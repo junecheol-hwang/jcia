@@ -112,6 +112,30 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 }
 .nav-dot:hover{background:var(--orange-faded);transform:scale(1.3);}
 
+/* BGM 컨트롤 */
+#bgm-ctrl{
+  position:fixed;bottom:2rem;left:2.5rem;
+  z-index:30;display:flex;align-items:center;gap:10px;
+  pointer-events:all;
+}
+#bgm-btn{
+  width:28px;height:28px;border-radius:50%;
+  background:transparent;border:0.5px solid rgba(110,108,102,0.4);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all 0.25s;
+}
+#bgm-btn:hover{ border-color:var(--orange-faded); }
+#bgm-btn svg{ width:12px;height:12px; }
+#bgm-vol{
+  -webkit-appearance:none;appearance:none;
+  width:60px;height:2px;
+  background:rgba(110,108,102,0.3);border-radius:2px;outline:none;cursor:pointer;
+}
+#bgm-vol::-webkit-slider-thumb{
+  -webkit-appearance:none;width:10px;height:10px;border-radius:50%;
+  background:var(--orange-worn);cursor:pointer;
+}
+
 /* back to the timeline */
 #back-btn{
   position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);
@@ -142,6 +166,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 
 <div id="three-container"></div>
 
+<!-- BGM -->
+<audio id="bgm" loop preload="auto">
+  <source src="bgm.sentient_beings.mp3" type="audio/mpeg">
+</audio>
+
 <div id="ui-layer">
   <div id="header">
     <div id="header-left">
@@ -170,6 +199,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   <div id="scroll-hint">← scroll →</div>
   <div id="nav"></div>
   <div id="back-btn" onclick="exitCluster()">back to the timeline</div>
+
+  <!-- BGM 컨트롤 -->
+  <div id="bgm-ctrl">
+    <button id="bgm-btn" onclick="toggleBgm()" title="음악 재생/정지">
+      <svg id="bgm-icon" viewBox="0 0 24 24" fill="none" stroke="rgba(110,108,102,0.8)" stroke-width="2">
+        <polygon points="5,3 19,12 5,21" fill="rgba(110,108,102,0.8)" stroke="none"/>
+      </svg>
+    </button>
+    <input type="range" id="bgm-vol" min="0" max="1" step="0.05" value="0.35"
+           oninput="setBgmVol(this.value)" title="볼륨">
+  </div>
 </div>
 
 <!-- 호버 아포리즘 패널 -->
@@ -843,6 +883,53 @@ document.addEventListener('keydown',e=>{
   if(e.key==='ArrowRight'){targetOffset+=PHASE_SPACING;clamp();}
   if(e.key==='ArrowLeft') {targetOffset-=PHASE_SPACING;clamp();}
 });
+
+// ── BGM 제어 ─────────────────────────────────────────
+const bgm = document.getElementById('bgm');
+let bgmPlaying = false;
+
+bgm.volume = 0.35;
+
+// 첫 번째 사용자 인터랙션 시 자동 재생 시도
+function tryAutoPlay(){
+  bgm.play().then(()=>{
+    bgmPlaying = true;
+    updateBgmIcon();
+  }).catch(()=>{}); // 자동재생 차단 시 무시
+  document.removeEventListener('click', tryAutoPlay);
+  document.removeEventListener('keydown', tryAutoPlay);
+}
+document.addEventListener('click', tryAutoPlay);
+document.addEventListener('keydown', tryAutoPlay);
+
+window.toggleBgm = function(){
+  if(bgmPlaying){
+    bgm.pause();
+    bgmPlaying = false;
+  } else {
+    bgm.play();
+    bgmPlaying = true;
+  }
+  updateBgmIcon();
+};
+
+window.setBgmVol = function(v){
+  bgm.volume = parseFloat(v);
+};
+
+function updateBgmIcon(){
+  const icon = document.getElementById('bgm-icon');
+  if(bgmPlaying){
+    // 일시정지 아이콘
+    icon.innerHTML = `
+      <rect x="6" y="4" width="4" height="16" fill="rgba(184,125,62,0.8)"/>
+      <rect x="14" y="4" width="4" height="16" fill="rgba(184,125,62,0.8)"/>`;
+  } else {
+    // 재생 아이콘
+    icon.innerHTML = `
+      <polygon points="5,3 19,12 5,21" fill="rgba(110,108,102,0.8)" stroke="none"/>`;
+  }
+}
 
 window.addEventListener('resize',resize);
 resize();
