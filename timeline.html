@@ -480,11 +480,11 @@ function drawTimeline(alpha){
     if(opacity<0.04) return;
     const c=book._starColor;
     const bx=x, by=y+yOff*scale, r=2.5*scale;
-    ctx.save();ctx.globalAlpha=opacity*alpha*0.6;
+    ctx.save();ctx.globalAlpha=opacity*alpha*0.28;
     ctx.beginPath();ctx.arc(bx,by,r,0,Math.PI*2);
     ctx.fillStyle=`rgb(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)})`;
-    ctx.shadowColor=`rgba(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)},0.6)`;
-    ctx.shadowBlur=6;ctx.fill();ctx.restore();
+    ctx.shadowColor=`rgba(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)},0.25)`;
+    ctx.shadowBlur=3;ctx.fill();ctx.restore();
   });
 }
 
