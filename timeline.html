@@ -519,51 +519,46 @@ function drawCluster(layout,alpha,phaseIdx){
   // easeOutCubic — 빠르게 퍼졌다 부드럽게 안착
   const entryE=1-Math.pow(1-entryT,3);
 
-  // ── 별자리 연결선 — 호버한 별 기준 ──────────────────
+  // ── 별자리 트러스트 구조 — 활성 별들 완전 연결 ────────
   if(hoveredBook && constellationAlpha > 0.01){
-    // 현재 호버 별의 실제 화면 위치 찾기
-    const hovered = layout.find(l=>l.book===hoveredBook);
-    if(hovered){
-      constellationLines.forEach(({toIdx, seed})=>{
-        const target=layout[toIdx];
-        if(!target||!target.book._csx) return;
-        const hx=hovered.book._csx, hy=hovered.book._csy;
-        const tx=target.book._csx, ty=target.book._csy;
+    // proximity 활성 별 목록 수집 (마우스 320px 반경 내)
+    const activeStars=layout.filter(({book})=>{
+      if(!book._csx) return false;
+      const dx=mouseX-book._csx, dy=mouseY-book._csy;
+      return Math.sqrt(dx*dx+dy*dy)<320;
+    });
 
-        // 선마다 약간 다른 점멸 주기 (seed 기반)
-        const flicker=0.75+Math.sin(now*(1.2+seed*0.4)+seed*3.1)*0.25;
-        const lineAlpha=constellationAlpha*flicker*0.55;
+    // 활성 별들 사이 모두 연결 (트러스트 구조)
+    for(let i=0;i<activeStars.length;i++){
+      for(let j=i+1;j<activeStars.length;j++){
+        const a=activeStars[i].book;
+        const b=activeStars[j].book;
+        if(!a._csx||!b._csx) continue;
+
+        // 두 별 사이 거리에 따라 선 투명도 조절 — 가까울수록 선명
+        const dx=a._csx-b._csx, dy=a._csy-b._csy;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        const distFade=Math.max(0,1-dist/400);
 
         ctx.save();
-        ctx.globalAlpha=alpha*lineAlpha;
+        ctx.globalAlpha=alpha*constellationAlpha*distFade*0.45;
         ctx.strokeStyle='rgba(217,169,110,0.9)';
         ctx.lineWidth=0.5;
-        ctx.setLineDash([4,6]);
-        ctx.lineDashOffset=-now*8; // 선이 흐르는 효과
+        ctx.setLineDash([]); // 실선
         ctx.beginPath();
-        ctx.moveTo(hx,hy);
-        ctx.lineTo(tx,ty);
+        ctx.moveTo(a._csx,a._csy);
+        ctx.lineTo(b._csx,b._csy);
         ctx.stroke();
-
-        // 연결된 별에 작은 광점
-        ctx.globalAlpha=alpha*constellationAlpha*0.6;
-        ctx.setLineDash([]);
-        ctx.beginPath();
-        ctx.arc(tx,ty,2.5,0,Math.PI*2);
-        ctx.fillStyle='rgba(217,169,110,0.8)';
-        ctx.shadowColor='rgba(217,169,110,0.9)';
-        ctx.shadowBlur=8;
-        ctx.fill();
         ctx.restore();
-      });
+      }
     }
   }
 
   // 별자리 알파 애니메이션
   if(constellationDir===1){
-    constellationAlpha=Math.min(1, constellationAlpha+0.035);
+    constellationAlpha=Math.min(1, constellationAlpha+0.04);
   } else if(constellationDir===-1){
-    constellationAlpha=Math.max(0, constellationAlpha-0.025);
+    constellationAlpha=Math.max(0, constellationAlpha-0.03);
     if(constellationAlpha<=0){ constellationDir=0; constellationLines=[]; }
   }
 
@@ -807,40 +802,6 @@ function handleClick(mx,my){
   // 성단 뷰에서는 클릭 없음 — 호버만
 }
 
-function buildConstellationLines(book){
-  // 현재 호버 별과 가장 가까운 4~6개 별 선택 (거리 기반)
-  const hIdx=clusterBooks.findIndex(l=>l.book===book);
-  if(hIdx<0){constellationLines=[];return;}
-
-  const hx=clusterBooks[hIdx].book._csx||0;
-  const hy=clusterBooks[hIdx].book._csy||0;
-
-  // 거리 계산 후 정렬
-  const dists=clusterBooks
-    .map((l,i)=>{
-      if(i===hIdx||!l.book._csx) return null;
-      const dx=l.book._csx-hx, dy=l.book._csy-hy;
-      return{toIdx:i, dist:Math.sqrt(dx*dx+dy*dy), seed:Math.sin(i*37.1)*0.5+0.5};
-    })
-    .filter(Boolean)
-    .sort((a,b)=>a.dist-b.dist);
-
-  // 가까운 것 중 거리 범위 내에서 랜덤하게 3~5개 선택
-  const candidates=dists.slice(0,12);
-  const count=3+Math.floor(Math.abs(Math.sin(book.id*11.3))*3); // 3~5개
-  // book.id 기반 고정 랜덤 선택
-  const selected=[];
-  for(let i=0;i<candidates.length&&selected.length<count;i++){
-    if(Math.abs(Math.sin(book.id*7.3+i*3.1))>0.35) selected.push(candidates[i]);
-  }
-  // 부족하면 앞에서 채움
-  if(selected.length<3){
-    candidates.slice(0,3).forEach(c=>{if(!selected.includes(c))selected.push(c);});
-  }
-
-  constellationLines=selected.slice(0,count);
-}
-
 function checkHover(mx,my){
   let found=false;
   if(viewMode==='timeline'){
@@ -860,14 +821,13 @@ function checkHover(mx,my){
       hoveredBook=newHovered;
       if(hoveredBook){
         showHoverPanel(hoveredBook);
-        buildConstellationLines(hoveredBook); // 별자리 선 생성
-        constellationDir=1;                   // 페이드인 시작
+        constellationDir=1; // 페이드인
       } else {
         hideHoverPanel();
-        constellationDir=-1;                  // 페이드아웃 시작
+        constellationDir=-1; // 페이드아웃
       }
     }
-    tlCanvas.style.cursor=hoveredBook?'default':'default';
+    tlCanvas.style.cursor='default';
   }
 }
 
