@@ -55,23 +55,25 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   padding:2rem 3rem 1.5rem;
   display:flex;flex-direction:column;align-items:flex-end;
   background:linear-gradient(to bottom,rgba(2,5,10,0.95) 60%,transparent);
-  opacity:0;pointer-events:none;max-width:400px;
+  opacity:0;pointer-events:none;max-width:420px;
 }
 #cluster-header-right{text-align:right;}
 #cluster-title{
   font-family:'Noto Serif KR',serif;font-weight:400;
   font-size:1.35rem;color:var(--orange-pale);letter-spacing:0.1em;
   text-shadow:0 2px 12px rgba(0,0,0,0.8);
+  white-space:nowrap;
 }
 #cluster-desc-hd{
   font-family:'Noto Sans KR',sans-serif;font-weight:300;
   font-size:0.8rem;color:var(--orange-worn);letter-spacing:0.12em;margin-top:5px;
   text-shadow:0 1px 8px rgba(0,0,0,0.8);
+  white-space:nowrap;
 }
 
-/* 성단 책 정보 패널 — 헤더 바로 아래 우측 */
+/* 성단 책 정보 패널 */
 #cluster-book-info{
-  margin-top:1.4rem;text-align:left;width:100%;
+  margin-top:1.4rem;text-align:right;width:100%;
   opacity:0;transition:opacity 0.3s ease;
   border-top:0.5px solid rgba(110,108,102,0.25);
   padding-top:1rem;
