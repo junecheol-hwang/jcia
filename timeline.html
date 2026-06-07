@@ -639,27 +639,46 @@ function drawCluster(layout,alpha,phaseIdx){
 
     // 별 크기
     const pulse=1+Math.sin(now*2+book.id)*0.1;
-    const r=isHovered ? 10 : (2.5+proximity*5)*pulse;
-    const glow=isHovered ? 32 : 4+proximity*24;
+    const r=isHovered ? 12 : (3+proximity*6)*pulse;
 
-    ctx.save();ctx.globalAlpha=alpha*(isHovered?1:baseAlpha);
-    ctx.beginPath();ctx.arc(fx,fy,r,0,Math.PI*2);
-    ctx.fillStyle=colStr;
-    ctx.shadowColor=glowStr;ctx.shadowBlur=glow;
-    ctx.fill();ctx.restore();
+    // 방사형 그라디언트 — 중심 밝고 바깥으로 흐려지는 별 느낌
+    const starAlpha=alpha*(isHovered?1:baseAlpha);
+    const grad=ctx.createRadialGradient(fx,fy,0,fx,fy,r*2.2);
+    const cr=Math.round(c.r*255), cg=Math.round(c.g*255), cb2=Math.round(c.b*255);
+
+    if(isHovered){
+      grad.addColorStop(0,   `rgba(255,255,255,0.95)`);
+      grad.addColorStop(0.2, `rgba(${cr},${cg},${cb2},0.85)`);
+      grad.addColorStop(0.5, `rgba(${cr},${cg},${cb2},0.35)`);
+      grad.addColorStop(1,   `rgba(${cr},${cg},${cb2},0)`);
+    } else {
+      const brightness=0.5+proximity*0.4;
+      grad.addColorStop(0,   `rgba(255,255,255,${0.8*brightness})`);
+      grad.addColorStop(0.25,`rgba(${cr},${cg},${cb2},${0.65*brightness})`);
+      grad.addColorStop(0.6, `rgba(${cr},${cg},${cb2},${0.2*brightness})`);
+      grad.addColorStop(1,   `rgba(${cr},${cg},${cb2},0)`);
+    }
+
+    ctx.save();
+    ctx.globalAlpha=starAlpha;
+    ctx.beginPath();
+    ctx.arc(fx,fy,r*2.2,0,Math.PI*2);
+    ctx.fillStyle=grad;
+    ctx.fill();
+    ctx.restore();
 
     // 호버 시 제목 — 별 바로 위
     if(isHovered){
       ctx.save();ctx.globalAlpha=alpha;
       ctx.font=`400 13px 'Noto Serif KR'`;
       ctx.fillStyle='rgba(242,224,200,0.95)';
-      ctx.shadowColor='rgba(0,0,0,0.8)';ctx.shadowBlur=8;
+      ctx.shadowColor='rgba(0,0,0,0.9)';ctx.shadowBlur=10;
       ctx.textAlign='center';
-      ctx.fillText(book.title,fx,fy-r-8);
+      ctx.fillText(book.title, fx, fy-r*2.2-8);
       ctx.restore();
     }
 
-    book._csx=fx;book._csy=fy;book._cr=r+12;
+    book._csx=fx;book._csy=fy;book._cr=r+10;
   });
 }
 
