@@ -354,6 +354,11 @@ const elHoverPanel=document.getElementById('hover-panel');
 
 function resize(){W=tlCanvas.width=innerWidth;H=tlCanvas.height=innerHeight;}
 
+// ── 성단 모션 상태 ────────────────────────────────────
+let clusterEntryTime = 0;   // 성단 진입 시각 (C: 진입 애니)
+let floatClock = 0;         // 부유 애니 시간 (A: 미세 부유)
+const ENTRY_DURATION = 1.4; // 진입 애니 지속 초
+
 // ── Easing ────────────────────────────────────────────
 function eio(t){return t<0.5?2*t*t:-1+(4-2*t)*t;}
 function eout(t){return 1-(1-t)*(1-t);}
@@ -501,42 +506,70 @@ function drawCluster(layout,alpha,phaseIdx){
   if(alpha<=0.01||!layout.length) return;
   const cx=W/2,cy=H/2;
   const phase=PHASES[phaseIdx];
+  const now=performance.now()/1000;
 
-  layout.forEach(({book,x,y})=>{
+  // C: 진입 애니 진행도 (0→1, ENTRY_DURATION 초 동안)
+  const entryElapsed=now-clusterEntryTime;
+  const entryT=Math.min(1, entryElapsed/ENTRY_DURATION);
+  // easeOutCubic — 빠르게 퍼졌다 부드럽게 안착
+  const entryE=1-Math.pow(1-entryT,3);
+
+  layout.forEach(({book,x,y},i)=>{
     const isHovered=(hoveredBook===book);
     const c=book._starColor;
     const colStr=`rgb(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)})`;
     const glowStr=`rgba(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)},0.9)`;
 
+    // C: 진입 — 별마다 약간 다른 딜레이로 중앙에서 퍼져나옴
+    const delay=Math.min(i/layout.length*0.4, 0.38); // 0~0.38초 딜레이
+    const starT=Math.min(1, Math.max(0, (entryT-delay)/(1-delay)));
+    const starE=1-Math.pow(1-starT,3);
+
+    // 진입 위치: 중앙(cx,cy) → 최종 위치(x,y)
+    const rx=cx+(x-cx)*starE;
+    const ry=cy+(y-cy)*starE;
+
+    // A: 미세 부유 — 각 별마다 고유 주기·방향
+    const floatAmp=3+Math.abs(Math.sin(book.id*7.3))*4; // 3~7px
+    const floatSpeedX=0.4+Math.abs(Math.sin(book.id*3.1))*0.5;
+    const floatSpeedY=0.35+Math.abs(Math.cos(book.id*5.7))*0.4;
+    const floatX=Math.sin(now*floatSpeedX+book.id*2.1)*floatAmp;
+    const floatY=Math.cos(now*floatSpeedY+book.id*1.7)*floatAmp*0.7;
+
+    // 진입 완료 후 부유 적용 (진입 중엔 부유 억제)
+    const floatMix=Math.max(0, (starE-0.7)/0.3); // 70% 이후부터 부유 시작
+    const fx=rx+floatX*floatMix;
+    const fy=ry+floatY*floatMix;
+
     // 마우스 거리 기반 proximity
-    const dx=mouseX-x, dy=mouseY-y;
+    const dx=mouseX-fx, dy=mouseY-fy;
     const dist=Math.sqrt(dx*dx+dy*dy);
     const proximity=Math.max(0,1-dist/320);
-    const baseAlpha=0.25+proximity*0.75;
+    const baseAlpha=(0.2+proximity*0.8)*starE; // 진입 중 페이드인
 
-    // 별 크기 — proximity 기반
-    const pulse=1+Math.sin(Date.now()*0.002+book.id)*0.1;
+    // 별 크기
+    const pulse=1+Math.sin(now*2+book.id)*0.1;
     const r=isHovered ? 10 : (2.5+proximity*5)*pulse;
     const glow=isHovered ? 32 : 4+proximity*24;
 
     ctx.save();ctx.globalAlpha=alpha*(isHovered?1:baseAlpha);
-    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.beginPath();ctx.arc(fx,fy,r,0,Math.PI*2);
     ctx.fillStyle=colStr;
     ctx.shadowColor=glowStr;ctx.shadowBlur=glow;
     ctx.fill();ctx.restore();
 
-    // 호버 시에만 별 위에 제목 — 짧게, 별 바로 위
+    // 호버 시 제목 — 별 바로 위
     if(isHovered){
       ctx.save();ctx.globalAlpha=alpha;
       ctx.font=`400 13px 'Noto Serif KR'`;
       ctx.fillStyle='rgba(242,224,200,0.95)';
       ctx.shadowColor='rgba(0,0,0,0.8)';ctx.shadowBlur=8;
       ctx.textAlign='center';
-      ctx.fillText(book.title, x, y-r-8);
+      ctx.fillText(book.title,fx,fy-r-8);
       ctx.restore();
     }
 
-    book._csx=x;book._csy=y;book._cr=r+12;
+    book._csx=fx;book._csy=fy;book._cr=r+12;
   });
 }
 
@@ -624,6 +657,7 @@ function enterCluster(phaseIdx){
   clusterBooks=computeCluster(phaseIdx,W/2,H/2);
   setClusterHeaderText(phaseIdx);
   viewMode='zoom-in';zoomT=0;
+  clusterEntryTime=performance.now()/1000; // 진입 시각 기록
   bgZoomIn(phaseIdx);
 }
 
