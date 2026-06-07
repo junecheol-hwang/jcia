@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Timeline — 도반의 여정</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;500&family=Noto+Sans+KR:wght@300;400&family=IM+Fell+English:ital@1&display=swap" rel="stylesheet">
+<script type="importmap">
+  { "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }}
+</script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --gray-light:#C8C5BE; --gray-mid:#A09D96; --gray-dark:#6E6C66;
+  --orange-pale:#F2E0C8; --orange-faded:#D9A96E; --orange-worn:#B87D3E;
+  --orange-deep:#8C5A20; --orange-dark:#5E3A10;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:none;}
+#three-container{position:fixed;inset:0;z-index:1;}
+#ui-layer{position:fixed;inset:0;z-index:10;pointer-events:none;animation:uiFadeIn 2.5s ease forwards;}
+@keyframes uiFadeIn{from{opacity:0}to{opacity:1}}
+
+/* 타임라인 헤더 */
+#header{
+  position:fixed;top:0;left:0;right:0;z-index:20;
+  padding:2rem 3rem 1.5rem;
+  display:flex;align-items:flex-end;justify-content:space-between;
+  background:linear-gradient(to bottom,rgba(2,5,10,0.92) 50%,transparent);
+  pointer-events:none;
+}
+#header-left{display:flex;flex-direction:column;gap:3px;}
+#header-subtitle{
+  font-family:'Noto Sans KR',sans-serif;font-weight:300;
+  font-size:0.58rem;color:rgba(63,61,57,0.9);letter-spacing:0.2em;
+}
+#header-title{
+  font-family:'Noto Serif KR',serif;font-weight:300;
+  font-size:0.95rem;color:var(--orange-faded);letter-spacing:0.14em;line-height:1.5;
+}
+#header-phase{
+  font-family:'Noto Sans KR',sans-serif;font-weight:300;
+  font-size:0.7rem;color:var(--gray-dark);letter-spacing:0.15em;text-align:right;
+}
+#header-phase .phase-name{
+  display:block;font-size:0.95rem;color:var(--gray-light);
+  margin-top:3px;font-family:'Noto Serif KR',serif;font-weight:300;
+}
+
+/* 성단 헤더 */
+#cluster-header{
+  position:fixed;top:0;left:0;right:0;z-index:25;
+  padding:2rem 3rem 1.5rem;
+  display:flex;align-items:flex-end;justify-content:flex-end;
+  background:linear-gradient(to bottom,rgba(2,5,10,0.95) 60%,transparent);
+  opacity:0;pointer-events:none;
+}
+#cluster-header-right{text-align:right;}
+#cluster-title{
+  font-family:'Noto Serif KR',serif;font-weight:300;
+  font-size:1rem;color:var(--orange-pale);letter-spacing:0.1em;
+}
+#cluster-desc-hd{
+  font-family:'Noto Sans KR',sans-serif;font-weight:300;
+  font-size:0.62rem;color:var(--gray-dark);letter-spacing:0.1em;margin-top:4px;
+}
+
+#tl-canvas{position:fixed;inset:0;z-index:15;pointer-events:all;}
+
+/* 성간이동 네비 */
+#nav{
+  position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);
+  z-index:30;display:flex;gap:10px;align-items:center;pointer-events:all;
+}
+.nav-dot{
+  width:9px;height:9px;border-radius:50%;
+  background:rgba(110,108,102,0.35);cursor:pointer;
+  transition:all 0.35s ease;border:0.5px solid rgba(110,108,102,0.5);
+}
+.nav-dot.active{
+  background:var(--orange-worn);border-color:var(--orange-faded);
+  box-shadow:0 0 10px rgba(184,125,62,0.6);width:11px;height:11px;
+}
+.nav-dot:hover{background:var(--orange-faded);transform:scale(1.3);}
+
+/* back to the timeline */
+#back-btn{
+  position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);
+  z-index:30;pointer-events:all;
+  font-family:'IM Fell English',serif;font-style:italic;
+  font-size:0.72rem;color:var(--gray-dark);letter-spacing:0.18em;
+  cursor:pointer;opacity:0;white-space:nowrap;transition:color 0.25s;
+}
+#back-btn:hover{color:var(--orange-faded);}
+
+/* 스크롤 힌트 */
+#scroll-hint{
+  position:fixed;bottom:4.5rem;left:50%;transform:translateX(-50%);
+  font-family:'Noto Sans KR',sans-serif;font-weight:300;
+  font-size:0.58rem;color:var(--gray-dark);letter-spacing:0.25em;
+  z-index:20;pointer-events:none;
+  animation:fadeHint 4s ease 2.5s forwards;
+}
+@keyframes fadeHint{0%{opacity:0.7}100%{opacity:0}}
+
+/* 호버 아포리즘 패널 */
+#hover-panel{
+  position:fixed;bottom:5rem;left:50%;transform:translateX(-50%);
+  z-index:50;text-align:center;pointer-events:none;
+  opacity:0;transition:opacity 0.4s ease;max-width:480px;width:90%;
+}
+#hover-panel.visible{opacity:1;}
+#hover-book-title{
+  font-family:'Noto Serif KR',serif;font-weight:400;
+  font-size:0.9rem;color:var(--orange-pale);letter-spacing:0.06em;
+  margin-bottom:0.5rem;
+}
+#hover-book-author{
+  font-family:'Noto Sans KR',sans-serif;font-weight:300;
+  font-size:0.65rem;color:var(--gray-dark);letter-spacing:0.08em;
+  margin-bottom:0.8rem;
+}
+#hover-divider{
+  width:16px;height:0.5px;background:var(--orange-dark);
+  margin:0 auto 0.8rem;
+}
+#hover-aphorism{
+  font-family:'Noto Serif KR',serif;font-weight:300;
+  font-size:0.78rem;color:var(--gray-light);line-height:1.9;font-style:italic;
+}
+</style>
+</head>
+<body>
+
+<div id="three-container"></div>
+
+<div id="ui-layer">
+  <div id="header">
+    <div id="header-left">
+      <div id="header-subtitle">가장 먼 여행</div>
+      <div id="header-title">머리에서 가슴으로</div>
+    </div>
+    <div id="header-phase">
+      <span id="current-phase-num">Phase 1</span>
+      <span class="phase-name" id="current-phase-name">우주론</span>
+    </div>
+  </div>
+
+  <div id="cluster-header">
+    <div id="cluster-header-right">
+      <div id="cluster-title"></div>
+      <div id="cluster-desc-hd"></div>
+    </div>
+  </div>
+
+  <canvas id="tl-canvas"></canvas>
+  <div id="scroll-hint">← scroll →</div>
+  <div id="nav"></div>
+  <div id="back-btn" onclick="exitCluster()">back to the timeline</div>
+</div>
+
+<!-- 호버 아포리즘 패널 -->
+<div id="hover-panel">
+  <div id="hover-book-title"></div>
+  <div id="hover-book-author"></div>
+  <div id="hover-divider"></div>
+  <div id="hover-aphorism"></div>
+</div>
+
+<!-- THREE.JS 파티클 배경 — 청백 통일 -->
+<script type="module">
+import * as THREE from 'three';
+const container=document.getElementById('three-container');
+const clock=new THREE.Clock();
+const N=7000;
+const basePos=new Float32Array(N*3);
+const sizes  =new Float32Array(N);
+const colors =new Float32Array(N*3);
+let scene,camera,renderer,pts;
+window._bg={targetZ:100,currentZ:100,targetX:0,currentX:0,targetY:27,currentY:27};
+
+function init(){
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x02050a);
+  scene.fog=new THREE.FogExp2(0x02050a,0.008);
+  camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,0.1,1000);
+  camera.position.set(0,27,100);
+  renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setSize(innerWidth,innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  container.appendChild(renderer.domElement);
+
+  const geo=new THREE.BufferGeometry();
+  for(let i=0;i<N;i++){
+    const i3=i*3;
+    const x=(Math.random()-0.5)*300;
+    const y=(Math.random()-0.5)*40;
+    const z=(Math.random()-0.5)*280;
+    basePos[i3]=x; basePos[i3+1]=y; basePos[i3+2]=z;
+    const df=1-Math.abs(z)/280*0.6;
+    // 배경 별: 청백 통일 — 거리에 따른 밝기 변화만
+    const bright=0.35+df*0.65;
+    const tint=Math.random();
+    // 약간의 청/백 변주만 (분광형 없음)
+    colors[i3]  =(0.72+tint*0.18)*bright;
+    colors[i3+1]=(0.82+tint*0.12)*bright;
+    colors[i3+2]=bright;
+    const base=Math.random()>0.92 ? Math.random()*2.5+1.2 : Math.random()*0.7+0.2;
+    sizes[i]=base*df;
+  }
+  geo.setAttribute('position',   new THREE.BufferAttribute(basePos.slice(),3));
+  geo.setAttribute('size',       new THREE.BufferAttribute(sizes,1));
+  geo.setAttribute('customColor',new THREE.BufferAttribute(colors,3));
+
+  const cv=document.createElement('canvas'); cv.width=64; cv.height=64;
+  const c2=cv.getContext('2d');
+  const g=c2.createRadialGradient(32,32,0,32,32,32);
+  g.addColorStop(0,'rgba(255,255,255,1)');
+  g.addColorStop(0.25,'rgba(210,228,255,0.7)');
+  g.addColorStop(0.6,'rgba(170,200,255,0.15)');
+  g.addColorStop(1,'transparent');
+  c2.fillStyle=g; c2.fillRect(0,0,64,64);
+
+  const mat=new THREE.ShaderMaterial({
+    uniforms:{pointTexture:{value:new THREE.CanvasTexture(cv)}},
+    vertexShader:`
+      attribute float size; attribute vec3 customColor; varying vec3 vColor;
+      void main(){vColor=customColor;
+        vec4 mvPos=modelViewMatrix*vec4(position,1.0);
+        gl_PointSize=size*(380.0/-mvPos.z);
+        gl_Position=projectionMatrix*mvPos;}`,
+    fragmentShader:`
+      uniform sampler2D pointTexture; varying vec3 vColor;
+      void main(){gl_FragColor=vec4(vColor,0.85)*texture2D(pointTexture,gl_PointCoord);}`,
+    blending:THREE.AdditiveBlending,depthTest:false,transparent:true
+  });
+  pts=new THREE.Points(geo,mat);
+  scene.add(pts);
+  window.addEventListener('resize',()=>{
+    camera.aspect=innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth,innerHeight);
+  });
+  animate();
+}
+
+function animate(){
+  requestAnimationFrame(animate);
+  const t=clock.getElapsedTime();
+  const bg=window._bg;
+  bg.currentZ+=(bg.targetZ-bg.currentZ)*0.028;
+  bg.currentX+=(bg.targetX-bg.currentX)*0.028;
+  bg.currentY+=(bg.targetY-bg.currentY)*0.028;
+  camera.position.z=bg.currentZ;
+  camera.position.x=bg.currentX+Math.sin(t*0.035)*5;
+  camera.position.y=bg.currentY+Math.sin(t*0.022)*2.5;
+  camera.lookAt(bg.currentX*0.2,0,0);
+  const pos=pts.geometry.attributes.position.array;
+  for(let i=0;i<N;i++){
+    const i3=i*3;
+    pos[i3]  =basePos[i3]  +Math.sin(t*0.28+i*0.71)*0.55;
+    pos[i3+1]=basePos[i3+1]+Math.sin(t*0.19+i*0.53)*0.95;
+    pos[i3+2]=basePos[i3+2]+Math.cos(t*0.23+i*0.41)*0.45;
+  }
+  pts.geometry.attributes.position.needsUpdate=true;
+  renderer.render(scene,camera);
+}
+init();
+</script>
+
+<!-- TIMELINE UI -->
+<script>
+// ── 책 별 분광형 색상 — 책마다 랜덤 고정 ─────────────
+const BOOK_STAR_TYPES=[
+  {r:0.75,g:0.85,b:1.00},  // O 청백
+  {r:0.70,g:0.80,b:1.00},  // B 청
+  {r:0.95,g:0.97,b:1.00},  // A 흰
+  {r:1.00,g:1.00,b:0.82},  // F 황백
+  {r:1.00,g:0.93,b:0.55},  // G 황
+  {r:1.00,g:0.75,b:0.32},  // K 주황
+  {r:1.00,g:0.48,b:0.20},  // M 적
+];
+
+// ── 데이터 ────────────────────────────────────────────
+const PHASES=[
+  {id:1,name:'우주론',              desc:'존재의 시원, 거대한 바다의 시작'},
+  {id:2,name:'우주를 기술하는 언어', desc:'물리·화학·수학'},
+  {id:3,name:'지구·생명·진화',      desc:'낳고 낳음(生生之易)'},
+  {id:4,name:'인류의 역사',          desc:'생명이 문명을 만듦'},
+  {id:5,name:'뇌과학·의식',          desc:'관찰자가 피관찰자를 인식함'},
+  {id:6,name:'철학',                desc:'의식이 도(道)를 만남'},
+  {id:7,name:'시·소설',             desc:'그 모든 것을 이야기로'},
+  {id:8,name:'여백',                desc:'그릇을 비워 다시 완전한 바다로'},
+];
+
+const BOOKS=[
+  {id:1, phase:1,title:'코스모스',           author:'칼 세이건',       aphorism:'우주는 과거에도 있었고, 지금도 있으며, 앞으로도 있을 것이다. 우리는 별의 먼지다.'},
+  {id:2, phase:1,title:'시간의 역사',        author:'스티븐 호킹',      aphorism:'시간에 시작이 있다면, 그 이전을 묻는 것은 의미가 없다.'},
+  {id:3, phase:1,title:'빅뱅',              author:'사이먼 싱',        aphorism:'모든 시작에는 침묵이 있었다. 그 침묵이 폭발했을 때, 시간이 태어났다.'},
+  {id:4, phase:2,title:'엘레강트 유니버스',   author:'브라이언 그린',    aphorism:'자연의 언어는 수학이다. 우리는 그 문법을 겨우 배우기 시작했을 뿐이다.'},
+  {id:5, phase:2,title:'페르마의 마지막 정리', author:'사이먼 싱',      aphorism:'수학적 진리는 발견되는 것이지, 발명되는 것이 아니다.'},
+  {id:6, phase:3,title:'이기적 유전자',      author:'리처드 도킨스',    aphorism:'우리는 유전자의 생존 기계다. 그러나 우리는 그 기계에 반역할 수 있는 유일한 존재다.'},
+  {id:7, phase:3,title:'생명이란 무엇인가',  author:'에르빈 슈뢰딩거',  aphorism:'생명은 무질서에 저항하는 질서다.'},
+  {id:8, phase:4,title:'사피엔스',           author:'유발 하라리',      aphorism:'인류의 가장 위대한 발명은 허구다. 신화를 믿는 능력이 문명을 만들었다.'},
+  {id:9, phase:4,title:'총, 균, 쇠',        author:'재레드 다이아몬드', aphorism:'역사는 정의롭지 않다. 다만 그렇게 흘렀을 뿐이다.'},
+  {id:10,phase:5,title:'의식의 탐구',        author:'크리스토프 코흐',   aphorism:'의식은 우주에서 가장 놀라운 현상이다. 그것이 무엇인지 우리는 아직 모른다.'},
+  {id:11,phase:5,title:'뇌의 미래',          author:'미치오 카쿠',      aphorism:'뇌는 우주에서 가장 복잡한 물체다. 그리고 그것이 스스로를 이해하려 한다.'},
+  {id:12,phase:6,title:'논어',              author:'공자',             aphorism:'배우고 때로 익히니 또한 즐겁지 아니한가.'},
+  {id:13,phase:6,title:'도덕경',             author:'노자',             aphorism:'말할 수 있는 도는 영원한 도가 아니다.'},
+  {id:14,phase:6,title:'주역',              author:'文王',             aphorism:'낳고 낳음, 그것이 역이다. 生生之謂易.'},
+  {id:15,phase:7,title:'백년의 고독',        author:'마르케스',         aphorism:'과거를 기억하지 못하는 자는 그것을 반복할 운명에 처한다.'},
+  {id:16,phase:7,title:'설국',              author:'가와바타 야스나리',  aphorism:'국경의 긴 터널을 빠져나오자, 설국이었다.'},
+  {id:17,phase:8,title:'여백의 미',          author:'',                 aphorism:'비움으로써 완전해진다. 여백은 결핍이 아니라 가능성이다.'},
+];
+
+// 책마다 랜덤 분광형 색상 고정 배정
+BOOKS.forEach(book=>{
+  const t=BOOK_STAR_TYPES[Math.floor((Math.sin(book.id*73.1)*0.5+0.5)*BOOK_STAR_TYPES.length)];
+  book._starColor=t;
+});
+
+// ── 상태 ──────────────────────────────────────────────
+const tlCanvas=document.getElementById('tl-canvas');
+const ctx=tlCanvas.getContext('2d');
+let W,H;
+
+let viewMode='timeline';
+let activeIdx=null;
+let zoomT=0;
+let clusterBooks=[];
+let currentOffset=0,targetOffset=0,currentPhaseIndex=0;
+const PHASE_SPACING=340;
+let phaseHitAreas=[];
+
+// 호버 상태
+let hoveredBook=null;
+let hoverPanelAlpha=0;
+
+// ── DOM 참조 ──────────────────────────────────────────
+const elHeader  =document.getElementById('header');
+const elCluster =document.getElementById('cluster-header');
+const elNav     =document.getElementById('nav');
+const elBack    =document.getElementById('back-btn');
+const elHoverPanel=document.getElementById('hover-panel');
+
+function resize(){W=tlCanvas.width=innerWidth;H=tlCanvas.height=innerHeight;}
+
+// ── Easing ────────────────────────────────────────────
+function eio(t){return t<0.5?2*t*t:-1+(4-2*t)*t;}
+function eout(t){return 1-(1-t)*(1-t);}
+
+// ── 헤더 통합 제어 ────────────────────────────────────
+function setHeaders(tlA,cluA){
+  elHeader.style.opacity =tlA.toFixed(3);
+  elCluster.style.opacity=cluA.toFixed(3);
+  elNav.style.opacity    =tlA.toFixed(3);
+  elBack.style.opacity   =cluA.toFixed(3);
+  elNav.style.pointerEvents =tlA>0.3?'all':'none';
+  elBack.style.pointerEvents=cluA>0.3?'all':'none';
+}
+
+// ── 좌표 변환 ─────────────────────────────────────────
+function tlToScreen(tPos){
+  const relX=tPos-currentOffset;
+  const normX=relX/(W*0.72);
+  return{
+    x:W/2+relX, y:H*0.50+normX*normX*70,
+    opacity:Math.max(0,1-Math.abs(normX)*1.5),
+    scale:Math.max(0.25,1-Math.abs(normX)*0.75)
+  };
+}
+
+// ── 성단 배치 계산 ────────────────────────────────────
+function computeCluster(phaseIdx,cx,cy){
+  const books=BOOKS.filter(b=>b.phase===phaseIdx+1);
+  const baseR=Math.min(W,H)*0.27;
+  return books.map((book,i)=>{
+    const angle=(i/books.length)*Math.PI*2-Math.PI/2;
+    const r=baseR+Math.sin(book.id*2.3)*0.11*baseR;
+    return{book,x:cx+Math.cos(angle)*r,y:cy+Math.sin(angle)*r};
+  });
+}
+
+// ── 배경 카메라 ───────────────────────────────────────
+function bgZoomIn(phaseIdx){
+  if(!window._bg) return;
+  window._bg.targetZ=24; window._bg.targetX=(phaseIdx-3.5)*5; window._bg.targetY=18;
+}
+function bgZoomOut(){
+  if(!window._bg) return;
+  window._bg.targetZ=100; window._bg.targetX=0; window._bg.targetY=27;
+}
+
+// ── 타임라인 그리기 ───────────────────────────────────
+function drawTimeline(alpha){
+  if(alpha<=0.01) return;
+
+  // 호 라인
+  ctx.save(); ctx.globalAlpha=alpha;
+  ctx.beginPath();
+  for(let t=-1.5;t<=1.5;t+=0.015){
+    const px=W/2+t*W*0.55,py=H*0.50+t*t*70;
+    t===-1.5?ctx.moveTo(px,py):ctx.lineTo(px,py);
+  }
+  ctx.strokeStyle='rgba(110,108,102,0.18)';ctx.lineWidth=0.5;ctx.stroke();
+  ctx.restore();
+
+  phaseHitAreas=[];
+
+  PHASES.forEach((phase,i)=>{
+    const tPos=i*PHASE_SPACING;
+    const{x,y,opacity,scale}=tlToScreen(tPos);
+    if(opacity<0.02) return;
+    const eff=opacity*alpha;
+
+    // 클릭 힌트 링
+    ctx.save();ctx.globalAlpha=eff*0.12;
+    ctx.beginPath();ctx.arc(x,y,24*scale,0,Math.PI*2);
+    ctx.strokeStyle='#B87D3E';ctx.lineWidth=0.5;ctx.stroke();ctx.restore();
+
+    // 마커
+    ctx.save();ctx.globalAlpha=eff;
+    ctx.beginPath();ctx.arc(x,y,6*scale,0,Math.PI*2);
+    ctx.fillStyle='#B87D3E';
+    ctx.shadowColor='rgba(184,125,62,0.8)';ctx.shadowBlur=16;
+    ctx.fill();ctx.restore();
+
+    phaseHitAreas.push({x,y,r:26*scale,phaseIdx:i});
+
+    // 레이블 (호 위)
+    ctx.save();ctx.globalAlpha=eff;ctx.textAlign='center';
+    ctx.font=`300 ${Math.round(9.5*scale)}px 'IM Fell English'`;
+    ctx.fillStyle='#8C5A20';
+    ctx.fillText(`Phase ${phase.id}`,x,y-52*scale);
+    ctx.font=`300 ${Math.round(13.5*scale)}px 'Noto Serif KR'`;
+    ctx.fillStyle='#C8C5BE';
+    ctx.fillText(phase.name,x,y-33*scale);
+    ctx.font=`300 ${Math.round(9*scale)}px 'Noto Sans KR'`;
+    ctx.fillStyle='#6E6C66';
+    ctx.fillText(phase.desc,x,y-15*scale);
+    ctx.restore();
+  });
+
+  // 책 별 (호 아래, 비활성 — 색상만 보임)
+  BOOKS.forEach(book=>{
+    const pIdx=book.phase-1;
+    const s1=Math.abs(Math.sin(book.id*137.508));
+    const s2=Math.abs(Math.cos(book.id*97.312));
+    const tPos=pIdx*PHASE_SPACING+(s1-0.5)*PHASE_SPACING*0.5+PHASE_SPACING*0.08;
+    const yOff=20+s2*80;
+    const{x,y,opacity,scale}=tlToScreen(tPos);
+    if(opacity<0.04) return;
+    const c=book._starColor;
+    const bx=x,by=y+yOff*scale,r=2.5*scale;
+    ctx.save();ctx.globalAlpha=opacity*alpha*0.55;
+    ctx.beginPath();ctx.arc(bx,by,r,0,Math.PI*2);
+    ctx.fillStyle=`rgb(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)})`;
+    ctx.shadowColor=`rgba(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)},0.6)`;
+    ctx.shadowBlur=6;ctx.fill();ctx.restore();
+  });
+}
+
+// ── 성단 그리기 ───────────────────────────────────────
+function drawCluster(layout,alpha,phaseIdx){
+  if(alpha<=0.01||!layout.length) return;
+  const cx=W/2,cy=H/2;
+  const phase=PHASES[phaseIdx];
+
+  // 중심 레이블
+  ctx.save();ctx.globalAlpha=alpha;ctx.textAlign='center';
+  ctx.font=`300 20px 'Noto Serif KR'`;
+  ctx.fillStyle='rgba(242,224,200,0.9)';
+  ctx.shadowColor='rgba(184,125,62,0.3)';ctx.shadowBlur=20;
+  ctx.fillText(phase.name,cx,cy-10);
+  ctx.font=`300 10px 'Noto Sans KR'`;
+  ctx.fillStyle='rgba(110,108,102,0.65)';ctx.shadowBlur=0;
+  ctx.fillText(phase.desc,cx,cy+10);
+  ctx.restore();
+
+  layout.forEach(({book,x,y})=>{
+    const isHovered=(hoveredBook===book);
+    const c=book._starColor;
+    const colStr=`rgb(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)})`;
+    const glowStr=`rgba(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)},0.9)`;
+
+    // 방사선
+    ctx.save();ctx.globalAlpha=0.09*alpha;
+    ctx.strokeStyle=colStr;ctx.lineWidth=0.5;ctx.setLineDash([2,6]);
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke();ctx.restore();
+
+    // 별 — 호버 시 더 크고 밝게
+    const pulse=1+Math.sin(Date.now()*0.002+book.id)*0.12;
+    const r=isHovered ? 8 : 5*pulse;
+    const glow=isHovered ? 28 : 16;
+
+    ctx.save();ctx.globalAlpha=alpha;
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle=colStr;
+    ctx.shadowColor=glowStr;ctx.shadowBlur=glow;
+    ctx.fill();ctx.restore();
+
+    // 제목 — 항상 희미하게, 호버 시 선명하게
+    const titleAlpha=isHovered ? 1.0 : 0.35;
+    const ang=Math.atan2(y-cy,x-cx);
+    const tx=x+Math.cos(ang)*28,ty=y+Math.sin(ang)*28;
+    ctx.save();ctx.globalAlpha=alpha*titleAlpha;
+    ctx.font=`300 11px 'Noto Serif KR'`;
+    ctx.fillStyle=isHovered?'rgba(242,224,200,0.95)':'rgba(160,157,150,0.8)';
+    ctx.shadowBlur=0;ctx.textAlign='center';
+    ctx.fillText(book.title,tx,ty);
+    ctx.restore();
+
+    book._csx=x;book._csy=y;book._cr=r+14;
+  });
+}
+
+// ── 호버 패널 제어 ────────────────────────────────────
+function showHoverPanel(book){
+  document.getElementById('hover-book-title').textContent=book.title;
+  document.getElementById('hover-book-author').textContent=book.author;
+  document.getElementById('hover-aphorism').textContent=`"${book.aphorism}"`;
+  elHoverPanel.classList.add('visible');
+}
+function hideHoverPanel(){
+  elHoverPanel.classList.remove('visible');
+}
+
+// ── 메인 루프 ─────────────────────────────────────────
+const SPEED=0.013; // 느리게 — 천천히 빨려드는 느낌
+
+function loop(){
+  ctx.clearRect(0,0,W,H);
+
+  if(viewMode==='timeline'){
+    currentOffset+=(targetOffset-currentOffset)*0.055;
+    const newPI=Math.max(0,Math.min(PHASES.length-1,Math.round(currentOffset/PHASE_SPACING)));
+    if(newPI!==currentPhaseIndex){currentPhaseIndex=newPI;updatePhaseUI();}
+
+    // 타임라인 스크롤에 비례한 배경 시차(parallax)
+    if(window._bg){
+      const totalRange=(PHASES.length-1)*PHASE_SPACING;
+      const normalized=currentOffset/totalRange;
+      window._bg.targetX=(normalized-0.5)*28;
+    }
+
+    drawTimeline(1);
+    setHeaders(1,0);
+  }
+
+  else if(viewMode==='zoom-in'){
+    zoomT=Math.min(1,zoomT+SPEED);
+    const e=eio(zoomT);
+    const tlA=Math.max(0,1-e*1.4);
+    const cA =Math.max(0,e*1.4-0.4);
+    drawTimeline(tlA);
+    drawCluster(clusterBooks,cA,activeIdx);
+    setHeaders(tlA,cA);
+    if(zoomT>=1){viewMode='cluster';setClusterHeaderText(activeIdx);}
+  }
+
+  else if(viewMode==='cluster'){
+    drawCluster(clusterBooks,1,activeIdx);
+    setHeaders(0,1);
+  }
+
+  else if(viewMode==='zoom-out'){
+    zoomT=Math.min(1,zoomT+SPEED);
+    const e=eio(zoomT);
+    const cA=Math.max(0,1-e*1.4);
+    const tlA=Math.max(0,e*1.4-0.4);
+    drawCluster(clusterBooks,cA,activeIdx);
+    drawTimeline(tlA);
+    setHeaders(tlA,cA);
+    if(zoomT>=1){
+      viewMode='timeline';
+      activeIdx=null;clusterBooks=[];
+      hoveredBook=null;hideHoverPanel();
+    }
+  }
+
+  requestAnimationFrame(loop);
+}
+
+// ── 전환 진입점 ───────────────────────────────────────
+function enterCluster(phaseIdx){
+  if(viewMode!=='timeline') return;
+  activeIdx=phaseIdx;
+  clusterBooks=computeCluster(phaseIdx,W/2,H/2);
+  setClusterHeaderText(phaseIdx);
+  viewMode='zoom-in';zoomT=0;
+  bgZoomIn(phaseIdx);
+}
+
+window.exitCluster=function(){
+  if(viewMode!=='cluster') return;
+  hoveredBook=null;hideHoverPanel();
+  viewMode='zoom-out';zoomT=0;
+  bgZoomOut();
+};
+
+function setClusterHeaderText(idx){
+  const p=PHASES[idx];
+  document.getElementById('cluster-title').textContent=`Phase ${p.id} — ${p.name}`;
+  document.getElementById('cluster-desc-hd').textContent=p.desc;
+}
+
+// ── UI 업데이트 ───────────────────────────────────────
+function updatePhaseUI(){
+  const p=PHASES[currentPhaseIndex];
+  document.getElementById('current-phase-num').textContent=`Phase ${p.id}`;
+  document.getElementById('current-phase-name').textContent=p.name;
+  document.querySelectorAll('.nav-dot').forEach((d,i)=>
+    d.classList.toggle('active',i===currentPhaseIndex));
+}
+function updateNavActive(idx){
+  document.querySelectorAll('.nav-dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
+}
+
+// ── 네비 점 ───────────────────────────────────────────
+const nav=document.getElementById('nav');
+PHASES.forEach((phase,i)=>{
+  const dot=document.createElement('div');
+  dot.className='nav-dot'+(i===0?' active':'');
+  dot.title=`Phase ${phase.id} — ${phase.name}`;
+  dot.addEventListener('click',()=>{
+    if(viewMode==='timeline'||viewMode==='zoom-out')
+      targetOffset=i*PHASE_SPACING;
+  });
+  nav.appendChild(dot);
+});
+
+// ── 입력 이벤트 ───────────────────────────────────────
+let isDragging=false,dragSX=0,dragSO=0,mdX=0,mdY=0,mdT=0;
+
+tlCanvas.addEventListener('mousedown',e=>{
+  if(viewMode!=='timeline'&&viewMode!=='cluster') return;
+  isDragging=true;dragSX=e.clientX;dragSO=targetOffset;
+  mdX=e.clientX;mdY=e.clientY;mdT=Date.now();
+  tlCanvas.style.cursor='grabbing';
+});
+window.addEventListener('mousemove',e=>{
+  if(!isDragging){checkHover(e.clientX,e.clientY);return;}
+  if(viewMode==='timeline'){targetOffset=dragSO+(dragSX-e.clientX)*1.15;clamp();}
+});
+window.addEventListener('mouseup',e=>{
+  if(!isDragging) return;
+  isDragging=false;tlCanvas.style.cursor='default';
+  const dx=e.clientX-mdX,dy=e.clientY-mdY;
+  if(Math.sqrt(dx*dx+dy*dy)<6&&Date.now()-mdT<300) handleClick(e.clientX,e.clientY);
+});
+tlCanvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+  if(viewMode!=='timeline') return;
+  targetOffset+=(e.deltaY+e.deltaX)*0.75;clamp();
+},{passive:false});
+
+let tSX=0,tSO=0,tDX=0,tDY=0,tDT=0;
+tlCanvas.addEventListener('touchstart',e=>{
+  tSX=e.touches[0].clientX;tSO=targetOffset;
+  tDX=tSX;tDY=e.touches[0].clientY;tDT=Date.now();
+},{passive:true});
+tlCanvas.addEventListener('touchmove',e=>{
+  if(viewMode!=='timeline') return;
+  targetOffset=tSO+(tSX-e.touches[0].clientX)*1.4;clamp();
+},{passive:true});
+tlCanvas.addEventListener('touchend',e=>{
+  const ch=e.changedTouches[0];
+  const dx=ch.clientX-tDX,dy=ch.clientY-tDY;
+  if(Math.sqrt(dx*dx+dy*dy)<8&&Date.now()-tDT<300) handleClick(ch.clientX,ch.clientY);
+});
+
+function clamp(){targetOffset=Math.max(0,Math.min((PHASES.length-1)*PHASE_SPACING,targetOffset));}
+
+function handleClick(mx,my){
+  if(viewMode==='timeline'){
+    for(const h of phaseHitAreas){
+      const dx=mx-h.x,dy=my-h.y;
+      if(Math.sqrt(dx*dx+dy*dy)<h.r){enterCluster(h.phaseIdx);return;}
+    }
+  }
+  // 성단 뷰에서는 클릭 없음 — 호버만
+}
+
+function checkHover(mx,my){
+  let found=false;
+  if(viewMode==='timeline'){
+    for(const h of phaseHitAreas){
+      const dx=mx-h.x,dy=my-h.y;
+      if(Math.sqrt(dx*dx+dy*dy)<h.r){found=true;break;}
+    }
+    tlCanvas.style.cursor=found?'pointer':'default';
+  } else if(viewMode==='cluster'){
+    let newHovered=null;
+    for(const cb of clusterBooks){
+      if(!cb.book._csx) continue;
+      const dx=mx-cb.book._csx,dy=my-cb.book._csy;
+      if(Math.sqrt(dx*dx+dy*dy)<cb.book._cr){newHovered=cb.book;break;}
+    }
+    if(newHovered!==hoveredBook){
+      hoveredBook=newHovered;
+      if(hoveredBook) showHoverPanel(hoveredBook);
+      else hideHoverPanel();
+    }
+    tlCanvas.style.cursor=hoveredBook?'default':'default';
+  }
+}
+
+// ── 키보드 ────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if(viewMode==='cluster') window.exitCluster();
+    return;
+  }
+  if(viewMode!=='timeline') return;
+  if(e.key==='ArrowRight'){targetOffset+=PHASE_SPACING;clamp();}
+  if(e.key==='ArrowLeft') {targetOffset-=PHASE_SPACING;clamp();}
+});
+
+window.addEventListener('resize',resize);
+resize();
+loop();
+</script>
+</body>
+</html>
