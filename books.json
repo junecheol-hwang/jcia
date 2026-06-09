@@ -2,7 +2,7 @@
   "meta": {
     "title": "도반의 여정",
     "subtitle": "가장 먼 여행 — 머리에서 가슴으로",
-    "total": 465
+    "total": 469
   },
   "phases": [
     {
@@ -45,7 +45,7 @@
       "id": 7,
       "name": "시·소설",
       "subtitle": "구체에서 추상으로",
-      "count": 86
+      "count": 90
     },
     {
       "id": 8,
@@ -4239,6 +4239,46 @@
       "phase": 8,
       "phase_name": "여백",
       "subtitle": "Potentiality"
+    },
+    {
+      "id": 467,
+      "title": "中國歷代詩歌選集 1",
+      "author": "기세춘·신영복 편역",
+      "publisher": "돌베개",
+      "phase": 7,
+      "phase_name": "시·소설",
+      "subtitle": "구체에서 추상으로",
+      "aphorism": ""
+    },
+    {
+      "id": 468,
+      "title": "中國歷代詩歌選集 2",
+      "author": "기세춘·신영복 편역",
+      "publisher": "돌베개",
+      "phase": 7,
+      "phase_name": "시·소설",
+      "subtitle": "구체에서 추상으로",
+      "aphorism": ""
+    },
+    {
+      "id": 469,
+      "title": "中國歷代詩歌選集 3",
+      "author": "기세춘·신영복 편역",
+      "publisher": "돌베개",
+      "phase": 7,
+      "phase_name": "시·소설",
+      "subtitle": "구체에서 추상으로",
+      "aphorism": ""
+    },
+    {
+      "id": 470,
+      "title": "中國歷代詩歌選集 4",
+      "author": "기세춘·신영복 편역",
+      "publisher": "돌베개",
+      "phase": 7,
+      "phase_name": "시·소설",
+      "subtitle": "구체에서 추상으로",
+      "aphorism": ""
     }
   ]
 }
