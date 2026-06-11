@@ -2,7 +2,7 @@
   "meta": {
     "title": "도반의 여정",
     "subtitle": "가장 먼 여행 — 머리에서 가슴으로",
-    "total": 469
+    "total": 480
   },
   "phases": [
     {
@@ -21,13 +21,13 @@
       "id": 3,
       "name": "생명의 진화",
       "subtitle": "관계론적 세계관",
-      "count": 45
+      "count": 46
     },
     {
       "id": 4,
       "name": "인류의 역사",
       "subtitle": "오래된 미래",
-      "count": 127
+      "count": 128
     },
     {
       "id": 5,
@@ -45,13 +45,13 @@
       "id": 7,
       "name": "시·소설",
       "subtitle": "구체에서 추상으로",
-      "count": 90
+      "count": 94
     },
     {
       "id": 8,
       "name": "여백",
       "subtitle": "Potentiality",
-      "count": 51
+      "count": 56
     }
   ],
   "books": [
@@ -4278,6 +4278,116 @@
       "phase": 7,
       "phase_name": "시·소설",
       "subtitle": "구체에서 추상으로",
+      "aphorism": ""
+    },
+    {
+      "id": 471,
+      "title": "죽음 1",
+      "author": "베르나르 베르베르",
+      "publisher": "열린책들",
+      "phase": 7,
+      "phase_name": "시·소설",
+      "subtitle": "구체에서 추상으로",
+      "aphorism": ""
+    },
+    {
+      "id": 472,
+      "title": "죽음 2",
+      "author": "베르나르 베르베르",
+      "publisher": "열린책들",
+      "phase": 7,
+      "phase_name": "시·소설",
+      "subtitle": "구체에서 추상으로",
+      "aphorism": ""
+    },
+    {
+      "id": 473,
+      "title": "역사속에서 걸어나온 사람들",
+      "author": "나카지마 아쓰시",
+      "publisher": "다섯수레",
+      "phase": 6,
+      "phase_name": "시·소설",
+      "subtitle": "구체에서 추상으로",
+      "aphorism": ""
+    },
+    {
+      "id": 474,
+      "title": "그림소담 — 간송미술관의 아름다운 그림",
+      "author": "탁현규",
+      "publisher": "dh",
+      "phase": 7,
+      "phase_name": "여백",
+      "subtitle": "Potentiality",
+      "aphorism": ""
+    },
+    {
+      "id": 475,
+      "title": "너의 췌장을 먹고 싶어",
+      "author": "스미노 요루",
+      "publisher": "소미미디어",
+      "phase": 7,
+      "phase_name": "시·소설",
+      "subtitle": "구체에서 추상으로",
+      "aphorism": ""
+    },
+    {
+      "id": 476,
+      "title": "전통 부채 13",
+      "author": "",
+      "publisher": "",
+      "phase": 8,
+      "phase_name": "여백",
+      "subtitle": "Potentiality",
+      "aphorism": ""
+    },
+    {
+      "id": 477,
+      "title": "도해 타이완사",
+      "author": "왕핀한",
+      "publisher": "글항아리",
+      "phase": 4,
+      "phase_name": "인류의 역사",
+      "subtitle": "오래된 미래",
+      "aphorism": ""
+    },
+    {
+      "id": 478,
+      "title": "미생물 전쟁",
+      "author": "브라이오니 바",
+      "publisher": "반니",
+      "phase": 3,
+      "phase_name": "생명의 진화",
+      "subtitle": "관계론적 세계관",
+      "aphorism": ""
+    },
+    {
+      "id": 479,
+      "title": "서재결혼시키기",
+      "author": "앤 패디먼",
+      "publisher": "Ex Libris",
+      "phase": 8,
+      "phase_name": "여백",
+      "subtitle": "Potentiality",
+      "aphorism": ""
+    },
+    {
+      "id": 480,
+      "title": "꼬리에 꼬리를 무는 漢字",
+      "author": "한호림",
+      "publisher": "중앙에듀",
+      "phase": 8,
+      "phase_name": "여백",
+      "subtitle": "Potentiality",
+      "aphorism": ""
+    },
+    {
+      "id": 481,
+      "title": "한국의 글쟁이들",
+      "author": "구본준",
+      "publisher": "한겨레출판",
+      "phase": 8,
+      "phase_name": "여백",
+      "subtitle": "Potentiality",
       "aphorism": ""
     }
   ]
