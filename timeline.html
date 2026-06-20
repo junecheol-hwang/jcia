@@ -495,19 +495,41 @@ function drawTimeline(alpha){
     if(opacity<0.02) return;
     const eff=opacity*alpha;
 
-    // 클릭 힌트 링
-    ctx.save();ctx.globalAlpha=eff*0.12;
-    ctx.beginPath();ctx.arc(x,y,24*scale,0,Math.PI*2);
-    ctx.strokeStyle='#B87D3E';ctx.lineWidth=0.5;ctx.stroke();ctx.restore();
+    // 중심 정렬 정도 (0~1) — 강조 강도를 부드럽게 보간
+    const cness=centernessOf(i);
+    const pulse=1+Math.sin(performance.now()/600)*0.06*cness;
 
-    // 마커
-    ctx.save();ctx.globalAlpha=eff;
-    ctx.beginPath();ctx.arc(x,y,6*scale,0,Math.PI*2);
-    ctx.fillStyle='#B87D3E';
-    ctx.shadowColor='rgba(184,125,62,0.8)';ctx.shadowBlur=16;
+    // 클릭 힌트 링 — 중심일수록 선명, 가장자리는 거의 사라짐
+    ctx.save();ctx.globalAlpha=eff*(0.06+cness*0.5);
+    ctx.beginPath();ctx.arc(x,y,24*scale*pulse,0,Math.PI*2);
+    ctx.strokeStyle='#D9A96E';ctx.lineWidth=0.5+cness*0.5;ctx.stroke();ctx.restore();
+
+    // 중심 정렬 시 바깥 펄스 링 하나 더
+    if(cness>0.5){
+      ctx.save();ctx.globalAlpha=eff*(cness-0.5)*0.5;
+      ctx.beginPath();ctx.arc(x,y,34*scale*pulse,0,Math.PI*2);
+      ctx.strokeStyle='#D9A96E';ctx.lineWidth=0.5;ctx.stroke();ctx.restore();
+    }
+
+    // 마커 — 중심일수록 밝고 큼
+    const mr=(5+cness*2)*scale;
+    ctx.save();ctx.globalAlpha=eff*(0.55+cness*0.45);
+    ctx.beginPath();ctx.arc(x,y,mr,0,Math.PI*2);
+    ctx.fillStyle=cness>0.5?'#D9A96E':'#B87D3E';
+    ctx.shadowColor='rgba(184,125,62,0.85)';ctx.shadowBlur=10+cness*12;
     ctx.fill();ctx.restore();
 
     phaseHitAreas.push({x,y,r:26*scale,phaseIdx:i});
+
+    // 진입 신호 — 충분히 중심에 왔을 때만 페이드인
+    if(cness>0.85){
+      ctx.save();ctx.globalAlpha=eff*((cness-0.85)/0.15)*0.85;
+      ctx.textAlign='center';
+      ctx.font=`italic 300 ${Math.round(11*scale)}px 'IM Fell English'`;
+      ctx.fillStyle='#D9A96E';
+      ctx.fillText('click to enter', x, y+34*scale);
+      ctx.restore();
+    }
 
     // 레이블 (호 위)
     ctx.save();ctx.globalAlpha=eff;ctx.textAlign='center';
@@ -829,11 +851,13 @@ window.addEventListener('mouseup',e=>{
   isDragging=false;tlCanvas.style.cursor='default';
   const dx=e.clientX-mdX,dy=e.clientY-mdY;
   if(Math.sqrt(dx*dx+dy*dy)<6&&Date.now()-mdT<300) handleClick(e.clientX,e.clientY);
+  else if(viewMode==='timeline') snapNow();
 });
 tlCanvas.addEventListener('wheel',e=>{
   e.preventDefault();
   if(viewMode!=='timeline') return;
   targetOffset+=(e.deltaY+e.deltaX)*0.75;clamp();
+  scheduleSnap();
 },{passive:false});
 
 let tSX=0,tSO=0,tDX=0,tDY=0,tDT=0;
@@ -849,15 +873,46 @@ tlCanvas.addEventListener('touchend',e=>{
   const ch=e.changedTouches[0];
   const dx=ch.clientX-tDX,dy=ch.clientY-tDY;
   if(Math.sqrt(dx*dx+dy*dy)<8&&Date.now()-tDT<300) handleClick(ch.clientX,ch.clientY);
+  else if(viewMode==='timeline') snapNow();
 });
 
 function clamp(){targetOffset=Math.max(0,Math.min((PHASES.length-1)*PHASE_SPACING,targetOffset));}
+
+// ── 중심 정렬(snap-to-center) ─────────────────────────
+// 각 Phase가 화면 중심에 얼마나 가까운지: 정확히 중심=1, 반 칸 벗어나면 0
+function centernessOf(i){
+  return Math.max(0, 1 - Math.abs(currentOffset - i*PHASE_SPACING)/(PHASE_SPACING*0.5));
+}
+// 현재 중심 Phase가 충분히 정렬되었는가 (진입 허용 임계)
+function isCentered(){
+  return centernessOf(currentPhaseIndex) > 0.72;
+}
+// 가장 가까운 Phase로 즉시 스냅
+function snapNow(){
+  if(snapTimer){clearTimeout(snapTimer);snapTimer=null;}
+  if(viewMode!=='timeline') return;
+  targetOffset=Math.round(targetOffset/PHASE_SPACING)*PHASE_SPACING;
+  clamp();
+}
+// 입력이 멈춘 뒤 디바운스로 스냅 (자유 스크롤 감각 유지)
+let snapTimer=null;
+function scheduleSnap(delay=140){
+  if(snapTimer) clearTimeout(snapTimer);
+  snapTimer=setTimeout(()=>{ snapTimer=null; snapNow(); },delay);
+}
 
 function handleClick(mx,my){
   if(viewMode==='timeline'){
     for(const h of phaseHitAreas){
       const dx=mx-h.x,dy=my-h.y;
-      if(Math.sqrt(dx*dx+dy*dy)<h.r){enterCluster(h.phaseIdx);return;}
+      if(Math.sqrt(dx*dx+dy*dy)<h.r){
+        if(h.phaseIdx===currentPhaseIndex && isCentered()){
+          enterCluster(h.phaseIdx);          // 중심에 정렬된 Phase → 성단 진입
+        } else {
+          targetOffset=h.phaseIdx*PHASE_SPACING; clamp();  // 양옆 Phase → 중심으로 이동
+        }
+        return;
+      }
     }
   }
   // 성단 뷰에서는 클릭 없음 — 호버만
@@ -899,8 +954,9 @@ document.addEventListener('keydown',e=>{
     return;
   }
   if(viewMode!=='timeline') return;
-  if(e.key==='ArrowRight'){targetOffset+=PHASE_SPACING;clamp();}
-  if(e.key==='ArrowLeft') {targetOffset-=PHASE_SPACING;clamp();}
+  if(e.key==='Enter' && isCentered()){ enterCluster(currentPhaseIndex); return; }
+  if(e.key==='ArrowRight'){targetOffset=(Math.round(targetOffset/PHASE_SPACING)+1)*PHASE_SPACING;clamp();}
+  if(e.key==='ArrowLeft') {targetOffset=(Math.round(targetOffset/PHASE_SPACING)-1)*PHASE_SPACING;clamp();}
 });
 
 // ── BGM 제어 ─────────────────────────────────────────
