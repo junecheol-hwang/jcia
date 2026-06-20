@@ -50,49 +50,93 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 }
 
 /* 성단 헤더 */
-#cluster-header{
-  position:fixed;top:0;right:0;z-index:25;
-  padding:4.3rem 3rem 1.5rem;
-  display:flex;flex-direction:column;align-items:flex-end;
-  background:linear-gradient(to bottom,rgba(2,5,10,0.95) 60%,transparent);
-  opacity:0;pointer-events:none;max-width:420px;
+/* 책 패널 — 우측, 검색창 아래 */
+#book-panel{
+  position:fixed;top:5rem;right:3rem;z-index:44;
+  width:clamp(240px,26vw,340px);
+  font-family:'Noto Sans KR',sans-serif;
+  pointer-events:none;opacity:0;transition:opacity 0.3s ease;
 }
-#cluster-header-right{text-align:right;}
-#cluster-title{
+#book-panel.visible{opacity:1;pointer-events:auto;}
+#bp-info{
+  background:rgba(2,5,10,0.72);
+  border:0.5px solid rgba(110,108,102,0.4);border-radius:2px;
+  padding:0.9rem 1rem;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+#bp-title{
   font-family:'Noto Serif KR',serif;font-weight:400;
-  font-size:1.35rem;color:var(--orange-pale);letter-spacing:0.1em;
-  text-shadow:0 2px 12px rgba(0,0,0,0.8);
-  white-space:nowrap;
+  font-size:1.02rem;color:var(--orange-pale);letter-spacing:0.04em;
 }
-#cluster-desc-hd{
-  font-family:'Noto Sans KR',sans-serif;font-weight:300;
-  font-size:0.8rem;color:var(--orange-worn);letter-spacing:0.12em;margin-top:5px;
-  text-shadow:0 1px 8px rgba(0,0,0,0.8);
-  white-space:nowrap;
+#bp-author{font-size:0.7rem;color:var(--gray-dark);letter-spacing:0.06em;margin-top:0.35rem;}
+#bp-subtitle{
+  font-family:'Noto Serif KR',serif;font-style:italic;font-weight:300;
+  font-size:0.76rem;color:var(--gray-mid);line-height:1.7;margin-top:0.5rem;
 }
+#bp-body{
+  display:none;margin-top:8px;
+  background:rgba(2,5,10,0.88);
+  border:0.5px solid rgba(110,108,102,0.3);border-radius:2px;
+  padding:0.9rem 1rem 1rem;
+  backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
+  max-height:64vh;overflow-y:auto;
+}
+#book-panel.open #bp-body{display:block;}
+#bp-body::-webkit-scrollbar{width:5px;}
+#bp-body::-webkit-scrollbar-thumb{background:rgba(110,108,102,0.3);border-radius:3px;}
+.bp-section{margin-bottom:1.1rem;}
+.bp-section:last-child{margin-bottom:0;}
+.bp-label{font-size:0.66rem;color:var(--orange-worn);letter-spacing:0.12em;margin-bottom:0.5rem;}
+.bp-add{display:flex;gap:6px;}
+.bp-input{
+  flex:1;background:rgba(255,255,255,0.03);
+  border:0.5px solid rgba(110,108,102,0.35);border-radius:2px;
+  padding:0.4rem 0.55rem;color:var(--gray-light);
+  font-size:0.74rem;font-weight:300;outline:none;
+}
+.bp-input:focus{border-color:rgba(217,169,110,0.6);}
+.bp-input::placeholder{color:rgba(110,108,102,0.7);}
+.bp-btn{
+  flex:none;width:28px;background:rgba(217,169,110,0.12);
+  border:0.5px solid rgba(217,169,110,0.4);border-radius:2px;
+  color:var(--orange-pale);font-size:0.9rem;cursor:pointer;transition:background 0.15s;
+}
+.bp-btn:hover{background:rgba(217,169,110,0.22);}
+.bp-list{margin-top:0.5rem;}
+.bp-item{
+  display:flex;align-items:flex-start;gap:6px;
+  font-size:0.74rem;color:var(--gray-mid);line-height:1.5;
+  padding:0.28rem 0;border-bottom:0.5px solid rgba(110,108,102,0.12);
+}
+.bp-item:last-child{border-bottom:none;}
+.bp-item a{color:var(--gray-light);text-decoration:none;border-bottom:0.5px dotted rgba(110,108,102,0.5);}
+.bp-item a:hover{color:var(--orange-pale);}
+.bp-item-text{flex:1;word-break:break-word;}
+.bp-del{flex:none;cursor:pointer;color:rgba(110,108,102,0.6);font-size:0.85rem;line-height:1;padding:0 2px;}
+.bp-del:hover{color:var(--orange-worn);}
 
-/* 성단 책 정보 패널 */
-#cluster-book-info{
-  margin-top:1.4rem;text-align:right;width:100%;
-  opacity:0;transition:opacity 0.3s ease;
-  border-top:0.5px solid rgba(110,108,102,0.25);
-  padding-top:1rem;
+/* 문장 다이얼 — 가운데 또렷, 위아래 페이드+축소 */
+#bp-dial{
+  position:relative;height:168px;margin-top:0.6rem;
+  overflow-y:auto;overflow-x:hidden;
+  -ms-overflow-style:none;scrollbar-width:none;
+  -webkit-mask-image:linear-gradient(to bottom,transparent,#000 24%,#000 76%,transparent);
+          mask-image:linear-gradient(to bottom,transparent,#000 24%,#000 76%,transparent);
 }
-#cluster-book-info.visible{opacity:1;}
-#cluster-book-info-title{
-  font-family:'Noto Serif KR',serif;font-weight:400;
-  font-size:1rem;color:var(--orange-pale);letter-spacing:0.05em;
-  margin-bottom:0.3rem;
-}
-#cluster-book-info-author{
-  font-family:'Noto Sans KR',sans-serif;font-weight:300;
-  font-size:0.72rem;color:var(--gray-dark);letter-spacing:0.06em;
-  margin-bottom:0.6rem;
-}
-#cluster-book-info-subtitle{
+#bp-dial::-webkit-scrollbar{display:none;}
+#bp-dial-track{padding:64px 0;}
+.bp-line{
   font-family:'Noto Serif KR',serif;font-weight:300;
-  font-size:0.78rem;color:var(--gray-mid);line-height:1.8;font-style:italic;
+  font-size:0.84rem;line-height:1.6;color:var(--gray-light);
+  text-align:center;padding:0.45rem 0.5rem;position:relative;
+  transition:opacity 0.1s,transform 0.1s,filter 0.1s;transform-origin:center;
 }
+.bp-line .bp-line-del{
+  position:absolute;right:-2px;top:50%;transform:translateY(-50%);
+  opacity:0;cursor:pointer;color:rgba(110,108,102,0.7);font-size:0.8rem;transition:opacity 0.15s;
+}
+.bp-line:hover .bp-line-del{opacity:1;}
+#bp-line-count{text-align:center;font-size:0.6rem;color:var(--gray-dark);letter-spacing:0.1em;margin-top:0.5rem;}
 
 #tl-canvas{position:fixed;inset:0;z-index:15;pointer-events:all;}
 
@@ -233,18 +277,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
     </div>
   </div>
 
-  <div id="cluster-header">
-    <div id="cluster-header-right">
-      <div id="cluster-title"></div>
-      <div id="cluster-desc-hd"></div>
-    </div>
-    <div id="cluster-book-info">
-      <div id="cluster-book-info-title"></div>
-      <div id="cluster-book-info-author"></div>
-      <div id="cluster-book-info-subtitle"></div>
-    </div>
-  </div>
-
   <canvas id="tl-canvas"></canvas>
   <div id="scroll-hint">← scroll →</div>
   <div id="nav"></div>
@@ -277,9 +309,45 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
       <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/>
     </svg>
     <input id="book-search-input" type="text" autocomplete="off" spellcheck="false"
-           placeholder="별 이름으로 검색 · 초성도 가능">
+           placeholder="책 이름으로 검색 · 초성도 가능">
   </div>
   <div id="book-search-results"></div>
+</div>
+
+<!-- 책 패널 — 검색창 아래: 책 정보 + 입력/저장 -->
+<div id="book-panel">
+  <div id="bp-info">
+    <div id="bp-title"></div>
+    <div id="bp-author"></div>
+    <div id="bp-subtitle"></div>
+  </div>
+  <div id="bp-body">
+    <div class="bp-section">
+      <div class="bp-label">♪ 같이 들을 음악</div>
+      <div class="bp-add">
+        <input class="bp-input" id="bp-music-input" placeholder="곡 · 앨범 · 링크" autocomplete="off" spellcheck="false">
+        <button class="bp-btn" data-add="music">+</button>
+      </div>
+      <div class="bp-list" id="bp-music-list"></div>
+    </div>
+    <div class="bp-section">
+      <div class="bp-label">✶ 더 읽을거리</div>
+      <div class="bp-add">
+        <input class="bp-input" id="bp-reading-input" placeholder="제목 · 링크" autocomplete="off" spellcheck="false">
+        <button class="bp-btn" data-add="reading">+</button>
+      </div>
+      <div class="bp-list" id="bp-reading-list"></div>
+    </div>
+    <div class="bp-section bp-lines-section">
+      <div class="bp-label">&ldquo; 마음에 드는 문장</div>
+      <div class="bp-add">
+        <input class="bp-input" id="bp-line-input" placeholder="문장을 적고 Enter" autocomplete="off" spellcheck="false">
+        <button class="bp-btn" data-add="line">+</button>
+      </div>
+      <div id="bp-dial"><div id="bp-dial-track"></div></div>
+      <div id="bp-line-count"></div>
+    </div>
+  </div>
 </div>
 
 <!-- THREE.JS 파티클 배경 — 청백 통일 -->
@@ -461,10 +529,15 @@ let mouseX=W/2||0, mouseY=H/2||0;
 
 // ── DOM 참조 ──────────────────────────────────────────
 const elHeader  =document.getElementById('header');
-const elCluster =document.getElementById('cluster-header');
+const elHoverPanel=document.getElementById('hover-panel');
 const elNav     =document.getElementById('nav');
 const elBack    =document.getElementById('back-btn');
-const elHoverPanel=document.getElementById('hover-panel');
+
+// 강조/선택 상태
+let pinnedBook=null;   // 검색/클릭으로 고정된 별
+let panelBook=null;    // 입력 패널이 열린 책
+let focusedBook=null;  // 강조 대상 = hoveredBook || pinnedBook
+const bookData={};     // 책 id별 {music:[],reading:[],lines:[]} — 세션 메모리
 
 function resize(){W=tlCanvas.width=innerWidth;H=tlCanvas.height=innerHeight;}
 
@@ -548,7 +621,6 @@ function eout(t){return 1-(1-t)*(1-t);}
 // ── 헤더 통합 제어 ────────────────────────────────────
 function setHeaders(tlA,cluA){
   elHeader.style.opacity =tlA.toFixed(3);
-  elCluster.style.opacity=cluA.toFixed(3);
   elNav.style.opacity    =tlA.toFixed(3);
   elBack.style.opacity   =cluA.toFixed(3);
   elNav.style.pointerEvents =tlA>0.3?'all':'none';
@@ -710,6 +782,13 @@ function drawCluster(layout,alpha,phaseIdx){
   const phase=PHASES[phaseIdx];
   const now=performance.now()/1000;
 
+  // 강조 대상 = 호버 별 또는 검색으로 고정된 별
+  const focused = hoveredBook || pinnedBook;
+  // 별자리는 별 위치(_csx)가 준비된 뒤 생성 (검색 진입 직후도 대응)
+  if(focused && focused._csx!=null && constellation.members.length===0 && constellationDir===1){
+    constellation=buildConstellation(focused);
+  }
+
   // C: 진입 애니 진행도 (0→1, ENTRY_DURATION 초 동안)
   const entryElapsed=now-clusterEntryTime;
   const entryT=Math.min(1, entryElapsed/ENTRY_DURATION);
@@ -744,7 +823,7 @@ function drawCluster(layout,alpha,phaseIdx){
   }
 
   layout.forEach(({book,x,y},i)=>{
-    const isHovered=(hoveredBook===book);
+    const isHovered=(book===focused);
     const c=book._starColor;
     const colStr=`rgb(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)})`;
     const glowStr=`rgba(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)},0.9)`;
@@ -776,28 +855,28 @@ function drawCluster(layout,alpha,phaseIdx){
     const proximity=Math.max(0,1-dist/320);
     const baseAlpha=(0.2+proximity*0.8)*starE; // 진입 중 페이드인
 
-    // 검색 반짝임 — selectBook이 book._sparkleUntil 설정
-    const sparkling = book._sparkleUntil && now < book._sparkleUntil;
-    const sparkP = sparkling ? (Math.sin(now*13)*0.5+0.5) : 0; // 0~1 빠른 명멸
-    const hot = isHovered || sparkling;
+    const hot = isHovered; // = focused (호버 또는 검색 고정)
 
     // 별 크기
     const pulse=1+Math.sin(now*2+book.id)*0.1;
-    let r = isHovered ? 12 : (3+proximity*6)*pulse;
-    if(sparkling) r = Math.max(r, 7+sparkP*8);
+    const r = hot ? 12 : (3+proximity*6)*pulse;
 
     const cr=Math.round(c.r*255), cg=Math.round(c.g*255), cb2=Math.round(c.b*255);
 
-    // 반짝임 후광 링 — "여기 있어요"
-    if(sparkling){
-      ctx.save();
-      ctx.globalAlpha=alpha*(0.25+sparkP*0.5);
-      ctx.beginPath();
-      ctx.arc(fx,fy,(r*2.2)+8+sparkP*6,0,Math.PI*2);
-      ctx.strokeStyle='rgba(242,224,200,0.9)';
-      ctx.lineWidth=0.8;
-      ctx.stroke();
-      ctx.restore();
+    // 은은한 파동 — focused 별 둘레로 천천히 퍼지는 동심원 (지속)
+    if(hot){
+      const period=2.6;
+      for(let k=0;k<2;k++){
+        const tt=((now/period)+k*0.5)%1;
+        ctx.save();
+        ctx.globalAlpha=alpha*(1-tt)*0.33;
+        ctx.beginPath();
+        ctx.arc(fx,fy,(r*2.2)+tt*44,0,Math.PI*2);
+        ctx.strokeStyle='rgba(242,224,200,0.8)';
+        ctx.lineWidth=0.8;
+        ctx.stroke();
+        ctx.restore();
+      }
     }
 
     // 방사형 그라디언트 — 중심 밝고 바깥으로 흐려지는 별 느낌
@@ -827,7 +906,7 @@ function drawCluster(layout,alpha,phaseIdx){
 
     // 호버·검색 시 제목 — 별 바로 위
     if(hot){
-      ctx.save();ctx.globalAlpha=alpha*(sparkling?0.7+sparkP*0.3:1);
+      ctx.save();ctx.globalAlpha=alpha;
       ctx.font=`400 13px 'Noto Serif KR'`;
       ctx.fillStyle='rgba(242,224,200,0.95)';
       ctx.shadowColor='rgba(0,0,0,0.9)';ctx.shadowBlur=10;
@@ -840,25 +919,17 @@ function drawCluster(layout,alpha,phaseIdx){
   });
 }
 
-// ── 책 정보 패널 제어 ────────────────────────────────
-function showHoverPanel(book){
-  // 성단 헤더 아래 책 정보
-  const infoPanel=document.getElementById('cluster-book-info');
-  document.getElementById('cluster-book-info-title').textContent=book.title;
-  document.getElementById('cluster-book-info-author').textContent=
+// ── 책 정보 표시 (검색창 아래 패널 머리) ──────────────
+function showBookInfo(book){
+  document.getElementById('bp-title').textContent=book.title;
+  document.getElementById('bp-author').textContent=
     book.author+(book.publisher&&book.publisher!=='(알 수 없음)'?'  ·  '+book.publisher:'');
-  document.getElementById('cluster-book-info-subtitle').textContent=
-    book.subtitle?book.subtitle:'';
-  infoPanel.classList.add('visible');
-  // 하단 패널도 유지 (fallback)
-  elHoverPanel.classList.add('visible');
-  document.getElementById('hover-book-title').textContent=book.title;
-  document.getElementById('hover-book-author').textContent=book.author;
-  document.getElementById('hover-aphorism').textContent='';
+  document.getElementById('bp-subtitle').textContent=book.subtitle?book.subtitle:'';
+  document.getElementById('book-panel').classList.add('visible');
 }
-function hideHoverPanel(){
-  document.getElementById('cluster-book-info').classList.remove('visible');
-  elHoverPanel.classList.remove('visible');
+function hideBookInfo(){
+  if(panelBook) return; // 입력 패널이 열려 있으면 정보 유지
+  document.getElementById('book-panel').classList.remove('visible');
 }
 
 // ── 메인 루프 ─────────────────────────────────────────
@@ -889,6 +960,7 @@ function loop(){
     const tlA=Math.max(0,1-e*1.4);
     const cA =Math.max(0,e*1.4-0.4);
     drawTimeline(tlA);
+    refreshFocus();
     drawCluster(clusterBooks,cA,activeIdx);
     setHeaders(tlA,cA);
     if(zoomT>=1){
@@ -901,6 +973,7 @@ function loop(){
   }
 
   else if(viewMode==='cluster'){
+    refreshFocus();
     drawCluster(clusterBooks,1,activeIdx);
     setHeaders(0,1);
   }
@@ -916,12 +989,15 @@ function loop(){
     if(zoomT>=1){
       viewMode='timeline';
       activeIdx=null;clusterBooks=[];
-      hoveredBook=null;hideHoverPanel();
+      hoveredBook=null; panelBook=null; focusedBook=null;
+      document.getElementById('book-panel').classList.remove('visible','open');
       if(pendingEnter!=null){
         const pe=pendingEnter; pendingEnter=null;
         targetOffset=pe*PHASE_SPACING; clamp();
         currentOffset=targetOffset; // 즉시 정렬 후 바로 진입
         enterCluster(pe);
+      } else {
+        pinnedBook=null;
       }
     }
   }
@@ -942,18 +1018,13 @@ function enterCluster(phaseIdx){
 
 window.exitCluster=function(){
   if(viewMode!=='cluster') return;
-  hoveredBook=null;hideHoverPanel();
-  document.getElementById('cluster-book-info').classList.remove('visible');
+  hoveredBook=null;
   constellationDir=-1; // 별자리 선 페이드아웃
   viewMode='zoom-out';zoomT=0;
   bgZoomOut();
 };
 
-function setClusterHeaderText(idx){
-  const p=PHASES[idx];
-  document.getElementById('cluster-title').textContent=`Phase ${p.id} — ${p.name}`;
-  document.getElementById('cluster-desc-hd').textContent=p.desc;
-}
+function setClusterHeaderText(idx){ /* 우측 상단 헤더 제거됨 */ }
 
 // ── UI 업데이트 ───────────────────────────────────────
 function updatePhaseUI(){
@@ -1063,7 +1134,24 @@ function handleClick(mx,my){
       }
     }
   }
-  // 성단 뷰에서는 클릭 없음 — 호버만
+  // 성단 뷰 — 별 클릭 시 패널 열기, 빈 곳 클릭 시 닫기
+  else if(viewMode==='cluster'){
+    let clicked=null;
+    for(const cb of clusterBooks){
+      if(!cb.book._csx) continue;
+      const dx=mx-cb.book._csx,dy=my-cb.book._csy;
+      if(Math.sqrt(dx*dx+dy*dy)<cb.book._cr){clicked=cb.book;break;}
+    }
+    if(clicked){
+      pinnedBook=clicked; hoveredBook=clicked;
+      refreshFocus();
+      openPanel(clicked);
+    } else {
+      pinnedBook=null; panelBook=null;
+      document.getElementById('book-panel').classList.remove('open');
+      refreshFocus();
+    }
+  }
 }
 
 function checkHover(mx,my){
@@ -1083,16 +1171,11 @@ function checkHover(mx,my){
     }
     if(newHovered!==hoveredBook){
       hoveredBook=newHovered;
-      if(hoveredBook){
-        showHoverPanel(hoveredBook);
-        constellation=buildConstellation(hoveredBook); // 별 5~12개 연결
-        constellationDir=1; // 페이드인
-      } else {
-        hideHoverPanel();
-        constellationDir=-1; // 페이드아웃
-      }
+      // 다른 별에 호버하면 검색 고정(pin) 해제
+      if(newHovered && newHovered!==pinnedBook) pinnedBook=null;
+      refreshFocus();
     }
-    tlCanvas.style.cursor='default';
+    tlCanvas.style.cursor=hoveredBook?'pointer':'default';
   }
 }
 
@@ -1101,7 +1184,11 @@ document.addEventListener('keydown',e=>{
   const si=document.getElementById('book-search-input');
   if(si && document.activeElement===si) return; // 검색 입력 중엔 성단 조작 안 함
   if(e.key==='Escape'){
-    if(viewMode==='cluster') window.exitCluster();
+    if(panelBook){
+      panelBook=null; pinnedBook=null;
+      document.getElementById('book-panel').classList.remove('open');
+      refreshFocus();
+    } else if(viewMode==='cluster') window.exitCluster();
     return;
   }
   if(viewMode!=='timeline') return;
@@ -1156,6 +1243,105 @@ function updateBgmIcon(){
       <polygon points="5,3 19,12 5,21" fill="rgba(110,108,102,0.8)" stroke="none"/>`;
   }
 }
+
+// ── 책 패널 (정보 + 입력/저장, 세션 메모리) ───────────
+function refreshFocus(){
+  const f = hoveredBook || pinnedBook;
+  if(f===focusedBook) return;
+  focusedBook=f;
+  if(f){
+    constellation={members:[],edges:[]}; // drawCluster가 _csx 준비 시 재생성
+    constellationDir=1;
+    showBookInfo(panelBook||f);
+  } else {
+    constellationDir=-1;
+    hideBookInfo();
+  }
+}
+function ensureData(book){
+  if(!bookData[book.id]) bookData[book.id]={music:[],reading:[],lines:[]};
+  return bookData[book.id];
+}
+function bpEsc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function bpLinkify(text){
+  const t=bpEsc(text);
+  if(/^https?:\/\//i.test(text)) return '<a href="'+t+'" target="_blank" rel="noopener">'+t+'</a>';
+  return t;
+}
+function openPanel(book){
+  panelBook=book; ensureData(book);
+  showBookInfo(book);
+  const bp=document.getElementById('book-panel');
+  bp.classList.add('visible','open');
+  renderLists(book); renderDial(book);
+}
+function renderLists(book){
+  const d=ensureData(book);
+  ['music','reading'].forEach(kind=>{
+    const el=document.getElementById('bp-'+kind+'-list');
+    el.innerHTML=d[kind].map((v,i)=>
+      '<div class="bp-item"><span class="bp-item-text">'+bpLinkify(v)+'</span>'
+      +'<span class="bp-del" data-i="'+i+'">×</span></div>').join('');
+    el.querySelectorAll('.bp-del').forEach(x=>{
+      x.addEventListener('click',()=>{ d[kind].splice(+x.dataset.i,1); renderLists(book); });
+    });
+  });
+}
+function renderDial(book){
+  const d=ensureData(book);
+  const track=document.getElementById('bp-dial-track');
+  track.innerHTML=d.lines.map((v,i)=>
+    '<div class="bp-line" data-i="'+i+'">'+bpEsc(v)
+    +'<span class="bp-line-del" data-i="'+i+'">×</span></div>').join('');
+  track.querySelectorAll('.bp-line-del').forEach(x=>{
+    x.addEventListener('click',e=>{ e.stopPropagation(); d.lines.splice(+x.dataset.i,1); renderDial(book); });
+  });
+  document.getElementById('bp-line-count').textContent=d.lines.length?d.lines.length+' / 50':'';
+  updateDialFocus();
+}
+function updateDialFocus(){
+  const dial=document.getElementById('bp-dial');
+  const lines=dial.querySelectorAll('.bp-line');
+  if(!lines.length) return;
+  const rect=dial.getBoundingClientRect();
+  const cy=rect.top+rect.height/2;
+  lines.forEach(el=>{
+    const r=el.getBoundingClientRect();
+    const dist=Math.min(1,Math.abs((r.top+r.height/2)-cy)/(rect.height/2));
+    el.style.opacity=(1-dist*0.82).toFixed(3);
+    el.style.transform='scale('+(1-dist*0.22).toFixed(3)+')';
+    el.style.filter='saturate('+(1-dist*0.65).toFixed(2)+')';
+  });
+}
+function addItem(kind){
+  if(!panelBook) return;
+  const inp=document.getElementById('bp-'+kind+'-input');
+  const v=inp.value.trim(); if(!v) return;
+  const d=ensureData(panelBook);
+  if(kind==='line'){
+    if(d.lines.length>=50) return;
+    d.lines.push(v); inp.value=''; renderDial(panelBook);
+    requestAnimationFrame(()=>{
+      const ls=document.getElementById('bp-dial').querySelectorAll('.bp-line');
+      if(ls.length){ ls[ls.length-1].scrollIntoView({block:'center'}); updateDialFocus(); }
+    });
+  } else {
+    d[kind].push(v); inp.value=''; renderLists(panelBook);
+  }
+}
+// 패널 입력 이벤트 바인딩
+document.querySelectorAll('.bp-btn').forEach(b=>{
+  b.addEventListener('click',()=>addItem(b.dataset.add));
+});
+['music','reading','line'].forEach(kind=>{
+  const inp=document.getElementById('bp-'+kind+'-input');
+  inp.addEventListener('keydown',e=>{
+    e.stopPropagation();
+    if(e.key==='Enter') addItem(kind);
+    else if(e.key==='Escape') inp.blur();
+  });
+});
+document.getElementById('bp-dial').addEventListener('scroll',updateDialFocus);
 
 // ── 책 검색 — 자동완성 · 초성 · 제안 · 별 반짝임 ──────
 (function(){
@@ -1228,9 +1414,9 @@ function updateBgmIcon(){
   function selectBook(book){
     if(!book) return;
     const phaseIdx=book.phase-1;
-    book._sparkleUntil=performance.now()/1000+5; // 5초 반짝
     input.value=''; close(); input.blur();
-    if(viewMode==='cluster' && activeIdx===phaseIdx) return; // 이미 그 성단 안
+    pinnedBook=book; hoveredBook=null; // 검색 고정 → 파동·제목 지속
+    if(viewMode==='cluster' && activeIdx===phaseIdx){ refreshFocus(); return; }
     if(viewMode==='timeline'){
       targetOffset=phaseIdx*PHASE_SPACING; clamp();
       currentOffset=targetOffset;
