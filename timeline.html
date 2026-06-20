@@ -26,7 +26,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 /* 타임라인 헤더 */
 #header{
   position:fixed;top:0;left:0;right:0;z-index:20;
-  padding:2rem 3rem 1.5rem;
+  padding:2rem calc(3rem + 320px) 1.5rem 3rem;
   display:flex;align-items:flex-end;justify-content:space-between;
   background:linear-gradient(to bottom,rgba(2,5,10,0.92) 50%,transparent);
   pointer-events:none;
@@ -52,7 +52,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 /* 성단 헤더 */
 #cluster-header{
   position:fixed;top:0;right:0;z-index:25;
-  padding:2rem 3rem 1.5rem;
+  padding:4.3rem 3rem 1.5rem;
   display:flex;flex-direction:column;align-items:flex-end;
   background:linear-gradient(to bottom,rgba(2,5,10,0.95) 60%,transparent);
   opacity:0;pointer-events:none;max-width:420px;
@@ -160,6 +160,56 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 #hover-panel{
   display:none;
 }
+
+/* 책 검색창 — 우측 상단, 타임라인·성단 공통 */
+#book-search{
+  position:fixed;top:1.5rem;right:3rem;z-index:45;
+  width:clamp(220px,24vw,300px);pointer-events:all;
+  font-family:'Noto Sans KR',sans-serif;
+}
+#book-search-box{
+  display:flex;align-items:center;gap:9px;
+  background:rgba(2,5,10,0.7);
+  border:0.5px solid rgba(110,108,102,0.45);
+  border-radius:2px;padding:0.55rem 0.85rem;
+  backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+  transition:border-color 0.25s;
+}
+#book-search-box:focus-within{border-color:rgba(217,169,110,0.7);}
+#book-search-icon{width:13px;height:13px;flex:none;opacity:0.55;}
+#book-search-input{
+  flex:1;background:transparent;border:none;outline:none;
+  color:var(--gray-light);font-size:0.8rem;font-weight:300;letter-spacing:0.04em;
+}
+#book-search-input::placeholder{color:rgba(110,108,102,0.85);}
+#book-search-results{
+  margin-top:6px;background:rgba(2,5,10,0.93);
+  border:0.5px solid rgba(110,108,102,0.3);border-radius:2px;
+  backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
+  max-height:62vh;overflow-y:auto;display:none;
+}
+#book-search-results.open{display:block;}
+#book-search-results::-webkit-scrollbar{width:5px;}
+#book-search-results::-webkit-scrollbar-thumb{background:rgba(110,108,102,0.35);border-radius:3px;}
+.bs-hint{
+  padding:0.55rem 0.9rem;font-size:0.62rem;color:var(--gray-dark);
+  letter-spacing:0.14em;border-bottom:0.5px solid rgba(110,108,102,0.18);
+}
+.bs-item{
+  padding:0.55rem 0.9rem;cursor:pointer;
+  border-bottom:0.5px solid rgba(110,108,102,0.1);
+  transition:background 0.15s;
+}
+.bs-item:last-child{border-bottom:none;}
+.bs-item:hover,.bs-item.active{background:rgba(217,169,110,0.1);}
+.bs-item-title{
+  font-family:'Noto Serif KR',serif;font-weight:400;
+  font-size:0.82rem;color:var(--orange-pale);letter-spacing:0.02em;
+}
+.bs-item-meta{
+  font-size:0.66rem;color:var(--gray-dark);margin-top:2px;letter-spacing:0.05em;
+}
+.bs-empty{padding:0.75rem 0.9rem;font-size:0.72rem;color:var(--gray-dark);}
 </style>
 </head>
 <body>
@@ -218,6 +268,18 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   <div id="hover-book-author"></div>
   <div id="hover-divider"></div>
   <div id="hover-aphorism"></div>
+</div>
+
+<!-- 책 검색창 — 우측 상단 -->
+<div id="book-search">
+  <div id="book-search-box">
+    <svg id="book-search-icon" viewBox="0 0 24 24" fill="none" stroke="rgba(200,197,190,0.85)" stroke-width="1.6">
+      <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/>
+    </svg>
+    <input id="book-search-input" type="text" autocomplete="off" spellcheck="false"
+           placeholder="별 이름으로 검색 · 초성도 가능">
+  </div>
+  <div id="book-search-results"></div>
 </div>
 
 <!-- THREE.JS 파티클 배경 — 청백 통일 -->
@@ -325,15 +387,25 @@ init();
 <!-- TIMELINE UI -->
 <script>
 // ── 책 별 분광형 색상 — 책마다 랜덤 고정 ─────────────
+// ── 책 별 색상 — 배경 청백 파티클과 조화로운 좁은 팔레트 ──
 const BOOK_STAR_TYPES=[
-  {r:0.75,g:0.85,b:1.00},  // O 청백
-  {r:0.70,g:0.80,b:1.00},  // B 청
-  {r:0.95,g:0.97,b:1.00},  // A 흰
-  {r:1.00,g:1.00,b:0.82},  // F 황백
-  {r:1.00,g:0.93,b:0.55},  // G 황
-  {r:1.00,g:0.75,b:0.32},  // K 주황
-  {r:1.00,g:0.48,b:0.20},  // M 적
+  {r:0.74,g:0.84,b:1.00},  // 청
+  {r:0.82,g:0.89,b:1.00},  // 옅은 청
+  {r:0.92,g:0.95,b:1.00},  // 청백
+  {r:0.98,g:0.99,b:1.00},  // 흰
+  {r:1.00,g:0.98,b:0.91},  // 따뜻한 흰 (미묘)
 ];
+
+// ── 결정론적 시드 난수 (mulberry32) — 책마다 고정된 위치/특성 ──
+function seededRand(seed){
+  let t=seed>>>0;
+  return function(){
+    t+=0x6D2B79F5;
+    let x=Math.imul(t^t>>>15,1|t);
+    x^=x+Math.imul(x^x>>>7,61|x);
+    return ((x^x>>>14)>>>0)/4294967296;
+  };
+}
 
 // ── 데이터 ────────────────────────────────────────────
 const PHASES=[
@@ -404,7 +476,70 @@ const ENTRY_DURATION = 1.4;
 // 별자리 선 상태
 let constellationAlpha = 0;  // 현재 선 투명도 (0→1 페이드인, 1→0 페이드아웃)
 let constellationDir   = 0;  // 1=나타남, -1=사라짐, 0=정지
-let constellationLines = []; // [{from, to, seed}] 연결선 목록
+let constellationLines = []; // (구) 연결선 목록 — 미사용
+let constellation = {members:[], edges:[]}; // 호버 별자리: 별 5~12개 + 연결
+let pendingEnter = null;     // 검색 선택 후 진입 예약 phaseIdx
+
+// ── 별자리 생성 — 호버한 별 둘레에서 5~12개를 골라 자연스럽게 연결 ──
+function buildConstellation(rootBook){
+  const all=clusterBooks
+    .map(cb=>cb.book)
+    .filter(b=>b!==rootBook && b._csx!=null && b._csy!=null);
+  if(rootBook._csx==null || all.length<4) return {members:[rootBook], edges:[]};
+
+  const rnd=seededRand(rootBook.id*40503+777);
+  const count=5+Math.floor(rnd()*8); // 5~12 (root 포함)
+  const rx=rootBook._csx, ry=rootBook._csy;
+
+  // root에서 가까운 후보 풀
+  const sorted=all.sort((a,b)=>{
+    const da=(a._csx-rx)**2+(a._csy-ry)**2;
+    const db=(b._csx-rx)**2+(b._csy-ry)**2;
+    return da-db;
+  });
+  const pool=sorted.slice(0, Math.min(sorted.length, (count-1)*2+4));
+  // 시드 셔플 후 추출 — 가깝되 매번 다른 조합
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  const members=[rootBook, ...pool.slice(0, count-1)];
+
+  // 최소신장트리(Prim) — 가까운 것끼리 나뭇가지처럼
+  const edges=primMST(members);
+  // 곁가지 1~2개 — 너무 트리스럽지 않게
+  const extra=1+Math.floor(rnd()*2);
+  for(let e=0;e<extra;e++){
+    const i=Math.floor(rnd()*members.length);
+    let bj=-1,bd=Infinity;
+    for(let j=0;j<members.length;j++){
+      if(j===i) continue;
+      if(edges.some(([a,b])=>(a===i&&b===j)||(a===j&&b===i))) continue;
+      const dx=members[i]._csx-members[j]._csx, dy=members[i]._csy-members[j]._csy;
+      const d=dx*dx+dy*dy;
+      if(d<bd){bd=d;bj=j;}
+    }
+    if(bj>=0) edges.push([i,bj]);
+  }
+  return {members, edges};
+}
+
+function primMST(nodes){
+  const n=nodes.length; if(n<2) return [];
+  const used=new Array(n).fill(false); used[0]=true;
+  const inTree=[0]; const edges=[];
+  for(let k=1;k<n;k++){
+    let best=Infinity,bi=-1,bj=-1;
+    for(const i of inTree){
+      for(let j=0;j<n;j++){
+        if(used[j]) continue;
+        const dx=nodes[i]._csx-nodes[j]._csx, dy=nodes[i]._csy-nodes[j]._csy;
+        const d=dx*dx+dy*dy;
+        if(d<best){best=d;bi=i;bj=j;}
+      }
+    }
+    if(bj<0) break;
+    used[bj]=true; inTree.push(bj); edges.push([bi,bj]);
+  }
+  return edges;
+}
 
 // ── Easing ────────────────────────────────────────────
 function eio(t){return t<0.5?2*t*t:-1+(4-2*t)*t;}
@@ -431,25 +566,23 @@ function tlToScreen(tPos){
   };
 }
 
-// ── 성단 배치 계산 — 황금각 나선형 ──────────────────
+// ── 성단 배치 계산 — 시드 난수로 원판 전체에 자연 산개 ──
 function computeCluster(phaseIdx,cx,cy){
   const books=BOOKS.filter(b=>b.phase===phaseIdx+1);
-  const n=books.length;
 
-  // 화면 활용 가능한 최대 반경 (화면의 42% — 중심에서 가장자리까지)
+  // 화면 활용 가능한 최대 반경 (화면의 42%)
   const maxR=Math.min(W,H)*0.42;
 
-  // 황금각 나선 (해바라기 씨앗 패턴)
-  const GOLDEN_ANGLE=137.508*(Math.PI/180);
-
-  return books.map((book,i)=>{
-    // 반경: 안쪽에서 바깥쪽으로 고르게 분포
-    const r=maxR*Math.sqrt((i+0.5)/n);
-    const angle=i*GOLDEN_ANGLE;
+  return books.map((book)=>{
+    // 책 id로 고정된 난수 — 매번 같은 자리, 매번 같은 별자리
+    const rnd=seededRand(book.id*2654435761+12345);
+    const a=rnd()*Math.PI*2;
+    // sqrt(random) → 면적 균일 분포 (중심에 뭉치지 않고 고르게)
+    const rr=Math.sqrt(rnd())*maxR;
     return{
       book,
-      x:cx+Math.cos(angle)*r,
-      y:cy+Math.sin(angle)*r
+      x:cx+Math.cos(a)*rr,
+      y:cy+Math.sin(a)*rr
     };
   });
 }
@@ -583,39 +716,23 @@ function drawCluster(layout,alpha,phaseIdx){
   // easeOutCubic — 빠르게 퍼졌다 부드럽게 안착
   const entryE=1-Math.pow(1-entryT,3);
 
-  // ── 별자리 트러스트 구조 — 활성 별들 완전 연결 ────────
-  if(hoveredBook && constellationAlpha > 0.01){
-    // proximity 활성 별 목록 수집 (마우스 320px 반경 내)
-    const activeStars=layout.filter(({book})=>{
-      if(!book._csx) return false;
-      const dx=mouseX-book._csx, dy=mouseY-book._csy;
-      return Math.sqrt(dx*dx+dy*dy)<320;
-    });
-
-    // 활성 별들 사이 모두 연결 (트러스트 구조)
-    for(let i=0;i<activeStars.length;i++){
-      for(let j=i+1;j<activeStars.length;j++){
-        const a=activeStars[i].book;
-        const b=activeStars[j].book;
-        if(!a._csx||!b._csx) continue;
-
-        // 두 별 사이 거리에 따라 선 투명도 조절 — 가까울수록 선명
-        const dx=a._csx-b._csx, dy=a._csy-b._csy;
-        const dist=Math.sqrt(dx*dx+dy*dy);
-        const distFade=Math.max(0,1-dist/400);
-
-        ctx.save();
-        ctx.globalAlpha=alpha*constellationAlpha*distFade*0.45;
-        ctx.strokeStyle='rgba(217,169,110,0.9)';
-        ctx.lineWidth=0.5;
-        ctx.setLineDash([]); // 실선
-        ctx.beginPath();
-        ctx.moveTo(a._csx,a._csy);
-        ctx.lineTo(b._csx,b._csy);
-        ctx.stroke();
-        ctx.restore();
-      }
+  // ── 별자리 — 호버한 별 둘레의 5~12개를 자연스럽게 연결 ──
+  if(constellation.members.length>1 && constellationAlpha>0.01){
+    const m=constellation.members;
+    ctx.save();
+    ctx.strokeStyle='rgba(217,169,110,0.85)';
+    ctx.lineWidth=0.6;
+    ctx.lineCap='round';
+    for(const [i,j] of constellation.edges){
+      const a=m[i], b=m[j];
+      if(a._csx==null||b._csx==null) continue;
+      ctx.globalAlpha=alpha*constellationAlpha*0.55;
+      ctx.beginPath();
+      ctx.moveTo(a._csx,a._csy);
+      ctx.lineTo(b._csx,b._csy);
+      ctx.stroke();
     }
+    ctx.restore();
   }
 
   // 별자리 알파 애니메이션
@@ -623,7 +740,7 @@ function drawCluster(layout,alpha,phaseIdx){
     constellationAlpha=Math.min(1, constellationAlpha+0.04);
   } else if(constellationDir===-1){
     constellationAlpha=Math.max(0, constellationAlpha-0.03);
-    if(constellationAlpha<=0){ constellationDir=0; constellationLines=[]; }
+    if(constellationAlpha<=0){ constellationDir=0; constellation={members:[],edges:[]}; }
   }
 
   layout.forEach(({book,x,y},i)=>{
@@ -659,16 +776,35 @@ function drawCluster(layout,alpha,phaseIdx){
     const proximity=Math.max(0,1-dist/320);
     const baseAlpha=(0.2+proximity*0.8)*starE; // 진입 중 페이드인
 
+    // 검색 반짝임 — selectBook이 book._sparkleUntil 설정
+    const sparkling = book._sparkleUntil && now < book._sparkleUntil;
+    const sparkP = sparkling ? (Math.sin(now*13)*0.5+0.5) : 0; // 0~1 빠른 명멸
+    const hot = isHovered || sparkling;
+
     // 별 크기
     const pulse=1+Math.sin(now*2+book.id)*0.1;
-    const r=isHovered ? 12 : (3+proximity*6)*pulse;
+    let r = isHovered ? 12 : (3+proximity*6)*pulse;
+    if(sparkling) r = Math.max(r, 7+sparkP*8);
 
-    // 방사형 그라디언트 — 중심 밝고 바깥으로 흐려지는 별 느낌
-    const starAlpha=alpha*(isHovered?1:baseAlpha);
-    const grad=ctx.createRadialGradient(fx,fy,0,fx,fy,r*2.2);
     const cr=Math.round(c.r*255), cg=Math.round(c.g*255), cb2=Math.round(c.b*255);
 
-    if(isHovered){
+    // 반짝임 후광 링 — "여기 있어요"
+    if(sparkling){
+      ctx.save();
+      ctx.globalAlpha=alpha*(0.25+sparkP*0.5);
+      ctx.beginPath();
+      ctx.arc(fx,fy,(r*2.2)+8+sparkP*6,0,Math.PI*2);
+      ctx.strokeStyle='rgba(242,224,200,0.9)';
+      ctx.lineWidth=0.8;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 방사형 그라디언트 — 중심 밝고 바깥으로 흐려지는 별 느낌
+    const starAlpha=alpha*(hot?1:baseAlpha);
+    const grad=ctx.createRadialGradient(fx,fy,0,fx,fy,r*2.2);
+
+    if(hot){
       grad.addColorStop(0,   `rgba(255,255,255,0.95)`);
       grad.addColorStop(0.2, `rgba(${cr},${cg},${cb2},0.85)`);
       grad.addColorStop(0.5, `rgba(${cr},${cg},${cb2},0.35)`);
@@ -689,9 +825,9 @@ function drawCluster(layout,alpha,phaseIdx){
     ctx.fill();
     ctx.restore();
 
-    // 호버 시 제목 — 별 바로 위
-    if(isHovered){
-      ctx.save();ctx.globalAlpha=alpha;
+    // 호버·검색 시 제목 — 별 바로 위
+    if(hot){
+      ctx.save();ctx.globalAlpha=alpha*(sparkling?0.7+sparkP*0.3:1);
       ctx.font=`400 13px 'Noto Serif KR'`;
       ctx.fillStyle='rgba(242,224,200,0.95)';
       ctx.shadowColor='rgba(0,0,0,0.9)';ctx.shadowBlur=10;
@@ -755,7 +891,13 @@ function loop(){
     drawTimeline(tlA);
     drawCluster(clusterBooks,cA,activeIdx);
     setHeaders(tlA,cA);
-    if(zoomT>=1){viewMode='cluster';setClusterHeaderText(activeIdx);}
+    if(zoomT>=1){
+      viewMode='cluster';setClusterHeaderText(activeIdx);
+      if(pendingEnter!=null){
+        if(pendingEnter===activeIdx){ pendingEnter=null; }
+        else { const pe=pendingEnter; window.exitCluster(); pendingEnter=pe; }
+      }
+    }
   }
 
   else if(viewMode==='cluster'){
@@ -775,6 +917,12 @@ function loop(){
       viewMode='timeline';
       activeIdx=null;clusterBooks=[];
       hoveredBook=null;hideHoverPanel();
+      if(pendingEnter!=null){
+        const pe=pendingEnter; pendingEnter=null;
+        targetOffset=pe*PHASE_SPACING; clamp();
+        currentOffset=targetOffset; // 즉시 정렬 후 바로 진입
+        enterCluster(pe);
+      }
     }
   }
 
@@ -937,6 +1085,7 @@ function checkHover(mx,my){
       hoveredBook=newHovered;
       if(hoveredBook){
         showHoverPanel(hoveredBook);
+        constellation=buildConstellation(hoveredBook); // 별 5~12개 연결
         constellationDir=1; // 페이드인
       } else {
         hideHoverPanel();
@@ -949,6 +1098,8 @@ function checkHover(mx,my){
 
 // ── 키보드 ────────────────────────────────────────────
 document.addEventListener('keydown',e=>{
+  const si=document.getElementById('book-search-input');
+  if(si && document.activeElement===si) return; // 검색 입력 중엔 성단 조작 안 함
   if(e.key==='Escape'){
     if(viewMode==='cluster') window.exitCluster();
     return;
@@ -1005,6 +1156,116 @@ function updateBgmIcon(){
       <polygon points="5,3 19,12 5,21" fill="rgba(110,108,102,0.8)" stroke="none"/>`;
   }
 }
+
+// ── 책 검색 — 자동완성 · 초성 · 제안 · 별 반짝임 ──────
+(function(){
+  const CHO=['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+  function toCho(str){
+    let out='';
+    for(const ch of str){
+      const code=ch.charCodeAt(0)-0xAC00;
+      if(code>=0 && code<11172) out+=CHO[Math.floor(code/588)];
+      else out+=ch;
+    }
+    return out;
+  }
+  const isCho=q=>/^[ㄱ-ㅎ\s]+$/.test(q) && q.trim().length>0;
+  function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+  const box=document.getElementById('book-search');
+  const input=document.getElementById('book-search-input');
+  const results=document.getElementById('book-search-results');
+  let activeIndex=-1, current=[];
+
+  function filterBooks(q){
+    q=q.trim();
+    if(!q) return [];
+    const lower=q.toLowerCase();
+    const cho=isCho(q);
+    const qc=q.replace(/\s/g,'');
+    const res=[];
+    for(const b of BOOKS){
+      let hit=false;
+      if(cho){
+        if(toCho(b.title||'').replace(/\s/g,'').includes(qc)) hit=true;
+      } else {
+        if((b.title||'').toLowerCase().includes(lower) ||
+           (b.author||'').toLowerCase().includes(lower) ||
+           (b.subtitle||'').toLowerCase().includes(lower)) hit=true;
+      }
+      if(hit){ res.push(b); if(res.length>=8) break; }
+    }
+    return res;
+  }
+  function suggestBooks(){
+    const pool=BOOKS.slice();
+    for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+    return pool.slice(0,6);
+  }
+
+  function render(list,isSuggest){
+    current=list; activeIndex=-1;
+    if(!list.length && !isSuggest){
+      results.innerHTML='<div class="bs-empty">그 이름의 별은 아직 없어요</div>';
+      results.classList.add('open'); return;
+    }
+    let html = isSuggest ? '<div class="bs-hint">이런 별은 어때요</div>' : '';
+    html += list.map((b,i)=>{
+      const meta=(b.author||'')+(b.phase_name?'   ·   '+b.phase_name:'');
+      return '<div class="bs-item" data-i="'+i+'">'
+        +'<div class="bs-item-title">'+esc(b.title)+'</div>'
+        +'<div class="bs-item-meta">'+esc(meta)+'</div></div>';
+    }).join('');
+    results.innerHTML=html;
+    results.classList.add('open');
+    results.querySelectorAll('.bs-item').forEach(el=>{
+      el.addEventListener('click',()=>selectBook(current[+el.dataset.i]));
+    });
+  }
+  function close(){ results.classList.remove('open'); results.innerHTML=''; activeIndex=-1; }
+  window.closeSearch=close;
+
+  function selectBook(book){
+    if(!book) return;
+    const phaseIdx=book.phase-1;
+    book._sparkleUntil=performance.now()/1000+5; // 5초 반짝
+    input.value=''; close(); input.blur();
+    if(viewMode==='cluster' && activeIdx===phaseIdx) return; // 이미 그 성단 안
+    if(viewMode==='timeline'){
+      targetOffset=phaseIdx*PHASE_SPACING; clamp();
+      currentOffset=targetOffset;
+      enterCluster(phaseIdx);
+    } else {
+      if(viewMode==='cluster') window.exitCluster();
+      pendingEnter=phaseIdx; // 전환 끝나면 loop가 진입시킴
+    }
+  }
+  window.selectBook=selectBook;
+
+  function upd(items){
+    items.forEach((el,i)=>el.classList.toggle('active',i===activeIndex));
+    if(activeIndex>=0 && items[activeIndex]) items[activeIndex].scrollIntoView({block:'nearest'});
+  }
+
+  input.addEventListener('input',()=>{
+    const q=input.value;
+    if(!q.trim()){ render(suggestBooks(),true); return; }
+    render(filterBooks(q),false);
+  });
+  input.addEventListener('focus',()=>{ if(!input.value.trim()) render(suggestBooks(),true); });
+  input.addEventListener('keydown',e=>{
+    const items=results.querySelectorAll('.bs-item');
+    if(e.key==='ArrowDown'){ e.preventDefault(); activeIndex=Math.min(items.length-1,activeIndex+1); upd(items); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); activeIndex=Math.max(0,activeIndex-1); upd(items); }
+    else if(e.key==='Enter'){ e.preventDefault();
+      if(activeIndex>=0 && current[activeIndex]) selectBook(current[activeIndex]);
+      else if(current.length) selectBook(current[0]);
+    }
+    else if(e.key==='Escape'){ input.value=''; close(); input.blur(); }
+  });
+  // 바깥 클릭 시 결과 닫기 (검색창 내부 클릭은 유지)
+  document.addEventListener('mousedown',e=>{ if(!box.contains(e.target)) close(); });
+})();
 
 window.addEventListener('resize',resize);
 resize();
