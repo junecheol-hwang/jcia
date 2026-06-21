@@ -1501,7 +1501,7 @@ async function sendMagicLink(){
   msg.textContent='메일 보내는 중…';
   try{
     const { error } = await window.sb.auth.signInWithOtp({
-      email, options:{ emailRedirectTo: window.location.href }
+      email, options:{ emailRedirectTo: 'https://jcia-five.vercel.app/timeline.html' }
     });
     msg.textContent = error ? ('오류: '+error.message) : '메일함에서 링크를 눌러주세요 ✉️';
   }catch(e){ msg.textContent='오류가 났어요'; }
