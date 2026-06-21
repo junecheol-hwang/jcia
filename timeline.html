@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Timeline — 도반의 여정</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;500&family=Noto+Sans+KR:wght@300;400&family=IM+Fell+English:ital@1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Cormorant:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <script type="importmap">
   { "imports": {
       "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
@@ -26,28 +26,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 
 /* 타임라인 헤더 */
 #header{
-  position:fixed;top:0;left:0;right:0;z-index:20;
-  padding:2rem calc(3rem + 320px) 1.5rem 3rem;
-  display:flex;align-items:flex-end;justify-content:space-between;
-  background:linear-gradient(to bottom,rgba(2,5,10,0.92) 50%,transparent);
+  position:fixed;left:3rem;bottom:7.5rem;z-index:30;
   pointer-events:none;
 }
-#header-left{display:flex;flex-direction:column;gap:3px;}
 #header-subtitle{
-  font-family:'Noto Sans KR',sans-serif;font-weight:300;
-  font-size:0.7rem;color:rgba(63,61,57,0.9);letter-spacing:0.2em;
+  font-family:'Gowun Batang',serif;font-weight:700;
+  font-size:0.84rem;color:var(--orange-faded);letter-spacing:0.18em;
 }
 #header-title{
-  font-family:'Noto Serif KR',serif;font-weight:300;
-  font-size:1.15rem;color:var(--orange-faded);letter-spacing:0.14em;line-height:1.5;
-}
-#header-phase{
-  font-family:'Noto Sans KR',sans-serif;font-weight:300;
-  font-size:0.85rem;color:var(--gray-dark);letter-spacing:0.15em;text-align:right;
-}
-#header-phase .phase-name{
-  display:block;font-size:1.15rem;color:var(--gray-light);
-  margin-top:3px;font-family:'Noto Serif KR',serif;font-weight:300;
+  font-family:'Gowun Batang',serif;font-weight:400;
+  font-size:1.02rem;color:var(--gray-light);letter-spacing:0.1em;
+  line-height:1.5;margin-top:2px;
 }
 
 /* 성단 헤더 */
@@ -55,7 +44,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 #book-panel{
   position:fixed;top:5rem;right:3rem;z-index:44;
   width:clamp(240px,26vw,340px);
-  font-family:'Noto Sans KR',sans-serif;
+  font-family:'Gowun Batang',sans-serif;
   pointer-events:none;opacity:0;transition:opacity 0.3s ease;
 }
 #book-panel.visible{opacity:1;pointer-events:auto;}
@@ -66,12 +55,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
 }
 #bp-title{
-  font-family:'Noto Serif KR',serif;font-weight:400;
+  font-family:'Gowun Batang',serif;font-weight:400;
   font-size:1.02rem;color:var(--orange-pale);letter-spacing:0.04em;
 }
 #bp-author{font-size:0.7rem;color:var(--gray-dark);letter-spacing:0.06em;margin-top:0.35rem;}
 #bp-subtitle{
-  font-family:'Noto Serif KR',serif;font-style:italic;font-weight:300;
+  font-family:'Gowun Batang',serif;font-style:italic;font-weight:300;
   font-size:0.76rem;color:var(--gray-mid);line-height:1.7;margin-top:0.5rem;
 }
 #bp-body{
@@ -127,7 +116,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 #bp-dial::-webkit-scrollbar{display:none;}
 #bp-dial-track{padding:64px 0;}
 .bp-line{
-  font-family:'Noto Serif KR',serif;font-weight:300;
+  font-family:'Gowun Batang',serif;font-weight:300;
   font-size:0.84rem;line-height:1.6;color:var(--gray-light);
   text-align:center;padding:0.45rem 0.5rem;position:relative;
   transition:opacity 0.1s,transform 0.1s,filter 0.1s;transform-origin:center;
@@ -142,7 +131,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 /* 로그인(magic link) — 좌측 하단 */
 #auth-box{
   position:fixed;left:3rem;bottom:1.6rem;z-index:45;
-  font-family:'Noto Sans KR',sans-serif;pointer-events:auto;
+  font-family:'Gowun Batang',sans-serif;pointer-events:auto;
 }
 #auth-box.flash{animation:authflash 1.6s;}
 @keyframes authflash{0%,100%{opacity:1}30%{opacity:0.3}}
@@ -184,7 +173,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 
 /* BGM 컨트롤 */
 #bgm-ctrl{
-  position:fixed;bottom:2rem;left:2.5rem;
+  position:fixed;bottom:4.7rem;left:3rem;
   z-index:30;display:flex;align-items:center;gap:10px;
   pointer-events:all;
 }
@@ -210,7 +199,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 #back-btn{
   position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);
   z-index:30;pointer-events:all;
-  font-family:'IM Fell English',serif;font-style:italic;
+  font-family:'Cormorant',serif;font-style:italic;
   font-size:0.88rem;color:var(--gray-dark);letter-spacing:0.18em;
   cursor:pointer;opacity:0;white-space:nowrap;transition:color 0.25s;
 }
@@ -219,7 +208,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 /* 스크롤 힌트 */
 #scroll-hint{
   position:fixed;bottom:4.5rem;left:50%;transform:translateX(-50%);
-  font-family:'Noto Sans KR',sans-serif;font-weight:300;
+  font-family:'Gowun Batang',sans-serif;font-weight:300;
   font-size:0.7rem;color:var(--gray-dark);letter-spacing:0.25em;
   z-index:20;pointer-events:none;
   animation:fadeHint 4s ease 2.5s forwards;
@@ -235,7 +224,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 #book-search{
   position:fixed;top:1.5rem;right:3rem;z-index:45;
   width:clamp(220px,24vw,300px);pointer-events:all;
-  font-family:'Noto Sans KR',sans-serif;
+  font-family:'Gowun Batang',sans-serif;
 }
 #book-search-box{
   display:flex;align-items:center;gap:9px;
@@ -273,7 +262,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 .bs-item:last-child{border-bottom:none;}
 .bs-item:hover,.bs-item.active{background:rgba(217,169,110,0.1);}
 .bs-item-title{
-  font-family:'Noto Serif KR',serif;font-weight:400;
+  font-family:'Gowun Batang',serif;font-weight:400;
   font-size:0.82rem;color:var(--orange-pale);letter-spacing:0.02em;
 }
 .bs-item-meta{
@@ -293,20 +282,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 
 <div id="ui-layer">
   <div id="header">
-    <div id="header-left">
-      <div id="header-subtitle">가장 먼 여행</div>
-      <div id="header-title">머리에서 가슴으로</div>
-    </div>
-    <div id="header-phase">
-      <span id="current-phase-num">Phase 1</span>
-      <span class="phase-name" id="current-phase-name">우주론</span>
-    </div>
+    <div id="header-subtitle">가장 먼 여행</div>
+    <div id="header-title">머리에서 가슴으로</div>
   </div>
 
   <canvas id="tl-canvas"></canvas>
   <div id="scroll-hint">← scroll →</div>
   <div id="nav"></div>
-  <div id="back-btn" onclick="exitCluster()">back to the timeline</div>
+  <div id="back-btn" onclick="exitCluster()">BACK TO THE TIMELINE</div>
 
   <!-- BGM 컨트롤 -->
   <div id="bgm-ctrl">
@@ -390,7 +373,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 <script type="module">
 import { createClient } from '@supabase/supabase-js';
 // ⚠️ 배포 전 확인: 아래 URL이 Supabase 대시보드의 Project URL과 정확히 같은지 (Copy 버튼으로 대조)
-const SUPABASE_URL = 'https://ebxaaxvpilouizujjwgt.supabase.co';
+const SUPABASE_URL = 'https://ebxaaaxvpilouizujwgt.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_g3UpSee8YCFDJWaVWmLpQg_HFvOG2-B';
 try {
   window.sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -731,7 +714,7 @@ function drawTimeline(alpha){
   // 데이터 로딩 중 표시
   if(!dataReady){
     ctx.save();ctx.globalAlpha=alpha*0.5;ctx.textAlign='center';
-    ctx.font=`300 13px 'Noto Sans KR'`;
+    ctx.font=`300 13px 'Gowun Batang'`;
     ctx.fillStyle='#6E6C66';
     ctx.fillText('책 목록을 불러오는 중…', W/2, H/2);
     ctx.restore();
@@ -781,27 +764,17 @@ function drawTimeline(alpha){
 
     phaseHitAreas.push({x,y,r:26*scale,phaseIdx:i});
 
-    // 진입 신호 — 충분히 중심에 왔을 때만 페이드인
-    if(cness>0.85){
-      ctx.save();ctx.globalAlpha=eff*((cness-0.85)/0.15)*0.85;
-      ctx.textAlign='center';
-      ctx.font=`italic 300 ${Math.round(11*scale)}px 'IM Fell English'`;
-      ctx.fillStyle='#D9A96E';
-      ctx.fillText('click to enter', x, y+34*scale);
-      ctx.restore();
-    }
-
-    // 레이블 (호 위)
+    // 레이블 — 주제(desc)를 위·크게, 분류(name)를 아래·작게
     ctx.save();ctx.globalAlpha=eff;ctx.textAlign='center';
-    ctx.font=`300 ${Math.round(11.5*scale)}px 'IM Fell English'`;
-    ctx.fillStyle='#8C5A20';
-    ctx.fillText(`Phase ${phase.id}`,x,y-58*scale);
-    ctx.font=`300 ${Math.round(16*scale)}px 'Noto Serif KR'`;
-    ctx.fillStyle='#C8C5BE';
-    ctx.fillText(phase.name,x,y-38*scale);
-    ctx.font=`300 ${Math.round(11*scale)}px 'Noto Sans KR'`;
+    // 주제 — 중심에 가까울수록 커지고 밝아짐 (가독성 유지)
+    const titleSize=(15+cness*5.5)*scale;     // 15 → 20.5px
+    ctx.font=`${cness>0.5?400:400} ${Math.round(titleSize)}px 'Gowun Batang'`;
+    ctx.fillStyle=cness>0.5?'#E0CDB2':'#A89B86';
+    ctx.fillText(phase.desc, x, y-40*scale);
+    // 분류 — 작게, 흐리게, 아래
+    ctx.font=`400 ${Math.round(11*scale)}px 'Gowun Batang'`;
     ctx.fillStyle='#6E6C66';
-    ctx.fillText(phase.desc,x,y-18*scale);
+    ctx.fillText(phase.name, x, y-20*scale);
     ctx.restore();
   });
 
@@ -962,7 +935,7 @@ function drawCluster(layout,alpha,phaseIdx){
     // 호버·검색 시 제목 — 별 바로 위
     if(hot){
       ctx.save();ctx.globalAlpha=alpha;
-      ctx.font=`400 13px 'Noto Serif KR'`;
+      ctx.font=`400 13px 'Gowun Batang'`;
       ctx.fillStyle='rgba(242,224,200,0.95)';
       ctx.shadowColor='rgba(0,0,0,0.9)';ctx.shadowBlur=10;
       ctx.textAlign='center';
@@ -1084,9 +1057,6 @@ function setClusterHeaderText(idx){ /* 우측 상단 헤더 제거됨 */ }
 
 // ── UI 업데이트 ───────────────────────────────────────
 function updatePhaseUI(){
-  const p=PHASES[currentPhaseIndex];
-  document.getElementById('current-phase-num').textContent=`Phase ${p.id}`;
-  document.getElementById('current-phase-name').textContent=p.name;
   document.querySelectorAll('.nav-dot').forEach((d,i)=>
     d.classList.toggle('active',i===currentPhaseIndex));
 }
