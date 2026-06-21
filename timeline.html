@@ -8,7 +8,8 @@
 <script type="importmap">
   { "imports": {
       "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+      "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2"
   }}
 </script>
 <style>
@@ -137,6 +138,31 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 }
 .bp-line:hover .bp-line-del{opacity:1;}
 #bp-line-count{text-align:center;font-size:0.6rem;color:var(--gray-dark);letter-spacing:0.1em;margin-top:0.5rem;}
+
+/* 로그인(magic link) — 좌측 하단 */
+#auth-box{
+  position:fixed;left:3rem;bottom:1.6rem;z-index:45;
+  font-family:'Noto Sans KR',sans-serif;pointer-events:auto;
+}
+#auth-box.flash{animation:authflash 1.6s;}
+@keyframes authflash{0%,100%{opacity:1}30%{opacity:0.3}}
+#auth-status{display:none;font-size:0.66rem;color:var(--orange-worn);letter-spacing:0.06em;}
+#auth-login{display:flex;gap:6px;align-items:center;}
+#auth-email{
+  background:rgba(2,5,10,0.7);border:0.5px solid rgba(110,108,102,0.4);border-radius:2px;
+  padding:0.4rem 0.6rem;width:150px;color:var(--gray-light);
+  font-size:0.72rem;font-weight:300;outline:none;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+}
+#auth-email:focus{border-color:rgba(217,169,110,0.6);}
+#auth-email::placeholder{color:rgba(110,108,102,0.75);}
+#auth-send{
+  width:28px;height:28px;flex:none;
+  background:rgba(217,169,110,0.12);border:0.5px solid rgba(217,169,110,0.4);border-radius:2px;
+  color:var(--orange-pale);cursor:pointer;font-size:0.85rem;
+}
+#auth-send:hover{background:rgba(217,169,110,0.22);}
+#auth-msg{font-size:0.6rem;color:var(--gray-dark);margin-top:5px;letter-spacing:0.04em;min-height:0.8rem;max-width:200px;}
 
 #tl-canvas{position:fixed;inset:0;z-index:15;pointer-events:all;}
 
@@ -350,6 +376,33 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   </div>
 </div>
 
+<!-- 로그인 (magic link) — 좌측 하단 -->
+<div id="auth-box">
+  <div id="auth-status"></div>
+  <div id="auth-login">
+    <input id="auth-email" type="email" autocomplete="email" spellcheck="false" placeholder="이메일로 로그인">
+    <button id="auth-send" title="로그인 링크 받기">→</button>
+  </div>
+  <div id="auth-msg"></div>
+</div>
+
+<!-- SUPABASE 초기화 -->
+<script type="module">
+import { createClient } from '@supabase/supabase-js';
+// ⚠️ 배포 전 확인: 아래 URL이 Supabase 대시보드의 Project URL과 정확히 같은지 (Copy 버튼으로 대조)
+const SUPABASE_URL = 'https://ebxaaxvpilouizujjwgt.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_g3UpSee8YCFDJWaVWmLpQg_HFvOG2-B';
+try {
+  window.sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+  });
+} catch(e) {
+  console.error('Supabase init 실패:', e);
+  window.sb = null;
+}
+window.dispatchEvent(new Event('sb-ready'));
+</script>
+
 <!-- THREE.JS 파티클 배경 — 청백 통일 -->
 <script type="module">
 import * as THREE from 'three';
@@ -537,7 +590,9 @@ const elBack    =document.getElementById('back-btn');
 let pinnedBook=null;   // 검색/클릭으로 고정된 별
 let panelBook=null;    // 입력 패널이 열린 책
 let focusedBook=null;  // 강조 대상 = hoveredBook || pinnedBook
-const bookData={};     // 책 id별 {music:[],reading:[],lines:[]} — 세션 메모리
+const bookData={};     // 책 id별 {music:[],reading:[],lines:[]}
+let panelDirty=false;  // 패널 내용이 바뀌어 저장이 필요한 상태
+let currentUser=null;  // 로그인한 사용자 (없으면 읽기만)
 
 function resize(){W=tlCanvas.width=innerWidth;H=tlCanvas.height=innerHeight;}
 
@@ -1018,6 +1073,7 @@ function enterCluster(phaseIdx){
 
 window.exitCluster=function(){
   if(viewMode!=='cluster') return;
+  if(typeof flushPanel==='function') flushPanel(); // 나가기 전 저장
   hoveredBook=null;
   constellationDir=-1; // 별자리 선 페이드아웃
   viewMode='zoom-out';zoomT=0;
@@ -1143,10 +1199,12 @@ function handleClick(mx,my){
       if(Math.sqrt(dx*dx+dy*dy)<cb.book._cr){clicked=cb.book;break;}
     }
     if(clicked){
+      if(panelBook && panelBook!==clicked) flushPanel(); // 직전 책 저장
       pinnedBook=clicked; hoveredBook=clicked;
       refreshFocus();
       openPanel(clicked);
     } else {
+      flushPanel();                                      // 빈 곳 클릭 → 저장 후 닫기
       pinnedBook=null; panelBook=null;
       document.getElementById('book-panel').classList.remove('open');
       refreshFocus();
@@ -1185,6 +1243,7 @@ document.addEventListener('keydown',e=>{
   if(si && document.activeElement===si) return; // 검색 입력 중엔 성단 조작 안 함
   if(e.key==='Escape'){
     if(panelBook){
+      flushPanel();
       panelBook=null; pinnedBook=null;
       document.getElementById('book-panel').classList.remove('open');
       refreshFocus();
@@ -1268,12 +1327,17 @@ function bpLinkify(text){
   if(/^https?:\/\//i.test(text)) return '<a href="'+t+'" target="_blank" rel="noopener">'+t+'</a>';
   return t;
 }
-function openPanel(book){
-  panelBook=book; ensureData(book);
+async function openPanel(book){
+  panelBook=book; panelDirty=false; ensureData(book);
   showBookInfo(book);
   const bp=document.getElementById('book-panel');
   bp.classList.add('visible','open');
-  renderLists(book); renderDial(book);
+  renderLists(book); renderDial(book);          // 우선 로컬(기존) 렌더
+  const remote=await loadBook(book.id);          // 그 책의 저장된 노트 불러오기
+  if(panelBook===book && remote){                // 그새 다른 책으로 넘어가지 않았으면 반영
+    bookData[book.id]=remote;
+    renderLists(book); renderDial(book);
+  }
 }
 function renderLists(book){
   const d=ensureData(book);
@@ -1283,7 +1347,7 @@ function renderLists(book){
       '<div class="bp-item"><span class="bp-item-text">'+bpLinkify(v)+'</span>'
       +'<span class="bp-del" data-i="'+i+'">×</span></div>').join('');
     el.querySelectorAll('.bp-del').forEach(x=>{
-      x.addEventListener('click',()=>{ d[kind].splice(+x.dataset.i,1); renderLists(book); });
+      x.addEventListener('click',()=>{ d[kind].splice(+x.dataset.i,1); panelDirty=true; renderLists(book); });
     });
   });
 }
@@ -1294,7 +1358,7 @@ function renderDial(book){
     '<div class="bp-line" data-i="'+i+'">'+bpEsc(v)
     +'<span class="bp-line-del" data-i="'+i+'">×</span></div>').join('');
   track.querySelectorAll('.bp-line-del').forEach(x=>{
-    x.addEventListener('click',e=>{ e.stopPropagation(); d.lines.splice(+x.dataset.i,1); renderDial(book); });
+    x.addEventListener('click',e=>{ e.stopPropagation(); d.lines.splice(+x.dataset.i,1); panelDirty=true; renderDial(book); });
   });
   document.getElementById('bp-line-count').textContent=d.lines.length?d.lines.length+' / 50':'';
   updateDialFocus();
@@ -1320,13 +1384,13 @@ function addItem(kind){
   const d=ensureData(panelBook);
   if(kind==='line'){
     if(d.lines.length>=50) return;
-    d.lines.push(v); inp.value=''; renderDial(panelBook);
+    d.lines.push(v); panelDirty=true; inp.value=''; renderDial(panelBook);
     requestAnimationFrame(()=>{
       const ls=document.getElementById('bp-dial').querySelectorAll('.bp-line');
       if(ls.length){ ls[ls.length-1].scrollIntoView({block:'center'}); updateDialFocus(); }
     });
   } else {
-    d[kind].push(v); inp.value=''; renderLists(panelBook);
+    d[kind].push(v); panelDirty=true; inp.value=''; renderLists(panelBook);
   }
 }
 // 패널 입력 이벤트 바인딩
@@ -1342,6 +1406,103 @@ document.querySelectorAll('.bp-btn').forEach(b=>{
   });
 });
 document.getElementById('bp-dial').addEventListener('scroll',updateDialFocus);
+
+// ── Supabase 저장/불러오기 + 로그인(magic link) ────────
+// window.sb 는 상단 module script에서 createClient로 만들어 둠 (없으면 null)
+function whenSB(cb){
+  if(typeof window.sb!=='undefined') cb();
+  else window.addEventListener('sb-ready', cb, {once:true});
+}
+
+async function loadBook(bookId){
+  if(!window.sb) return null;
+  try{
+    const { data, error } = await window.sb
+      .from('books_notes').select('music,reading,lines')
+      .eq('book_id', bookId).maybeSingle();
+    if(error){ console.warn('loadBook', error); return null; }
+    if(!data) return {music:[],reading:[],lines:[]};
+    return {music:data.music||[], reading:data.reading||[], lines:data.lines||[]};
+  }catch(e){ console.warn('loadBook 예외', e); return null; }
+}
+
+async function saveBook(bookId, d){
+  if(!window.sb) return {ok:false, reason:'no-client'};
+  if(!currentUser) return {ok:false, reason:'not-logged-in'};
+  try{
+    const { error } = await window.sb.from('books_notes').upsert({
+      user_id: currentUser.id, book_id: bookId,
+      music:d.music, reading:d.reading, lines:d.lines,
+      updated_at: new Date().toISOString()
+    }, { onConflict:'user_id,book_id' });
+    if(error){ console.warn('saveBook', error); return {ok:false, reason:'error', error}; }
+    return {ok:true};
+  }catch(e){ console.warn('saveBook 예외', e); return {ok:false, reason:'error'}; }
+}
+
+// 패널 내용이 바뀐 채로 닫히거나 다른 책으로 넘어갈 때 저장
+function flushPanel(){
+  if(!panelDirty || !panelBook) return;
+  const b=panelBook, d=bookData[b.id];
+  panelDirty=false;
+  if(!d) return;
+  saveBook(b.id, d).then(res=>{
+    if(res && !res.ok && res.reason==='not-logged-in') showAuthHint();
+  });
+}
+window.flushPanel=flushPanel;
+
+// ── 로그인 UI ─────────────────────────────────────────
+function setUser(u){
+  currentUser=u;
+  const status=document.getElementById('auth-status');
+  const login=document.getElementById('auth-login');
+  const msg=document.getElementById('auth-msg');
+  if(u){
+    status.textContent='✓ '+(u.email||'기록 가능');
+    status.style.display='block'; login.style.display='none';
+    if(msg) msg.textContent='';
+  } else {
+    status.style.display='none'; login.style.display='flex';
+  }
+}
+async function initAuth(){
+  if(!window.sb){ document.getElementById('auth-box').style.display='none'; return; }
+  try{
+    const { data:{ session } } = await window.sb.auth.getSession();
+    setUser(session ? session.user : null);
+    window.sb.auth.onAuthStateChange((_e, sess)=> setUser(sess ? sess.user : null));
+  }catch(e){ console.warn('initAuth', e); }
+}
+async function sendMagicLink(){
+  const email=document.getElementById('auth-email').value.trim();
+  const msg=document.getElementById('auth-msg');
+  if(!email){ msg.textContent='이메일을 입력하세요'; return; }
+  if(!window.sb){ msg.textContent='연결되지 않았어요'; return; }
+  msg.textContent='메일 보내는 중…';
+  try{
+    const { error } = await window.sb.auth.signInWithOtp({
+      email, options:{ emailRedirectTo: window.location.href }
+    });
+    msg.textContent = error ? ('오류: '+error.message) : '메일함에서 링크를 눌러주세요 ✉️';
+  }catch(e){ msg.textContent='오류가 났어요'; }
+}
+function showAuthHint(){
+  const box=document.getElementById('auth-box');
+  const msg=document.getElementById('auth-msg');
+  if(msg) msg.textContent='저장하려면 로그인하세요';
+  if(box){ box.classList.add('flash'); setTimeout(()=>box.classList.remove('flash'),1600); }
+}
+(function bindAuth(){
+  const send=document.getElementById('auth-send');
+  const email=document.getElementById('auth-email');
+  if(send) send.addEventListener('click', sendMagicLink);
+  if(email) email.addEventListener('keydown', e=>{
+    e.stopPropagation();
+    if(e.key==='Enter') sendMagicLink();
+  });
+})();
+whenSB(initAuth);
 
 // ── 책 검색 — 자동완성 · 초성 · 제안 · 별 반짝임 ──────
 (function(){
