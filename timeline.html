@@ -764,17 +764,17 @@ function drawTimeline(alpha){
 
     phaseHitAreas.push({x,y,r:26*scale,phaseIdx:i});
 
-    // 레이블 — 주제(desc)를 위·크게, 분류(name)를 아래·작게
+    // 레이블 — 주제(desc)는 마커 위·크게, 분류(name)는 마커 아래·작게
     ctx.save();ctx.globalAlpha=eff;ctx.textAlign='center';
-    // 주제 — 중심에 가까울수록 커지고 밝아짐 (가독성 유지)
+    // 주제 — 중심에 가까울수록 커지고 밝아짐
     const titleSize=(15+cness*5.5)*scale;     // 15 → 20.5px
-    ctx.font=`${cness>0.5?400:400} ${Math.round(titleSize)}px 'Gowun Batang'`;
+    ctx.font=`400 ${Math.round(titleSize)}px 'Gowun Batang'`;
     ctx.fillStyle=cness>0.5?'#E0CDB2':'#A89B86';
-    ctx.fillText(phase.desc, x, y-40*scale);
-    // 분류 — 작게, 흐리게, 아래
-    ctx.font=`400 ${Math.round(11*scale)}px 'Gowun Batang'`;
-    ctx.fillStyle='#6E6C66';
-    ctx.fillText(phase.name, x, y-20*scale);
+    ctx.fillText(phase.desc, x, y-38*scale);
+    // 분류 — 마커 아래, 가독성 위해 밝게
+    ctx.font=`400 ${Math.round(12*scale)}px 'Gowun Batang'`;
+    ctx.fillStyle=cness>0.5?'#BCB6AA':'#948F85';
+    ctx.fillText(phase.name, x, y+30*scale);
     ctx.restore();
   });
 
