@@ -59,6 +59,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   font-size:1.04rem;color:var(--orange-pale);letter-spacing:0.04em;
 }
 #bp-author{font-size:0.7rem;color:var(--gray-dark);letter-spacing:0.06em;margin-top:0.35rem;}
+#bp-views{font-size:0.64rem;color:var(--orange-worn);letter-spacing:0.08em;margin-top:0.4rem;opacity:0.85;}
+.comet{
+  position:fixed;right:2.2rem;bottom:1.7rem;z-index:25;
+  font-family:'Gowun Batang',serif;font-size:0.66rem;color:var(--orange-worn);
+  letter-spacing:0.12em;opacity:0;transition:opacity 0.7s;pointer-events:none;text-align:right;
+}
+.comet.show{opacity:0.62;}
 #bp-body{
   display:none;margin-top:6px;
   background:rgba(2,5,10,0.72);
@@ -299,6 +306,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   <div id="scroll-hint">← scroll →</div>
   <div id="nav"></div>
   <div id="back-btn" onclick="exitCluster()">BACK TO THE TIMELINE</div>
+  <div id="comet-site" class="comet"></div>
+  <div id="comet-phase" class="comet"></div>
 
   <!-- BGM 컨트롤 -->
   <div id="bgm-ctrl">
@@ -337,6 +346,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   <div id="bp-info">
     <div id="bp-title"></div>
     <div id="bp-author"></div>
+    <div id="bp-views"></div>
   </div>
   <div id="bp-body">
     <div class="bp-section">
@@ -389,7 +399,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 <script type="module">
 import { createClient } from '@supabase/supabase-js';
 // ⚠️ 배포 전 확인: 아래 URL이 Supabase 대시보드의 Project URL과 정확히 같은지 (Copy 버튼으로 대조)
-const SUPABASE_URL = 'https://ebxaaxvpilouizujjwgt.supabase.co';
+const SUPABASE_URL = 'https://ebxaaaxvpilouizujwgt.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_g3UpSee8YCFDJWaVWmLpQg_HFvOG2-B';
 try {
   window.sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -972,6 +982,7 @@ function showBookInfo(book){
   document.getElementById('bp-title').textContent=book.title;
   document.getElementById('bp-author').textContent=
     book.author+(book.publisher&&book.publisher!=='(알 수 없음)'?'  ·  '+book.publisher:'');
+  document.getElementById('bp-views').textContent=''; // 별을 클릭해 패널을 열 때 채워짐
   document.getElementById('book-panel').classList.add('visible');
 }
 function hideBookInfo(){
@@ -1061,6 +1072,10 @@ function enterCluster(phaseIdx){
   viewMode='zoom-in';zoomT=0;
   clusterEntryTime=performance.now()/1000; // 진입 시각 기록
   panelShiftX=0; // 별 밀림 초기화
+  // 혜성 카운트 — 사이트(스쳐간) 숨김, 성단(근접한) 표시 + 입장 +1
+  document.getElementById('comet-site').classList.remove('show');
+  document.getElementById('comet-phase').classList.add('show');
+  if(PHASES[phaseIdx]) bumpPhase(PHASES[phaseIdx].id);
   bgZoomIn(phaseIdx);
 }
 
@@ -1070,6 +1085,9 @@ window.exitCluster=function(){
   hoveredBook=null;
   constellationDir=-1; // 별자리 선 페이드아웃
   viewMode='zoom-out';zoomT=0;
+  // 혜성 카운트 — 성단(근접한) 숨김, 사이트(스쳐간) 표시
+  document.getElementById('comet-phase').classList.remove('show');
+  document.getElementById('comet-site').classList.add('show');
   bgZoomOut();
 };
 
@@ -1322,12 +1340,40 @@ async function openPanel(book){
   showBookInfo(book);
   const bp=document.getElementById('book-panel');
   bp.classList.add('visible','open');
+  bumpView(book);                                // 열람 횟수 +1 (로그인 무관)
   renderLists(book); renderDial(book);          // 우선 로컬(기존) 렌더
   const remote=await loadBook(book.id);          // 그 책의 저장된 노트 불러오기
   if(panelBook===book && remote){                // 그새 다른 책으로 넘어가지 않았으면 반영
     bookData[book.id]=remote;
     renderLists(book); renderDial(book);
   }
+}
+// 별을 열 때 Supabase 함수로 +1, 반환된 누적값을 패널에 표시
+function bumpView(book){
+  if(!window.sb) return;
+  window.sb.rpc('bump_view',{bid:book.id}).then(({data,error})=>{
+    if(!error && data!=null && panelBook===book)
+      document.getElementById('bp-views').textContent=data+'번 펼쳐봄';
+  }).catch(()=>{});
+}
+// 스쳐간 혜성들 — 사이트 진입 시 +1 (페이지 로드 1회)
+function bumpSite(){
+  if(!window.sb) return;
+  window.sb.rpc('bump_site').then(({data,error})=>{
+    if(!error && data!=null){
+      const el=document.getElementById('comet-site');
+      el.textContent='스쳐간 혜성  '+data;
+      if(viewMode==='timeline') el.classList.add('show');
+    }
+  }).catch(()=>{});
+}
+// 근접한 혜성들 — 성단 입장 시 +1
+function bumpPhase(phaseId){
+  if(!window.sb) return;
+  window.sb.rpc('bump_phase',{pid:phaseId}).then(({data,error})=>{
+    if(!error && data!=null)
+      document.getElementById('comet-phase').textContent='근접한 혜성  '+data;
+  }).catch(()=>{});
 }
 function renderLists(book){
   const d=ensureData(book);
@@ -1522,6 +1568,7 @@ function showAuthHint(){
   });
 })();
 whenSB(initAuth);
+whenSB(bumpSite);
 
 // ── 책 검색 — 자동완성 · 초성 · 제안 · 별 반짝임 ──────
 (function(){
