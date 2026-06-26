@@ -60,12 +60,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 }
 #bp-author{font-size:0.7rem;color:var(--gray-dark);letter-spacing:0.06em;margin-top:0.35rem;}
 #bp-views{font-size:0.64rem;color:var(--orange-worn);letter-spacing:0.08em;margin-top:0.4rem;opacity:0.85;}
-.comet{
-  position:fixed;right:2.2rem;bottom:1.7rem;z-index:25;
-  font-family:'Gowun Batang',serif;font-size:0.66rem;color:var(--orange-worn);
-  letter-spacing:0.12em;opacity:0;transition:opacity 0.7s;pointer-events:none;text-align:right;
+#comet-slot{
+  position:relative;height:0.95rem;margin-top:0.5rem;
 }
-.comet.show{opacity:0.62;}
+.comet{
+  position:absolute;left:0;top:0;z-index:25;white-space:nowrap;
+  font-family:'Gowun Batang',serif;font-size:0.64rem;color:var(--orange-worn);
+  letter-spacing:0.1em;opacity:0;transition:opacity 0.7s;pointer-events:none;text-align:left;
+}
+.comet.show{opacity:0.6;}
 #bp-body{
   display:none;margin-top:6px;
   background:rgba(2,5,10,0.72);
@@ -306,8 +309,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   <div id="scroll-hint">← scroll →</div>
   <div id="nav"></div>
   <div id="back-btn" onclick="exitCluster()">BACK TO THE TIMELINE</div>
-  <div id="comet-site" class="comet"></div>
-  <div id="comet-phase" class="comet"></div>
 
   <!-- BGM 컨트롤 -->
   <div id="bgm-ctrl">
@@ -391,6 +392,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   <div id="auth-login">
     <input id="auth-email" type="email" autocomplete="email" spellcheck="false" placeholder="이메일로 로그인">
     <button id="auth-send" title="로그인 링크 받기">→</button>
+  </div>
+  <div id="comet-slot">
+    <div id="comet-site" class="comet"></div>
+    <div id="comet-phase" class="comet"></div>
   </div>
   <div id="auth-msg"></div>
 </div>
