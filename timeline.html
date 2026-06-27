@@ -141,6 +141,43 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 .bp-calli-sws{display:flex;gap:8px;margin-top:9px;justify-content:center;}
 .bp-calli-sw{width:19px;height:19px;border-radius:50%;border:1px solid rgba(110,108,102,0.45);cursor:pointer;padding:0;transition:box-shadow 0.2s,border-color 0.2s;}
 .bp-calli-sw.on{border-color:var(--gray-light);box-shadow:0 0 0 1.5px var(--gray-light);}
+/* 글쓰기 — 상단에서 내려오는 에디터 */
+#essay-pen{position:fixed;top:1.3rem;left:50%;transform:translateX(-50%);z-index:47;
+  width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;opacity:0.5;transition:opacity 0.3s;color:var(--orange-faded);}
+#essay-pen:hover{opacity:1;}
+#essay-editor{position:fixed;top:0;left:50%;transform:translate(-50%,-115%);
+  width:min(680px,92vw);max-height:84vh;z-index:60;display:flex;flex-direction:column;
+  background:rgba(7,11,20,0.97);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:0.5px solid rgba(217,169,110,0.28);border-top:none;border-radius:0 0 16px 16px;
+  box-shadow:0 14px 50px rgba(0,0,0,0.55);
+  transition:transform 0.55s cubic-bezier(.22,.61,.36,1);font-family:'Gowun Batang',serif;}
+#essay-editor.open{transform:translate(-50%,0);}
+#essay-tools{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:11px 15px;
+  border-bottom:0.5px solid rgba(110,108,102,0.22);}
+#essay-tools select,#essay-tools button{background:rgba(255,255,255,0.04);
+  border:0.5px solid rgba(110,108,102,0.4);border-radius:3px;color:var(--gray-light);
+  font-size:0.72rem;padding:4px 8px;cursor:pointer;font-family:inherit;transition:border-color 0.15s;line-height:1;}
+#essay-tools button:hover,#essay-tools select:hover{border-color:rgba(217,169,110,0.6);}
+#essay-tools button.act{min-width:26px;}
+#essay-tools .sep{width:1px;height:15px;background:rgba(110,108,102,0.3);margin:0 2px;}
+.essay-sw{width:17px;height:17px;border-radius:50%;border:1px solid rgba(110,108,102,0.45);cursor:pointer;padding:0;}
+#essay-body{flex:1;overflow-y:auto;padding:20px 24px;min-height:230px;
+  color:var(--gray-light);font-size:0.96rem;line-height:1.95;outline:none;word-break:break-word;}
+#essay-body:empty:before{content:attr(data-ph);color:var(--gray-dark);}
+#essay-foot{display:flex;justify-content:space-between;align-items:center;
+  padding:11px 15px;border-top:0.5px solid rgba(110,108,102,0.22);}
+#essay-pub{display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--gray-mid);cursor:pointer;}
+#essay-status{font-size:0.66rem;color:var(--gray-dark);margin-left:10px;}
+.essay-acts{display:flex;gap:7px;}
+.essay-acts button{background:transparent;border:0.5px solid rgba(110,108,102,0.4);
+  border-radius:3px;color:var(--gray-mid);font-size:0.74rem;padding:5px 13px;cursor:pointer;
+  font-family:inherit;transition:border-color 0.15s;}
+.essay-acts button#essay-save{border-color:rgba(217,169,110,0.5);color:var(--orange-pale);}
+.essay-acts button:hover{border-color:rgba(217,169,110,0.7);}
+#bp-essay-mark{display:inline-flex;align-items:center;gap:5px;cursor:pointer;
+  font-size:0.74rem;color:var(--orange-pale);margin-top:4px;animation:essayPulse 2.4s ease-in-out infinite;}
+@keyframes essayPulse{0%,100%{opacity:0.4;}50%{opacity:1;}}
 .bp-calli-ctrl{display:flex;align-items:center;gap:7px;margin-top:7px;}
 .bp-calli-ctrl span{font-size:0.62rem;color:var(--gray-dark);white-space:nowrap;}
 .bp-calli-ctrl input[type=range]{flex:1;}
@@ -423,6 +460,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
     <div id="bp-title"></div>
     <div id="bp-author"></div>
     <div id="bp-views"></div>
+    <div id="bp-essay-mark" style="display:none">文 &nbsp;이 별의 글</div>
   </div>
   <div id="bp-body">
     <div class="bp-section">
@@ -466,6 +504,47 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 </div>
 
 <div id="calli-sky"><img id="calli-img" alt=""></div>
+
+<!-- 글쓰기: 상단 펜 + 내려오는 에디터 -->
+<div id="essay-pen" title="이 별에 글 쓰기">
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 19l7-7 2 2-7 7-2 2-3 1 1-3 2-2z"/><path d="M16 8l4-4M3 21l6-6"/>
+  </svg>
+</div>
+<div id="essay-editor">
+  <div id="essay-tools">
+    <select id="essay-font" title="글꼴">
+      <option value="'Gowun Batang',serif">명조</option>
+      <option value="'EB Garamond',serif">개러몬드</option>
+      <option value="'Cormorant',serif">코모란트</option>
+      <option value="sans-serif">고딕</option>
+    </select>
+    <span class="sep"></span>
+    <button class="act" data-cmd="bold" title="굵게"><b>B</b></button>
+    <button class="act" data-cmd="italic" title="기울임"><i>I</i></button>
+    <span class="sep"></span>
+    <button class="essay-sw" data-color="#e8e4da" style="background:#e8e4da" title="흰빛"></button>
+    <button class="essay-sw" data-color="#d9b97a" style="background:#d9b97a" title="금빛"></button>
+    <button class="essay-sw" data-color="#9fb8d4" style="background:#9fb8d4" title="청빛"></button>
+    <button class="essay-sw" data-color="#a9c9b8" style="background:#a9c9b8" title="비취"></button>
+    <span class="sep"></span>
+    <button class="act" data-cmd="justifyLeft" title="왼쪽 정렬">‹</button>
+    <button class="act" data-cmd="justifyCenter" title="가운데 정렬">∙</button>
+    <button class="act" data-cmd="justifyRight" title="오른쪽 정렬">›</button>
+    <span class="sep"></span>
+    <button class="act" data-cmd="indent" title="들여쓰기">⇥</button>
+    <button class="act" data-cmd="outdent" title="내어쓰기">⇤</button>
+  </div>
+  <div id="essay-body" contenteditable="true" data-ph="여기에, 문득 차오른 글을…"></div>
+  <div id="essay-foot">
+    <label id="essay-pub"><input type="checkbox" id="essay-pub-cb" checked> 공개<span id="essay-status"></span></label>
+    <div class="essay-acts">
+      <button id="essay-del">삭제</button>
+      <button id="essay-save">새기기</button>
+      <button id="essay-close">닫기</button>
+    </div>
+  </div>
+</div>
 
 <!-- 로그인 (magic link) — 좌측 하단 -->
 <div id="auth-box">
@@ -1019,13 +1098,14 @@ function drawCluster(layout,alpha,phaseIdx){
     const dx=mouseX-fx, dy=mouseY-fy;
     const dist=Math.sqrt(dx*dx+dy*dy);
     const proximity=Math.max(0,1-dist/320);
-    const baseAlpha=(0.2+proximity*0.8)*starE; // 진입 중 페이드인
+    const hasEssay=essayStars.has(book.id);
+    const baseAlpha=(0.2+proximity*0.8)*starE*(hasEssay?1.45:1); // 글 있으면 더 밝게
 
     const hot = isHovered; // = focused (호버 또는 검색 고정)
 
     // 별 크기
     const pulse=1+Math.sin(now*2+book.id)*0.1;
-    const r = hot ? 12 : (3+proximity*6)*pulse;
+    const r = hot ? 12 : (3+proximity*6)*pulse*(hasEssay?1.3:1);
 
     const cr=Math.round(c.r*255), cg=Math.round(c.g*255), cb2=Math.round(c.b*255);
 
@@ -1438,9 +1518,16 @@ function refreshFocus(){
     hideBookInfo();
   }
 }
+function parseEssay(raw){
+  if(!raw) return null;
+  if(typeof raw==='object') return raw;
+  try{ var o=JSON.parse(raw); if(o&&typeof o.html==='string') return o; }catch(e){}
+  return null;
+}
 function ensureData(book){
-  if(!bookData[book.id]) bookData[book.id]={music:[],movie:[],reading:[],lines:[],calligraphy:null};
+  if(!bookData[book.id]) bookData[book.id]={music:[],movie:[],reading:[],lines:[],calligraphy:null,essay:null};
   if(bookData[book.id].calligraphy===undefined) bookData[book.id].calligraphy=null;
+  if(bookData[book.id].essay===undefined) bookData[book.id].essay=null;
   return bookData[book.id];
 }
 function bpEsc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
@@ -1613,6 +1700,90 @@ function renderCalli(book){
     el.innerHTML='<div class="bp-calli-empty">로그인하면 이 별에 천문을 띄울 수 있어요.</div>';
   }
 }
+// ── 글쓰기 에디터 ──────────────────────────────────────
+var essayBook=null;
+var essayStars=new Set();   // 글이 있는 책 id (별을 더 밝게)
+function essayCmd(cmd){ document.getElementById('essay-body').focus(); document.execCommand(cmd,false,null); }
+function openEssay(book){
+  if(!book) return;
+  essayBook=book;
+  var d=ensureData(book), es=d.essay;
+  var body=document.getElementById('essay-body');
+  body.innerHTML = (es&&es.html) ? es.html : '';
+  document.getElementById('essay-pub-cb').checked = es ? (es.isPublic!==false) : true;
+  document.getElementById('essay-del').style.display = (es&&es.html) ? '' : 'none';
+  document.getElementById('essay-status').textContent='';
+  document.getElementById('essay-editor').classList.add('open');
+  setTimeout(function(){ body.focus(); }, 220);
+}
+function closeEssay(){ document.getElementById('essay-editor').classList.remove('open'); essayBook=null; }
+async function saveEssay(){
+  if(!essayBook) return;
+  var st=document.getElementById('essay-status');
+  if(!currentUser){ st.textContent='로그인이 필요해요'; return; }
+  var body=document.getElementById('essay-body');
+  var html=body.innerHTML.trim();
+  if(!html || html==='<br>'){ st.textContent='빈 글은 새길 수 없어요'; return; }
+  var d=ensureData(essayBook);
+  d.essay={html:html, isPublic:document.getElementById('essay-pub-cb').checked};
+  st.textContent='새기는 중…';
+  var r=await saveBook(essayBook.id, d);
+  if(r && r.ok){
+    st.textContent='새겼어요';
+    essayStars.add(essayBook.id);
+    if(panelBook===essayBook) renderEssayMark(essayBook);
+    setTimeout(closeEssay, 650);
+  } else { st.textContent='실패 — 다시'; }
+}
+async function deleteEssay(){
+  if(!essayBook) return;
+  var d=ensureData(essayBook); d.essay=null;
+  essayStars.delete(essayBook.id);
+  var b=essayBook;
+  await saveBook(b.id, d);
+  if(panelBook===b) renderEssayMark(b);
+  closeEssay();
+}
+function renderEssayMark(book){
+  var el=document.getElementById('bp-essay-mark');
+  if(!el) return;
+  var d=ensureData(book), es=d.essay;
+  var canSee = es && es.html && (es.isPublic!==false || !!currentUser);
+  if(canSee){ el.style.display='inline-flex'; el.onclick=function(){ openEssay(book); }; }
+  else { el.style.display='none'; el.onclick=null; }
+}
+async function loadEssayStars(){
+  if(!window.sb) return;
+  try{
+    var q=await window.sb.from('books_notes').select('book_id,essay').not('essay','is',null);
+    if(q && q.data) q.data.forEach(function(r){
+      var e=parseEssay(r.essay);
+      if(e && e.html) essayStars.add(r.book_id);
+    });
+  }catch(e){ console.warn('essayStars', e); }
+}
+(function(){
+  var pen=document.getElementById('essay-pen');
+  if(pen) pen.addEventListener('click',function(){
+    if(panelBook) openEssay(panelBook);
+    else if(pen.animate) pen.animate([{opacity:1},{opacity:0.25},{opacity:1}],{duration:700});
+  });
+  document.querySelectorAll('#essay-tools button.act').forEach(function(b){
+    b.addEventListener('mousedown',function(e){ e.preventDefault(); });
+    b.addEventListener('click',function(){ essayCmd(b.getAttribute('data-cmd')); });
+  });
+  document.querySelectorAll('#essay-tools .essay-sw').forEach(function(b){
+    b.addEventListener('mousedown',function(e){ e.preventDefault(); });
+    b.addEventListener('click',function(){ var bd=document.getElementById('essay-body'); bd.focus(); document.execCommand('foreColor',false,b.getAttribute('data-color')); });
+  });
+  var fs=document.getElementById('essay-font');
+  if(fs) fs.addEventListener('change',function(){ var bd=document.getElementById('essay-body'); bd.focus(); document.execCommand('fontName',false,fs.value); });
+  var sv=document.getElementById('essay-save'); if(sv) sv.addEventListener('click',saveEssay);
+  var dl=document.getElementById('essay-del'); if(dl) dl.addEventListener('click',deleteEssay);
+  var cl=document.getElementById('essay-close'); if(cl) cl.addEventListener('click',closeEssay);
+  loadEssayStars();
+})();
+
 function bpLinkify(text){
   const t=bpEsc(text);
   if(/^https?:\/\//i.test(text)) return '<a href="'+t+'" target="_blank" rel="noopener">'+t+'</a>';
@@ -1625,13 +1796,13 @@ async function openPanel(book){
   bp.classList.add('visible','open');
   bumpView(book);                                // 열람 횟수 +1 (로그인 무관)
   hideCalli();                                   // 이전 별의 글씨는 스러짐
-  renderLists(book); renderDial(book); renderCalli(book);   // 우선 로컬(기존) 렌더
+  renderLists(book); renderDial(book); renderCalli(book); renderEssayMark(book);   // 우선 로컬(기존) 렌더
   const local=ensureData(book);
   if(local.calligraphy) showCalli(local.calligraphy);       // 로컬에 이미 있으면 즉시 띄움
   const remote=await loadBook(book.id);          // 그 책의 저장된 노트 불러오기
   if(panelBook===book && remote){                // 그새 다른 책으로 넘어가지 않았으면 반영
     bookData[book.id]=remote;
-    renderLists(book); renderDial(book); renderCalli(book);
+    renderLists(book); renderDial(book); renderCalli(book); renderEssayMark(book);
     if(remote.calligraphy) showCalli(remote.calligraphy); else hideCalli();
   }
 }
@@ -1786,11 +1957,11 @@ async function loadBook(bookId){
   if(!window.sb) return null;
   try{
     const { data, error } = await window.sb
-      .from('books_notes').select('music,movie,reading,lines,calligraphy')
+      .from('books_notes').select('music,movie,reading,lines,calligraphy,essay')
       .eq('book_id', bookId).maybeSingle();
     if(error){ console.warn('loadBook', error); return null; }
-    if(!data) return {music:[],movie:[],reading:[],lines:[],calligraphy:null};
-    return {music:data.music||[], movie:data.movie||[], reading:data.reading||[], lines:data.lines||[], calligraphy:parseCalli(data.calligraphy)};
+    if(!data) return {music:[],movie:[],reading:[],lines:[],calligraphy:null,essay:null};
+    return {music:data.music||[], movie:data.movie||[], reading:data.reading||[], lines:data.lines||[], calligraphy:parseCalli(data.calligraphy), essay:parseEssay(data.essay)};
   }catch(e){ console.warn('loadBook 예외', e); return null; }
 }
 
@@ -1802,6 +1973,7 @@ async function saveBook(bookId, d){
       user_id: currentUser.id, book_id: bookId,
       music:d.music, movie:d.movie||[], reading:d.reading, lines:d.lines,
       calligraphy:d.calligraphy?JSON.stringify(d.calligraphy):null,
+      essay:d.essay?JSON.stringify(d.essay):null,
       updated_at: new Date().toISOString()
     }, { onConflict:'user_id,book_id' });
     if(error){ console.warn('saveBook', error); return {ok:false, reason:'error', error}; }
