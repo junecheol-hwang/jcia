@@ -1515,19 +1515,27 @@ async function calliUpload(book, canvas){
   return {ok:true, url:pub.data.publicUrl+'?t='+Date.now()};
 }
 function pickCalli(book){
-  var inp=document.createElement('input'); inp.type='file'; inp.accept='image/png,image/jpeg,image/webp,image/*';
+  var inp=document.createElement('input');
+  inp.type='file'; inp.accept='image/png,image/jpeg,image/webp,image/*';
+  inp.style.position='fixed'; inp.style.left='-10000px'; inp.style.top='0'; inp.style.opacity='0';
+  document.body.appendChild(inp);
   inp.addEventListener('change',function(e){
-    var f=e.target.files&&e.target.files[0]; if(!f) return;
+    var f=e.target.files&&e.target.files[0];
+    if(inp.parentNode) inp.parentNode.removeChild(inp);
+    if(!f){ console.warn('[천문] 파일 선택 없음'); return; }
+    console.log('[천문] 파일 선택:', f.name, f.type, f.size+'B');
     var u=URL.createObjectURL(f), im=new Image();
     im.onload=function(){
+      console.log('[천문] 이미지 로드 OK', im.naturalWidth+'x'+im.naturalHeight);
       calliEdit={book:book, img:im, objurl:u, thr:155, soft:20, color:'#ffd98a', size:44, canvas:null};
       renderCalli(book);
     };
     im.onerror=function(){
+      console.warn('[천문] 이미지 디코드 실패');
       URL.revokeObjectURL(u);
       var el=document.getElementById('bp-calli');
       if(!el) return;
-      el.innerHTML='<div class="bp-calli-empty">이 사진을 불러올 수 없어요. 아이폰 사진(HEIC)은 브라우저가 못 읽으니, JPG나 PNG로 바꿔 다시 시도해 주세요.</div>'
+      el.innerHTML='<div class="bp-calli-empty">이 사진을 불러올 수 없어요. JPG나 PNG로 다시 시도해 주세요.</div>'
         +'<div class="bp-calli-row" style="margin-top:7px"><button id="bp-calli-retry">다시 시도</button></div>';
       var rb=document.getElementById('bp-calli-retry');
       if(rb) rb.addEventListener('click',function(){ pickCalli(book); });
