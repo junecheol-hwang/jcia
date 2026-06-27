@@ -42,7 +42,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 /* 성단 헤더 */
 /* 책 패널 — 우측, 검색창 아래 */
 #book-panel{
-  position:fixed;top:5rem;right:3rem;z-index:44;
+  position:fixed;top:8.8rem;right:3rem;z-index:44;
   width:clamp(240px,26vw,340px);
   font-family:'Gowun Batang',sans-serif;
   pointer-events:none;opacity:0;transition:opacity 0.3s ease;
@@ -61,14 +61,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 #bp-author{font-size:0.72rem;color:var(--gray-mid);letter-spacing:0.06em;margin-top:0.35rem;}
 #bp-views{font-size:0.64rem;color:var(--orange-worn);letter-spacing:0.08em;margin-top:0.4rem;opacity:0.85;}
 #comet-slot{
-  position:relative;height:0.95rem;margin-bottom:0.5rem;
+  position:relative;height:0.95rem;margin-top:0.5rem;
 }
 .comet{
   position:absolute;right:0;top:0;z-index:25;white-space:nowrap;
-  font-family:'Gowun Batang',serif;font-size:0.64rem;color:var(--orange-worn);
-  letter-spacing:0.1em;opacity:0;transition:opacity 0.7s;pointer-events:none;text-align:right;
+  font-family:'Gowun Batang',serif;font-size:0.66rem;color:var(--orange-pale);
+  letter-spacing:0.06em;opacity:0;transition:opacity 0.7s;pointer-events:none;text-align:right;
+  text-shadow:0 0 6px rgba(217,169,110,0.25);
 }
-.comet.show{opacity:0.6;}
+.comet.show{opacity:0.74;}
 #bp-body{
   display:none;margin-top:6px;
   background:rgba(2,5,10,0.72);
@@ -82,7 +83,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 #bp-body::-webkit-scrollbar-thumb{background:rgba(110,108,102,0.3);border-radius:3px;}
 .bp-section{margin-bottom:1.1rem;}
 .bp-section:last-child{margin-bottom:0;}
-.bp-label{font-size:0.66rem;color:var(--orange-worn);letter-spacing:0.12em;margin-bottom:0.5rem;}
+.bp-label{font-size:0.73rem;color:var(--orange-pale);letter-spacing:0.05em;margin-bottom:0.55rem;text-shadow:0 0 6px rgba(217,169,110,0.28);}
 .bp-add{display:flex;gap:6px;}
 .bp-input{
   flex:1;background:rgba(255,255,255,0.03);
@@ -187,7 +188,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 
 /* 로그인(magic link) — 좌측 하단 */
 #auth-box{
-  position:fixed;right:3rem;top:7.1rem;z-index:45;text-align:right;
+  position:fixed;right:3rem;top:3.3rem;z-index:45;text-align:right;
   font-family:'Gowun Batang',sans-serif;pointer-events:auto;
 }
 #auth-box.flash{animation:authflash 1.6s;}
@@ -296,7 +297,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 @keyframes brandIn{to{opacity:1;}}
 @keyframes brandFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
 #book-search{
-  position:fixed;top:3.7rem;right:3rem;z-index:45;
+  position:fixed;top:6.7rem;right:3rem;z-index:45;
   width:clamp(220px,24vw,300px);pointer-events:all;
   font-family:'Gowun Batang',sans-serif;
 }
@@ -468,14 +469,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 
 <!-- 로그인 (magic link) — 좌측 하단 -->
 <div id="auth-box">
-  <div id="comet-slot">
-    <div id="comet-site" class="comet"></div>
-    <div id="comet-phase" class="comet"></div>
-  </div>
   <div id="auth-status"></div>
   <div id="auth-login">
     <input id="auth-email" type="email" autocomplete="email" spellcheck="false" placeholder="이메일로 로그인">
     <button id="auth-send" title="로그인 링크 받기">→</button>
+  </div>
+  <div id="comet-slot">
+    <div id="comet-site" class="comet"></div>
+    <div id="comet-phase" class="comet"></div>
   </div>
   <div id="auth-msg"></div>
 </div>
@@ -704,6 +705,7 @@ let constellationDir   = 0;  // 1=나타남, -1=사라짐, 0=정지
 let constellationLines = []; // (구) 연결선 목록 — 미사용
 let constellation = {members:[], edges:[]}; // 호버 별자리: 별 5~12개 + 연결
 let pendingEnter = null;     // 검색 선택 후 진입 예약 phaseIdx
+let pendingOpenBook = null;  // 검색 선택 후 성단 진입이 끝나면 열 책
 
 // ── 별자리 생성 — 호버한 별 둘레에서 5~12개를 골라 자연스럽게 연결 ──
 function buildConstellation(rootBook){
@@ -880,25 +882,30 @@ function drawTimeline(alpha){
     ctx.shadowColor='rgba(184,125,62,0.85)';ctx.shadowBlur=10+cness*12;
     ctx.fill();ctx.restore();
 
-    phaseHitAreas.push({x,y,r:26*scale,phaseIdx:i});
+    phaseHitAreas.push({x, y:y-14*scale, r:34*scale, phaseIdx:i});
 
-    // 레이블 — 주제(name)는 마커 위·크게, 부제(desc)는 호버 시 슬며시 떠오름
+    // 레이블 — 주제(name)는 마커 위·크게
     ctx.save();ctx.globalAlpha=eff;ctx.textAlign='center';
-    // 주제 — 중심에 가까울수록 커지고 밝아짐
-    const titleSize=(15+cness*5.5)*scale;     // 15 → 20.5px
+    const titleSize=(15+cness*5.5)*scale;
     ctx.font=`400 ${Math.round(titleSize)}px 'Gowun Batang'`;
     ctx.fillStyle=cness>0.5?'#E0CDB2':'#A89B86';
     ctx.fillText(phase.name, x, y-38*scale);
-    // 부제 — 마우스가 그 성단 위에 있을 때만 아래에서 슬며시
-    const showP = hoveredPhase>=0 ? hoveredPhase : lastHoveredPhase;
-    if(i===showP && phaseDescFade>0.01){
-      ctx.globalAlpha=eff*phaseDescFade*0.92;
-      ctx.font=`300 ${Math.round(11.5*scale)}px 'Gowun Batang'`;
-      ctx.fillStyle='#C8A878';
-      ctx.fillText(phase.desc, x, y+28*scale);
-    }
     ctx.restore();
   });
+
+  // 부제 — 호버한 성단의 부제를 상단 빈 하늘에 크게 (클릭하면 성단으로 들며 스러짐)
+  if(phaseDescFade>0.01){
+    const sp = hoveredPhase>=0 ? hoveredPhase : lastHoveredPhase;
+    if(sp>=0 && PHASES[sp]){
+      ctx.save();
+      ctx.globalAlpha=alpha*phaseDescFade*0.9;
+      ctx.textAlign='center';
+      ctx.font=`300 ${Math.round(31)}px 'Gowun Batang'`;
+      ctx.fillStyle='#D8C8A8';
+      ctx.fillText(PHASES[sp].desc, W/2, H*0.15);
+      ctx.restore();
+    }
+  }
 
   // 책 별 — Phase 마커 중심으로 원형 산포
   BOOKS.forEach(book=>{
@@ -951,16 +958,23 @@ function drawCluster(layout,alpha,phaseIdx){
   if(constellation.members.length>1 && constellationAlpha>0.01){
     const m=constellation.members;
     ctx.save();
-    ctx.strokeStyle='rgba(217,169,110,0.85)';
-    ctx.lineWidth=0.6;
     ctx.lineCap='round';
     for(const [i,j] of constellation.edges){
       const a=m[i], b=m[j];
       if(a._csx==null||b._csx==null) continue;
-      ctx.globalAlpha=alpha*constellationAlpha*0.55;
       ctx.beginPath();
       ctx.moveTo(a._csx,a._csy);
       ctx.lineTo(b._csx,b._csy);
+      ctx.globalAlpha=alpha*constellationAlpha*0.32;
+      ctx.strokeStyle='rgba(232,200,150,0.9)';
+      ctx.lineWidth=2.4;
+      ctx.shadowColor='rgba(217,169,110,0.9)';
+      ctx.shadowBlur=8;
+      ctx.stroke();
+      ctx.globalAlpha=alpha*constellationAlpha*0.8;
+      ctx.strokeStyle='rgba(242,224,186,0.95)';
+      ctx.lineWidth=0.8;
+      ctx.shadowBlur=0;
       ctx.stroke();
     }
     ctx.restore();
@@ -1117,9 +1131,11 @@ function loop(){
     setHeaders(tlA,cA);
     if(zoomT>=1){
       viewMode='cluster';setClusterHeaderText(activeIdx);
-      if(pendingEnter!=null){
-        if(pendingEnter===activeIdx){ pendingEnter=null; }
-        else { const pe=pendingEnter; window.exitCluster(); pendingEnter=pe; }
+      if(pendingEnter!=null && pendingEnter!==activeIdx){
+        const pe=pendingEnter; window.exitCluster(); pendingEnter=pe;
+      } else {
+        pendingEnter=null;
+        if(pendingOpenBook){ const b=pendingOpenBook; pendingOpenBook=null; openPanel(b); }
       }
     }
   }
@@ -1923,14 +1939,15 @@ whenSB(bumpSite);
     const phaseIdx=book.phase-1;
     input.value=''; close(); input.blur();
     pinnedBook=book; hoveredBook=null; // 검색 고정 → 파동·제목 지속
-    if(viewMode==='cluster' && activeIdx===phaseIdx){ refreshFocus(); return; }
+    if(viewMode==='cluster' && activeIdx===phaseIdx){ refreshFocus(); openPanel(book); return; }
     if(viewMode==='timeline'){
       targetOffset=phaseIdx*PHASE_SPACING; clamp();
       currentOffset=targetOffset;
+      pendingOpenBook=book;
       enterCluster(phaseIdx);
     } else {
       if(viewMode==='cluster') window.exitCluster();
-      pendingEnter=phaseIdx; // 전환 끝나면 loop가 진입시킴
+      pendingEnter=phaseIdx; pendingOpenBook=book; // 전환 끝나면 loop가 진입 후 패널 염
     }
   }
   window.selectBook=selectBook;
