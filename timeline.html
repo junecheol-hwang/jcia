@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Timeline — 도반의 여정</title>
-<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Cormorant:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Cormorant:ital,wght@0,400;0,600;1,400&family=EB+Garamond:wght@400;500&display=swap" rel="stylesheet">
 <script type="importmap">
   { "imports": {
       "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
@@ -136,8 +136,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   color:var(--orange-worn);border:0.5px solid rgba(217,169,110,0.4);border-radius:3px;padding:4px 9px;transition:border-color 0.2s;}
 .bp-calli-up:hover{border-color:rgba(217,169,110,0.7);}
 .bp-calli-prev{margin-top:7px;background:#070b18;border-radius:4px;padding:10px;display:flex;align-items:center;justify-content:center;min-height:74px;}
-.bp-calli-prev img{max-width:100%;max-height:90px;object-fit:contain;
-  filter:drop-shadow(0 0 4px #ffd98a) drop-shadow(0 0 11px rgba(255,200,110,0.6));}
+.bp-calli-prev img,.bp-calli-prev canvas{max-width:100%;max-height:120px;object-fit:contain;}
+.bp-calli-sws{display:flex;gap:8px;margin-top:9px;justify-content:center;}
+.bp-calli-sw{width:19px;height:19px;border-radius:50%;border:1px solid rgba(110,108,102,0.45);cursor:pointer;padding:0;transition:box-shadow 0.2s,border-color 0.2s;}
+.bp-calli-sw.on{border-color:var(--gray-light);box-shadow:0 0 0 1.5px var(--gray-light);}
 .bp-calli-ctrl{display:flex;align-items:center;gap:7px;margin-top:7px;}
 .bp-calli-ctrl span{font-size:0.62rem;color:var(--gray-dark);white-space:nowrap;}
 .bp-calli-ctrl input[type=range]{flex:1;}
@@ -288,8 +290,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   filter:drop-shadow(0 0 5px rgba(217,185,122,0.55));
 }
 #brand-name{
-  font-family:'Cormorant','Gowun Batang',serif;font-weight:500;
-  font-size:1.04rem;letter-spacing:0.16em;color:var(--orange-faded);opacity:0.82;
+  font-family:'EB Garamond','Gowun Batang',serif;font-weight:500;
+  font-size:1.1rem;letter-spacing:0.15em;color:var(--orange-faded);opacity:0.82;
 }
 @keyframes brandIn{to{opacity:1;}}
 @keyframes brandFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
@@ -456,7 +458,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
       <div id="bp-line-count"></div>
     </div>
     <div class="bp-section">
-      <div class="bp-label">墨 하늘에 띄울 붓글씨</div>
+      <div class="bp-label">墨 천문</div>
       <div id="bp-calli"></div>
     </div>
   </div>
@@ -1445,13 +1447,23 @@ async function ytTitle(vid){
 }
 // ── 붓글씨: 배경제거(흰 획) + Storage 저장 + 하늘 글로우 ──
 let calliEdit=null;
+function calliGlow(color){
+  return 'drop-shadow(0 0 4px '+color+') drop-shadow(0 0 13px '+color+') drop-shadow(0 0 30px '+color+'88)';
+}
+function parseCalli(raw){
+  if(!raw) return null;
+  if(typeof raw==='object') return raw;
+  try{ var o=JSON.parse(raw); if(o&&o.url) return o; }catch(e){}
+  return {url:raw, color:'#ffd98a', size:44};
+}
 function calliExtract(img, thr, soft){
   var iw=img.naturalWidth||img.width, ih=img.naturalHeight||img.height;
-  var sc=Math.min(1,760/Math.max(iw,ih));
+  if(!iw||!ih) return null;
+  var sc=Math.min(1,820/Math.max(iw,ih));
   var W=Math.max(1,Math.round(iw*sc)), H=Math.max(1,Math.round(ih*sc));
   var src=document.createElement('canvas'); src.width=W; src.height=H;
-  src.getContext('2d').drawImage(img,0,0,W,H);
-  var sd=src.getContext('2d').getImageData(0,0,W,H);
+  var sctx=src.getContext('2d'); sctx.drawImage(img,0,0,W,H);
+  var sd; try{ sd=sctx.getImageData(0,0,W,H); }catch(e){ console.warn('calli getImageData', e); return null; }
   var out=document.createElement('canvas'); out.width=W; out.height=H;
   var octx=out.getContext('2d'), od=octx.createImageData(W,H), s=sd.data, o=od.data;
   for(var i=0;i<s.length;i+=4){
@@ -1462,11 +1474,15 @@ function calliExtract(img, thr, soft){
   octx.putImageData(od,0,0);
   return out;
 }
-function showCalli(url){
-  if(!url) return;
+function showCalli(meta){
+  meta=parseCalli(meta);
+  if(!meta||!meta.url) return;
   var sky=document.getElementById('calli-sky'), img=document.getElementById('calli-img');
   if(!sky||!img) return;
-  img.src=url; sky.classList.add('show');
+  img.src=meta.url;
+  img.style.maxWidth=(meta.size||44)+'%';
+  img.style.filter=calliGlow(meta.color||'#ffd98a');
+  sky.classList.add('show');
 }
 function hideCalli(){
   var sky=document.getElementById('calli-sky');
@@ -1475,6 +1491,7 @@ function hideCalli(){
 async function calliUpload(book, canvas){
   if(!window.sb||!currentUser) return {ok:false, reason:'not-logged-in'};
   var blob=await new Promise(function(res){ canvas.toBlob(res,'image/png'); });
+  if(!blob) return {ok:false, reason:'blob-failed'};
   var path=currentUser.id+'/'+book.id+'.png';
   var up=await window.sb.storage.from('calligraphy').upload(path, blob, {upsert:true, contentType:'image/png'});
   if(up.error){ console.warn('calli upload', up.error); return {ok:false, error:up.error}; }
@@ -1482,11 +1499,23 @@ async function calliUpload(book, canvas){
   return {ok:true, url:pub.data.publicUrl+'?t='+Date.now()};
 }
 function pickCalli(book){
-  var inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  var inp=document.createElement('input'); inp.type='file'; inp.accept='image/png,image/jpeg,image/webp,image/*';
   inp.addEventListener('change',function(e){
     var f=e.target.files&&e.target.files[0]; if(!f) return;
     var u=URL.createObjectURL(f), im=new Image();
-    im.onload=function(){ calliEdit={book:book, img:im, thr:155, soft:20, canvas:null}; renderCalli(book); URL.revokeObjectURL(u); };
+    im.onload=function(){
+      calliEdit={book:book, img:im, objurl:u, thr:155, soft:20, color:'#ffd98a', size:44, canvas:null};
+      renderCalli(book);
+    };
+    im.onerror=function(){
+      URL.revokeObjectURL(u);
+      var el=document.getElementById('bp-calli');
+      if(!el) return;
+      el.innerHTML='<div class="bp-calli-empty">이 사진을 불러올 수 없어요. 아이폰 사진(HEIC)은 브라우저가 못 읽으니, JPG나 PNG로 바꿔 다시 시도해 주세요.</div>'
+        +'<div class="bp-calli-row" style="margin-top:7px"><button id="bp-calli-retry">다시 시도</button></div>';
+      var rb=document.getElementById('bp-calli-retry');
+      if(rb) rb.addEventListener('click',function(){ pickCalli(book); });
+    };
     im.src=u;
   });
   inp.click();
@@ -1495,31 +1524,56 @@ function renderCalli(book){
   var d=ensureData(book), el=document.getElementById('bp-calli');
   if(!el) return;
   if(calliEdit && calliEdit.book===book){
-    el.innerHTML='<div class="bp-calli-prev"><canvas id="bp-calli-cv"></canvas></div>'
+    var sw=function(c,name){ return '<button class="bp-calli-sw'+(calliEdit.color===c?' on':'')+'" data-c="'+c+'" title="'+name+'" style="background:'+c+'"></button>'; };
+    el.innerHTML=
+      '<div class="bp-calli-prev"><canvas id="bp-calli-cv"></canvas></div>'
+      +'<div class="bp-calli-sws">'+sw('#ffd98a','금빛')+sw('#dfe9ff','달빛')+sw('#a9e6cf','비취')+sw('#f3b0c3','매화')+'</div>'
       +'<div class="bp-calli-ctrl"><span>감도</span><input type="range" id="bp-calli-thr" min="40" max="235" value="'+calliEdit.thr+'" step="1"></div>'
       +'<div class="bp-calli-ctrl"><span>번짐</span><input type="range" id="bp-calli-soft" min="2" max="70" value="'+calliEdit.soft+'" step="1"></div>'
+      +'<div class="bp-calli-ctrl"><span>크기</span><input type="range" id="bp-calli-size" min="20" max="72" value="'+calliEdit.size+'" step="1"></div>'
       +'<div class="bp-calli-row"><button class="primary" id="bp-calli-save">하늘에 새기기</button><button id="bp-calli-cancel">취소</button></div>';
     var redraw=function(){
       var cv=calliExtract(calliEdit.img, +document.getElementById('bp-calli-thr').value, +document.getElementById('bp-calli-soft').value);
+      if(!cv){ return; }
       var disp=document.getElementById('bp-calli-cv'); disp.width=cv.width; disp.height=cv.height;
       disp.getContext('2d').drawImage(cv,0,0); calliEdit.canvas=cv;
+      disp.style.maxWidth=calliEdit.size+'%';
+      disp.style.filter=calliGlow(calliEdit.color);
     };
     redraw();
     document.getElementById('bp-calli-thr').addEventListener('input',function(){ calliEdit.thr=+this.value; redraw(); });
     document.getElementById('bp-calli-soft').addEventListener('input',function(){ calliEdit.soft=+this.value; redraw(); });
-    document.getElementById('bp-calli-cancel').addEventListener('click',function(){ calliEdit=null; renderCalli(book); });
+    document.getElementById('bp-calli-size').addEventListener('input',function(){ calliEdit.size=+this.value; redraw(); });
+    Array.prototype.forEach.call(el.querySelectorAll('.bp-calli-sw'),function(b){
+      b.addEventListener('click',function(){ calliEdit.color=b.getAttribute('data-c'); el.querySelectorAll('.bp-calli-sw').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); redraw(); });
+    });
+    document.getElementById('bp-calli-cancel').addEventListener('click',function(){ if(calliEdit&&calliEdit.objurl)URL.revokeObjectURL(calliEdit.objurl); calliEdit=null; renderCalli(book); });
     document.getElementById('bp-calli-save').addEventListener('click',async function(){
-      var btn=this; btn.textContent='새기는 중…'; btn.disabled=true;
+      var btn=this;
+      if(!calliEdit.canvas){ btn.textContent='이미지 오류 — 취소 후 재시도'; return; }
+      btn.textContent='새기는 중…'; btn.disabled=true;
       var r=await calliUpload(book, calliEdit.canvas);
-      if(r.ok){ d.calligraphy=r.url; calliEdit=null; await saveBook(book.id, d); renderCalli(book); if(panelBook===book) showCalli(r.url); }
-      else { btn.textContent='실패 — 다시'; btn.disabled=false; }
+      if(r.ok){
+        var meta={url:r.url, color:calliEdit.color, size:calliEdit.size};
+        d.calligraphy=meta;
+        if(calliEdit.objurl)URL.revokeObjectURL(calliEdit.objurl);
+        calliEdit=null;
+        await saveBook(book.id, d);
+        renderCalli(book);
+        if(panelBook===book) showCalli(meta);
+      } else {
+        btn.disabled=false;
+        btn.textContent = r.reason==='not-logged-in' ? '로그인이 필요해요' : '실패 — 다시';
+      }
     });
     return;
   }
-  if(d.calligraphy){
+  if(d.calligraphy && d.calligraphy.url){
     var canEdit=!!currentUser;
-    el.innerHTML='<div class="bp-calli-prev"><img src="'+d.calligraphy+'" alt=""></div>'
+    el.innerHTML='<div class="bp-calli-prev"><img id="bp-calli-shown" src="'+d.calligraphy.url+'" alt=""></div>'
       +(canEdit?'<div class="bp-calli-row"><button id="bp-calli-replace">다시 올리기</button><button id="bp-calli-del">지우기</button></div>':'');
+    var shown=document.getElementById('bp-calli-shown');
+    if(shown){ shown.style.maxWidth=(d.calligraphy.size||44)+'%'; shown.style.filter=calliGlow(d.calligraphy.color||'#ffd98a'); }
     if(canEdit){
       document.getElementById('bp-calli-replace').addEventListener('click',function(){ pickCalli(book); });
       document.getElementById('bp-calli-del').addEventListener('click',async function(){
@@ -1529,10 +1583,10 @@ function renderCalli(book){
     return;
   }
   if(currentUser){
-    el.innerHTML='<label class="bp-calli-up">붓글씨 사진 올리기</label>';
+    el.innerHTML='<label class="bp-calli-up">천문 띄우기</label>';
     el.querySelector('.bp-calli-up').addEventListener('click',function(){ pickCalli(book); });
   } else {
-    el.innerHTML='<div class="bp-calli-empty">로그인하면 이 별에 붓글씨를 새길 수 있어요.</div>';
+    el.innerHTML='<div class="bp-calli-empty">로그인하면 이 별에 천문을 띄울 수 있어요.</div>';
   }
 }
 function bpLinkify(text){
@@ -1712,7 +1766,7 @@ async function loadBook(bookId){
       .eq('book_id', bookId).maybeSingle();
     if(error){ console.warn('loadBook', error); return null; }
     if(!data) return {music:[],movie:[],reading:[],lines:[],calligraphy:null};
-    return {music:data.music||[], movie:data.movie||[], reading:data.reading||[], lines:data.lines||[], calligraphy:data.calligraphy||null};
+    return {music:data.music||[], movie:data.movie||[], reading:data.reading||[], lines:data.lines||[], calligraphy:parseCalli(data.calligraphy)};
   }catch(e){ console.warn('loadBook 예외', e); return null; }
 }
 
@@ -1723,7 +1777,7 @@ async function saveBook(bookId, d){
     const { error } = await window.sb.from('books_notes').upsert({
       user_id: currentUser.id, book_id: bookId,
       music:d.music, movie:d.movie||[], reading:d.reading, lines:d.lines,
-      calligraphy:d.calligraphy||null,
+      calligraphy:d.calligraphy?JSON.stringify(d.calligraphy):null,
       updated_at: new Date().toISOString()
     }, { onConflict:'user_id,book_id' });
     if(error){ console.warn('saveBook', error); return {ok:false, reason:'error', error}; }
