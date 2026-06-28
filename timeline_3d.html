@@ -698,10 +698,10 @@ function init(){
   scene.add(pts);
   window.scene=scene; window.camera=camera; window.renderer=renderer;
   window._bgPts=pts;
-  // 정·동 호흡 항법 + 유성 비행 상태
-  window._nav={yaw:0.35,pitch:0.22,dist:165,distTarget:165,yawV:0,pitchV:0,
-               dragging:false,interactT:performance.now()-9999,drift:1,
-               center:{x:0,y:0,z:0}, flying:false, flyT:0, flyStep:1/96,
+  // 룩어라운드 항법 + 유성 비행 — 위치(pos)와 시선(yaw/pitch)을 분리
+  window._nav={pos:{x:0,y:0,z:165}, yaw:Math.PI, pitch:0, yawV:0, pitchV:0,
+               dragging:false, interactT:performance.now()-9999, drift:1,
+               center:{x:0,y:0,z:0}, flying:false, flyT:0, flyStep:1/120,
                p0:null,pc:null,p1:null, onArrive:null};
   window.addEventListener('resize',()=>{
     camera.aspect=innerWidth/innerHeight;
@@ -728,31 +728,31 @@ function animate(){
     // ── 유성의 곡선 비행 ──
     nav.flyT += nav.flyStep;
     const t01=Math.min(1,nav.flyT);
-    const e = t01<0.5 ? 4*t01*t01*t01 : 1-Math.pow(-2*t01+2,3)/2;  // easeInOutCubic
+    const e = t01<0.5 ? 8*t01*t01*t01*t01 : 1-Math.pow(-2*t01+2,4)/2;  // easeInOutQuart — 도착부 더 길게 감속
     const P=bez3(nav.p0,nav.pc,nav.p1,e);
     camera.position.set(P.x,P.y,P.z);
     // 유성의 시선 — 진행 방향을 보다가, 도착이 가까우면 별로 안착
     const A=bez3(nav.p0,nav.pc,nav.p1,Math.min(1,e+0.04));
     let lx=A.x,ly=A.y,lz=A.z;
-    if(t01>0.72){
-      const k=(t01-0.72)/0.28;
+    if(t01>0.6){
+      const k=(t01-0.6)/0.4;
       lx+=(nav.center.x-lx)*k; ly+=(nav.center.y-ly)*k; lz+=(nav.center.z-lz)*k;
     }
     camera.lookAt(lx,ly,lz);
     if(t01>=1){
       nav.flying=false;
-      // 그 별을 새 궤도 중심으로 — 도착 위치에서 yaw/pitch/dist 역산
-      const dx=camera.position.x-nav.center.x, dy=camera.position.y-nav.center.y, dz=camera.position.z-nav.center.z;
-      const rr=Math.max(1,Math.hypot(dx,dy,dz));
-      nav.yaw=Math.atan2(dx,dz);
-      nav.pitch=Math.max(-1.35,Math.min(1.35,Math.asin(dy/rr)));
-      nav.dist=nav.distTarget=rr;
+      // 도착한 그 자리에 멈춤 — 별을 중앙에 박지 않고, 별을 향한 시선만 기억
+      nav.pos={x:nav.p1.x, y:nav.p1.y, z:nav.p1.z};
+      const vx=nav.center.x-nav.pos.x, vy=nav.center.y-nav.pos.y, vz=nav.center.z-nav.pos.z;
+      const vl=Math.max(1,Math.hypot(vx,vy,vz));
+      nav.yaw=Math.atan2(vx,vz);
+      nav.pitch=Math.max(-1.35,Math.min(1.35,Math.asin(vy/vl)));
       nav.yawV=0; nav.pitchV=0; nav.drift=0;
       nav.interactT=performance.now();
       if(nav.onArrive){ const cb=nav.onArrive; nav.onArrive=null; cb(); }
     }
   } else {
-    // ── 정·동의 호흡 — 손 놓으면 표류, 잡으면 항해 ──
+    // ── 정·동의 호흡 — 제자리에서 시선을 돌림 (룩어라운드) ──
     const since=now-nav.interactT;
     const wantDrift = nav.dragging ? 0 : Math.min(1, Math.max(0,(since-700)/2600));
     nav.drift += (wantDrift-nav.drift)*0.02;
@@ -762,15 +762,14 @@ function animate(){
       nav.yawV  *= 0.90;
       nav.pitchV*= 0.90;
     }
-    nav.yaw   += 0.00035*nav.drift;
-    nav.pitch += Math.sin(t*0.05)*0.00010*nav.drift;
+    nav.yaw   += 0.00018*nav.drift;                  // 제자리 두리번 — 아주 느리게
+    nav.pitch += Math.sin(t*0.05)*0.00008*nav.drift; // 미세한 끄덕임
     nav.pitch = Math.max(-1.35, Math.min(1.35, nav.pitch));
-    nav.dist  += (nav.distTarget-nav.dist)*0.08;
-    const cd=nav.dist;
-    camera.position.x = nav.center.x + cd*Math.cos(nav.pitch)*Math.sin(nav.yaw);
-    camera.position.y = nav.center.y + cd*Math.sin(nav.pitch);
-    camera.position.z = nav.center.z + cd*Math.cos(nav.pitch)*Math.cos(nav.yaw);
-    camera.lookAt(nav.center.x,nav.center.y,nav.center.z);
+    camera.position.set(nav.pos.x, nav.pos.y, nav.pos.z);
+    const dx=Math.cos(nav.pitch)*Math.sin(nav.yaw);
+    const dy=Math.sin(nav.pitch);
+    const dz=Math.cos(nav.pitch)*Math.cos(nav.yaw);
+    camera.lookAt(nav.pos.x+dx, nav.pos.y+dy, nav.pos.z+dz);
   }
 
   // ── 미지의 별 — 느린 표류 ──
@@ -922,9 +921,13 @@ function buildBookStars(){
   for(const s of NEB_SEEDS) if(s.w<startNeb.w) startNeb=s;  // w 작을수록 촘촘
   const mr=Math.hypot(startNeb.x,startNeb.y,startNeb.z);
   const nav=window._nav;
-  nav.yaw   = Math.atan2(startNeb.x, startNeb.z);
-  nav.pitch = Math.max(-1.0, Math.min(1.0, Math.asin(startNeb.y/Math.max(1,mr))));
-  nav.dist  = nav.distTarget = Math.max(34, mr*0.6);  // 별들 사이에서 — 줌아웃하면 전체 성운
+  const back=42;                       // 무리에서 조금 떨어져 바라봄
+  const f=Math.max(0,(mr-back)/mr);
+  nav.pos={x:startNeb.x*f, y:startNeb.y*f, z:startNeb.z*f};
+  const vx=startNeb.x-nav.pos.x, vy=startNeb.y-nav.pos.y, vz=startNeb.z-nav.pos.z;
+  const vl=Math.max(1,Math.hypot(vx,vy,vz));
+  nav.yaw   = Math.atan2(vx, vz);
+  nav.pitch = Math.max(-1.0, Math.min(1.0, Math.asin(vy/vl)));
   nav.interactT = performance.now()-9999;
 }
 
@@ -937,7 +940,7 @@ function project3d(p){
 function pickBook(mx,my){
   if(!bookPts||!bookRay) return null;
   const ndc=new window.THREE.Vector2((mx/innerWidth)*2-1, -(my/innerHeight)*2+1);
-  bookRay.params.Points.threshold=Math.max(1.6, window._nav.dist*0.018);
+  bookRay.params.Points.threshold=2.4;
   bookRay.setFromCamera(ndc, window.camera);
   const hits=bookRay.intersectObject(bookPts);
   if(hits.length){ return BOOKS[hits[0].index]||null; }
@@ -949,7 +952,7 @@ window.flyTo=function(book,onArrive){
   const nav=window._nav, cam=window.camera;
   if(!book||!book._p3||!cam){ if(onArrive) onArrive(); return; }
   const star=book._p3;
-  const p0={x:cam.position.x,y:cam.position.y,z:cam.position.z};
+  const p0={x:nav.pos.x, y:nav.pos.y, z:nav.pos.z};   // 직전 책 앞 그 자리 — 드래그로 둘러봐도 불변
   const arrive=42;                       // 도착 시 별로부터의 거리
   let ax=p0.x-star.x, ay=p0.y-star.y, az=p0.z-star.z;
   let al=Math.hypot(ax,ay,az);
@@ -969,7 +972,7 @@ window.flyTo=function(book,onArrive){
   nav.pc={x:mid.x+px*bend*side, y:mid.y+lift, z:mid.z+pz*bend*side};
   nav.p0=p0; nav.p1=p1;
   nav.center={x:star.x, y:star.y, z:star.z};
-  nav.flying=true; nav.flyT=0; nav.flyStep=1/96;  // ~1.6초
+  nav.flying=true; nav.flyT=0; nav.flyStep=1/120;  // ~2초, 도착에 길게 잦아듦
   nav.dragging=false; nav.onArrive=onArrive||null;
 };
 
@@ -1542,7 +1545,9 @@ tlCanvas.addEventListener('wheel',e=>{
   e.preventDefault();
   if(window._nav.flying) return;
   const nav=window._nav;
-  nav.distTarget=Math.max(70,Math.min(280, nav.distTarget+e.deltaY*0.12));
+  const dx=Math.cos(nav.pitch)*Math.sin(nav.yaw), dy=Math.sin(nav.pitch), dz=Math.cos(nav.pitch)*Math.cos(nav.yaw);
+  const step=-e.deltaY*0.06;          // 휠 위로 = 시선 방향으로 전진
+  nav.pos.x+=dx*step; nav.pos.y+=dy*step; nav.pos.z+=dz*step;
   nav.interactT=performance.now();
 },{passive:false});
 
