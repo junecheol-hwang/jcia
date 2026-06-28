@@ -2126,14 +2126,6 @@ function renderLists(book){
           +'<span class="bp-yt-title loading">불러오는 중…</span></a>'
           +'<span class="bp-del" data-i="'+i+'">×</span></div>';
       }
-      if(kind==='reading'){
-        const lk=findBookByTitle(v);
-        if(lk){
-          return '<div class="bp-item bp-internal" data-book-id="'+bpEsc(String(lk.id))+'" title="이 우주의 별 — 눌러서 건너가기">'
-            +'<span class="bp-item-text">✶ '+bpEsc(v)+'</span>'
-            +'<span class="bp-del" data-i="'+i+'">×</span></div>';
-        }
-      }
       return '<div class="bp-item"><span class="bp-item-text">'+bpLinkify(v)+'</span>'
         +'<span class="bp-del" data-i="'+i+'">×</span></div>';
     }).join('');
@@ -2220,9 +2212,10 @@ function addItem(kind){
     d[kind].push(v); panelDirty=true; inp.value=''; renderLists(panelBook);
   }
 }
-// 패널 입력 이벤트 바인딩
-document.querySelectorAll('.bp-btn').forEach(b=>{
-  b.addEventListener('click',()=>addItem(b.dataset.add));
+// 패널 입력 이벤트 바인딩 — 이벤트 위임(타이밍·순서 무관하게 항상 작동)
+document.addEventListener('click',e=>{
+  const b=(e.target&&e.target.closest)?e.target.closest('.bp-btn'):null;
+  if(b&&b.dataset&&b.dataset.add) addItem(b.dataset.add);
 });
 ['music','movie','reading','line'].forEach(kind=>{
   const inp=document.getElementById('bp-'+kind+'-input');
