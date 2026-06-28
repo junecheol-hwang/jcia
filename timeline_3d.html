@@ -725,13 +725,13 @@ function animate(){
   const now=performance.now();
 
   if(nav.flying){
-    // ── 3인칭 관망 — 빛이 곡선을 건너가고, 카메라는 호를 그리며 지켜봄 ──
+    // ── 빛을 한 발 뒤에서 따라가는 추격 비행 ──
     nav.flyT += nav.flyStep;
     const ftt=Math.min(1,nav.flyT);
     const e=ftt*ftt*ftt*(ftt*(ftt*6-15)+10);  // smootherstep
-    const L=bez3(nav.p0,nav.pc,nav.p1,e);      // 빛 점(시점)
+    const L=bez3(nav.p0,nav.pc,nav.p1,e);      // 빛 점(앞서가는 시점)
 
-    // 궤적 — 출발점에서 현재까지 곡선
+    // 궤적 — 출발점에서 현재까지
     const ft=window._flyTrail;
     if(ft){
       for(let i=0;i<ft.N;i++){
@@ -741,41 +741,37 @@ function animate(){
       }
       ft.geo.attributes.position.needsUpdate=true;
       ft.geo.setDrawRange(0,ft.N);
-      ft.mat.opacity=0.8*Math.min(1,ftt/0.12)*Math.min(1,(1-ftt)/0.12+0.0001);
+      ft.mat.opacity=0.85*Math.min(1,ftt/0.1)*Math.min(1,(1-ftt)/0.1+0.0001);
     }
     const fp=window._flyPoint;
     if(fp){
       const a=fp.geo.attributes.position.array;
       a[0]=L.x; a[1]=L.y; a[2]=L.z;
       fp.geo.attributes.position.needsUpdate=true;
-      fp.mat.opacity=Math.min(1,ftt/0.1)*Math.min(1,(1-ftt)/0.1+0.0001);
+      fp.mat.opacity=Math.min(1,ftt/0.08)*Math.min(1,(1-ftt)/0.08+0.0001);
     }
 
-    // 관망 카메라 — 곡선 중점을 중심으로 호를 그리며
-    const C=bez3(nav.p0,nav.pc,nav.p1,0.5);
-    let fwx=nav.p1.x-nav.p0.x, fwz=nav.p1.z-nav.p0.z;
-    const fwl=Math.hypot(fwx,fwz)||1; fwx/=fwl; fwz/=fwl;
-    const baseYaw=Math.atan2(fwx,fwz)+Math.PI/2;     // 진행방향에 수직(곡선 옆)
-    const ang=baseYaw+(e-0.5)*0.7;                   // 절제된 호 swing (±0.35rad)
-    const viewDist=Math.max(70,Math.min(260, nav.flyDlen*0.95));
-    let cdx=Math.sin(ang)*0.86, cdy=0.5, cdz=Math.cos(ang)*0.86;
-    const cl=Math.hypot(cdx,cdy,cdz); cdx/=cl; cdy/=cl; cdz/=cl;
-    const obs={x:C.x+cdx*viewDist, y:C.y+cdy*viewDist, z:C.z+cdz*viewDist};
+    // 진행방향 접선
+    const Lh=bez3(nav.p0,nav.pc,nav.p1,Math.min(1,e+0.02));
+    let tx=Lh.x-L.x, ty=Lh.y-L.y, tz=Lh.z-L.z;
+    const tl=Math.hypot(tx,ty,tz)||1; tx/=tl; ty/=tl; tz/=tl;
+    // 빛 한 발 뒤 + 살짝 위에서 추격
+    const follow=16, lift=5;
+    const obs={x:L.x-tx*follow, y:L.y-ty*follow+lift, z:L.z-tz*follow};
 
-    // 이음매 — 시작 18%: 1인칭→관망, 끝 18%: 관망→도착 1인칭
+    // 이음매 — 시작/끝 12% 부드럽게
     const sm=(k)=>k*k*(3-2*k);
     let camP, look;
-    if(ftt<0.18){
-      const k=sm(ftt/0.18);
+    if(ftt<0.12){
+      const k=sm(ftt/0.12);
       camP={x:nav.flyStart.x+(obs.x-nav.flyStart.x)*k, y:nav.flyStart.y+(obs.y-nav.flyStart.y)*k, z:nav.flyStart.z+(obs.z-nav.flyStart.z)*k};
-      look={x:nav.flyStartLook.x+(C.x-nav.flyStartLook.x)*k, y:nav.flyStartLook.y+(C.y-nav.flyStartLook.y)*k, z:nav.flyStartLook.z+(C.z-nav.flyStartLook.z)*k};
-    } else if(ftt>0.82){
-      const k=sm((ftt-0.82)/0.18);
+      look={x:nav.flyStartLook.x+(L.x-nav.flyStartLook.x)*k, y:nav.flyStartLook.y+(L.y-nav.flyStartLook.y)*k, z:nav.flyStartLook.z+(L.z-nav.flyStartLook.z)*k};
+    } else if(ftt>0.88){
+      const k=sm((ftt-0.88)/0.12);
       camP={x:obs.x+(nav.flyEnd.x-obs.x)*k, y:obs.y+(nav.flyEnd.y-obs.y)*k, z:obs.z+(nav.flyEnd.z-obs.z)*k};
-      look={x:C.x+(nav.center.x-C.x)*k, y:C.y+(nav.center.y-C.y)*k, z:C.z+(nav.center.z-C.z)*k};
+      look={x:L.x+(nav.center.x-L.x)*k, y:L.y+(nav.center.y-L.y)*k, z:L.z+(nav.center.z-L.z)*k};
     } else {
-      camP=obs;
-      look={x:C.x*0.7+L.x*0.3, y:C.y*0.7+L.y*0.3, z:C.z*0.7+L.z*0.3};
+      camP=obs; look={x:L.x,y:L.y,z:L.z};
     }
     camera.position.set(camP.x,camP.y,camP.z);
     camera.lookAt(look.x,look.y,look.z);
@@ -965,7 +961,7 @@ function buildBookStars(){
   for(const s of NEB_SEEDS) if(s.w<startNeb.w) startNeb=s;  // w 작을수록 촘촘
   const mr=Math.hypot(startNeb.x,startNeb.y,startNeb.z);
   const nav=window._nav;
-  const back=42;                       // 무리에서 조금 떨어져 바라봄
+  const back=16;                       // 무리에 바짝 — 별들이 화면을 채우는 깊이
   const f=Math.max(0,(mr-back)/mr);
   nav.pos={x:startNeb.x*f, y:startNeb.y*f, z:startNeb.z*f};
   const vx=startNeb.x-nav.pos.x, vy=startNeb.y-nav.pos.y, vz=startNeb.z-nav.pos.z;
@@ -983,9 +979,10 @@ function buildFlyFx(){
   const tg=new THREE.BufferGeometry();
   const tp=new Float32Array(TN*3);
   tg.setAttribute('position',new THREE.BufferAttribute(tp,3));
-  const tm=new THREE.LineBasicMaterial({color:0x9ad8ff, transparent:true, opacity:0.0,
+  const tm=new THREE.PointsMaterial({size:5.5, sizeAttenuation:true, transparent:true, opacity:0.0,
+            map:window._bookTex||null, color:0x9ad8ff,
             blending:THREE.AdditiveBlending, depthTest:false, depthWrite:false});
-  const trail=new THREE.Line(tg,tm);
+  const trail=new THREE.Points(tg,tm);
   trail.frustumCulled=false; trail.visible=false;
   window.scene.add(trail);
   window._flyTrail={line:trail, geo:tg, pos:tp, N:TN, mat:tm};
@@ -1047,7 +1044,7 @@ window.flyTo=function(book,onArrive){
   nav.flyStartLook={x:nav.pos.x+sdx, y:nav.pos.y+sdy, z:nav.pos.z+sdz};
   nav.flyEnd={x:p1.x, y:p1.y, z:p1.z};
   nav.flyDlen=dlen;
-  const frames=Math.max(90, Math.min(220, Math.round(dlen*0.6)));  // 거리에 비례, 3인칭은 여유롭게
+  const frames=Math.max(150, Math.min(340, Math.round(dlen*0.9)));  // 거리에 비례, 느리게 음미
   nav.flying=true; nav.flyT=0; nav.flyStep=1/frames;
   nav.dragging=false; nav.onArrive=onArrive||null;
   if(window._flyPoint) window._flyPoint.pts.visible=true;
