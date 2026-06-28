@@ -767,12 +767,7 @@ function animate(){
       look={x:nav.flyStartLook.x+(L.x-nav.flyStartLook.x)*k, y:nav.flyStartLook.y+(L.y-nav.flyStartLook.y)*k, z:nav.flyStartLook.z+(L.z-nav.flyStartLook.z)*k};
     } else {
       camP=obs;
-      if(ftt>0.84){
-        const k=sm((ftt-0.84)/0.16);
-        look={x:L.x+(nav.center.x-L.x)*k, y:L.y+(nav.center.y-L.y)*k, z:L.z+(nav.center.z-L.z)*k};
-      } else {
-        look={x:L.x,y:L.y,z:L.z};
-      }
+      look={x:L.x,y:L.y,z:L.z};   // 빛을 쫓던 시선 그대로 — 별 중앙으로 당기지 않음
     }
     camera.position.set(camP.x,camP.y,camP.z);
     camera.lookAt(look.x,look.y,look.z);
@@ -780,7 +775,7 @@ function animate(){
     if(ftt>=1){
       nav.flying=false;
       nav.pos={x:obs.x, y:obs.y, z:obs.z};   // 빛 뒤 그 자리에 머묾
-      const vx=nav.center.x-nav.pos.x, vy=nav.center.y-nav.pos.y, vz=nav.center.z-nav.pos.z;
+      const vx=L.x-nav.pos.x, vy=L.y-nav.pos.y, vz=L.z-nav.pos.z;  // 빛 쫓던 시선 이어받음
       const vl=Math.max(1,Math.hypot(vx,vy,vz));
       nav.yaw=Math.atan2(vx,vz);
       nav.pitch=Math.max(-1.35,Math.min(1.35,Math.asin(vy/vl)));
@@ -956,6 +951,8 @@ function buildBookStars(){
 
   bookRay=new THREE.Raycaster();
   bookRay.params.Points.threshold=2.6;
+
+  buildFlyFx();   // 빛 점 + 궤적 선 생성 (이게 없으면 아무것도 안 보임)
 
   // ── 성단 안에서 깨어나기 — 가장 촘촘한 무리 곁에서 시작 (시드 고정) ──
   let startNeb=NEB_SEEDS[0];
@@ -1742,6 +1739,13 @@ function handleClick(mx,my){
 
 function checkHover(mx,my){
   if(isDragging) return;
+  // 오른쪽 패널·검색창·게이지 등 UI 위에서는 그 아래 별 호버를 막음
+  const el=document.elementFromPoint(mx,my);
+  if(el && el.id!=='tl-canvas'){
+    if(hoveredBook){ hoveredBook=null; if(typeof refreshFocus==='function') refreshFocus(); }
+    tlCanvas.style.cursor='default';
+    return;
+  }
   const nb=pickBook(mx,my);
   if(nb!==hoveredBook){
     hoveredBook=nb;
