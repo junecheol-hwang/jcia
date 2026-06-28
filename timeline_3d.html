@@ -728,22 +728,22 @@ function animate(){
     // ── 유성의 곡선 비행 ──
     nav.flyT += nav.flyStep;
     const t01=Math.min(1,nav.flyT);
-    const e = t01<0.5 ? 8*t01*t01*t01*t01 : 1-Math.pow(-2*t01+2,4)/2;  // easeInOutQuart — 도착부 더 길게 감속
+    const e = t01*t01*t01*(t01*(t01*6-15)+10);  // smootherstep — 양끝 부드럽고 중간도 과하지 않게
     const P=bez3(nav.p0,nav.pc,nav.p1,e);
     camera.position.set(P.x,P.y,P.z);
-    // 유성의 시선 — 진행 방향을 보다가, 도착이 가까우면 별로 안착
+    // 유성의 시선 — 진행 방향을 보다가, 도착이 가까우면 별로 (정중앙은 아니게) 안착
     const A=bez3(nav.p0,nav.pc,nav.p1,Math.min(1,e+0.04));
     let lx=A.x,ly=A.y,lz=A.z;
-    if(t01>0.6){
-      const k=(t01-0.6)/0.4;
+    if(t01>0.55){
+      const k=(t01-0.55)/0.45*0.6;   // 최대 60%만 별로 — 별이 시야 어딘가 비껴 걸침
       lx+=(nav.center.x-lx)*k; ly+=(nav.center.y-ly)*k; lz+=(nav.center.z-lz)*k;
     }
     camera.lookAt(lx,ly,lz);
     if(t01>=1){
       nav.flying=false;
-      // 도착한 그 자리에 멈춤 — 별을 중앙에 박지 않고, 별을 향한 시선만 기억
+      // 도착한 그 자리에 멈춤 — 마지막 시선을 그대로 이어받아 튀지 않게
       nav.pos={x:nav.p1.x, y:nav.p1.y, z:nav.p1.z};
-      const vx=nav.center.x-nav.pos.x, vy=nav.center.y-nav.pos.y, vz=nav.center.z-nav.pos.z;
+      const vx=lx-nav.pos.x, vy=ly-nav.pos.y, vz=lz-nav.pos.z;
       const vl=Math.max(1,Math.hypot(vx,vy,vz));
       nav.yaw=Math.atan2(vx,vz);
       nav.pitch=Math.max(-1.35,Math.min(1.35,Math.asin(vy/vl)));
@@ -972,7 +972,8 @@ window.flyTo=function(book,onArrive){
   nav.pc={x:mid.x+px*bend*side, y:mid.y+lift, z:mid.z+pz*bend*side};
   nav.p0=p0; nav.p1=p1;
   nav.center={x:star.x, y:star.y, z:star.z};
-  nav.flying=true; nav.flyT=0; nav.flyStep=1/120;  // ~2초, 도착에 길게 잦아듦
+  const frames=Math.max(70, Math.min(190, Math.round(dlen*0.5)));  // 거리에 비례 — 먼 별은 더 길게
+  nav.flying=true; nav.flyT=0; nav.flyStep=1/frames;
   nav.dragging=false; nav.onArrive=onArrive||null;
 };
 
