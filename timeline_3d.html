@@ -109,6 +109,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 .bp-item a{color:var(--gray-light);text-decoration:none;border-bottom:0.5px dotted rgba(110,108,102,0.5);}
 .bp-item a:hover{color:var(--orange-pale);}
 .bp-item-text{flex:1;word-break:break-word;}
+.bp-internal{cursor:pointer;border-radius:5px;margin:0 -4px;padding-left:4px;padding-right:4px;transition:background 0.2s;}
+.bp-internal .bp-item-text{color:#8fe4dc;}
+.bp-internal:hover{background:rgba(127,224,216,0.10);}
 .bp-del{flex:none;cursor:pointer;color:rgba(110,108,102,0.6);font-size:0.85rem;line-height:1;padding:0 2px;}
 .bp-del:hover{color:var(--orange-worn);}
 /* 유튜브 카드 (음악) */
@@ -2176,6 +2179,15 @@ function bumpPhase(phaseId){
       document.getElementById('comet-phase').textContent='근접한 혜성  '+data;
   }).catch(()=>{});
 }
+function findBookByTitle(text){
+  if(!text||!BOOKS.length) return null;
+  let t=String(text).split('·')[0].trim();
+  if(/^https?:\/\//i.test(t)||!t) return null;
+  const norm=x=>x.replace(/\s+/g,'').toLowerCase();
+  const nt=norm(t);
+  for(const b of BOOKS){ if(b.title&&norm(b.title)===nt) return b; }
+  return null;
+}
 function renderLists(book){
   const d=ensureData(book);
   ['music','movie','reading'].forEach(kind=>{
@@ -2189,12 +2201,32 @@ function renderLists(book){
           +'<span class="bp-yt-title loading">불러오는 중…</span></a>'
           +'<span class="bp-del" data-i="'+i+'">×</span></div>';
       }
+      if(kind==='reading'){
+        const lk=findBookByTitle(v);
+        if(lk){
+          return '<div class="bp-item bp-internal" data-book-id="'+bpEsc(String(lk.id))+'" title="이 우주의 별 — 눌러서 건너가기">'
+            +'<span class="bp-item-text">✶ '+bpEsc(v)+'</span>'
+            +'<span class="bp-del" data-i="'+i+'">×</span></div>';
+        }
+      }
       return '<div class="bp-item"><span class="bp-item-text">'+bpLinkify(v)+'</span>'
         +'<span class="bp-del" data-i="'+i+'">×</span></div>';
     }).join('');
     el.querySelectorAll('.bp-del').forEach(x=>{
       x.addEventListener('click',()=>{ d[kind].splice(+x.dataset.i,1); panelDirty=true; renderLists(book); });
     });
+    if(kind==='reading'){
+      el.querySelectorAll('.bp-internal').forEach(it=>{
+        it.addEventListener('click',e=>{
+          if(e.target.classList.contains('bp-del')) return;
+          const target=BOOKS.find(b=>String(b.id)===it.dataset.bookId);
+          if(target&&target._p3&&window.flyTo){
+            document.getElementById('book-panel').classList.remove('visible','open');
+            window.flyTo(target, ()=>openPanel(target));
+          }
+        });
+      });
+    }
     if(kind==='music'){
       el.querySelectorAll('.bp-yt').forEach(card=>{
         const vid=ytId(d.music[+card.dataset.i]); if(!vid) return;
