@@ -698,9 +698,11 @@ function init(){
   scene.add(pts);
   window.scene=scene; window.camera=camera; window.renderer=renderer;
   window._bgPts=pts;
-  // 정·동 호흡 항법 상태 — 손 놓으면 표류, 잡으면 항해
+  // 정·동 호흡 항법 + 유성 비행 상태
   window._nav={yaw:0.35,pitch:0.22,dist:165,distTarget:165,yawV:0,pitchV:0,
-               dragging:false,interactT:performance.now()-9999,drift:1};
+               dragging:false,interactT:performance.now()-9999,drift:1,
+               center:{x:0,y:0,z:0}, flying:false, flyT:0, flyStep:1/96,
+               p0:null,pc:null,p1:null, onArrive:null};
   window.addEventListener('resize',()=>{
     camera.aspect=innerWidth/innerHeight;
     camera.updateProjectionMatrix();
@@ -709,31 +711,67 @@ function init(){
   animate();
 }
 
+function bez3(a,c,b,t){
+  const u=1-t;
+  return { x:u*u*a.x+2*u*t*c.x+t*t*b.x,
+           y:u*u*a.y+2*u*t*c.y+t*t*b.y,
+           z:u*u*a.z+2*u*t*c.z+t*t*b.z };
+}
+
 function animate(){
   requestAnimationFrame(animate);
   const t=clock.getElapsedTime();
   const nav=window._nav;
-
-  // ── 정·동의 호흡 — 손 놓으면 표류, 잡으면 항해 ──
   const now=performance.now();
-  const since=now-nav.interactT;
-  const wantDrift = nav.dragging ? 0 : Math.min(1, Math.max(0,(since-700)/2600));
-  nav.drift += (wantDrift-nav.drift)*0.02;
-  if(!nav.dragging){
-    nav.yaw   += nav.yawV;
-    nav.pitch += nav.pitchV;
-    nav.yawV  *= 0.90;
-    nav.pitchV*= 0.90;
+
+  if(nav.flying){
+    // ── 유성의 곡선 비행 ──
+    nav.flyT += nav.flyStep;
+    const t01=Math.min(1,nav.flyT);
+    const e = t01<0.5 ? 4*t01*t01*t01 : 1-Math.pow(-2*t01+2,3)/2;  // easeInOutCubic
+    const P=bez3(nav.p0,nav.pc,nav.p1,e);
+    camera.position.set(P.x,P.y,P.z);
+    // 유성의 시선 — 진행 방향을 보다가, 도착이 가까우면 별로 안착
+    const A=bez3(nav.p0,nav.pc,nav.p1,Math.min(1,e+0.04));
+    let lx=A.x,ly=A.y,lz=A.z;
+    if(t01>0.72){
+      const k=(t01-0.72)/0.28;
+      lx+=(nav.center.x-lx)*k; ly+=(nav.center.y-ly)*k; lz+=(nav.center.z-lz)*k;
+    }
+    camera.lookAt(lx,ly,lz);
+    if(t01>=1){
+      nav.flying=false;
+      // 그 별을 새 궤도 중심으로 — 도착 위치에서 yaw/pitch/dist 역산
+      const dx=camera.position.x-nav.center.x, dy=camera.position.y-nav.center.y, dz=camera.position.z-nav.center.z;
+      const rr=Math.max(1,Math.hypot(dx,dy,dz));
+      nav.yaw=Math.atan2(dx,dz);
+      nav.pitch=Math.max(-1.35,Math.min(1.35,Math.asin(dy/rr)));
+      nav.dist=nav.distTarget=rr;
+      nav.yawV=0; nav.pitchV=0; nav.drift=0;
+      nav.interactT=performance.now();
+      if(nav.onArrive){ const cb=nav.onArrive; nav.onArrive=null; cb(); }
+    }
+  } else {
+    // ── 정·동의 호흡 — 손 놓으면 표류, 잡으면 항해 ──
+    const since=now-nav.interactT;
+    const wantDrift = nav.dragging ? 0 : Math.min(1, Math.max(0,(since-700)/2600));
+    nav.drift += (wantDrift-nav.drift)*0.02;
+    if(!nav.dragging){
+      nav.yaw   += nav.yawV;
+      nav.pitch += nav.pitchV;
+      nav.yawV  *= 0.90;
+      nav.pitchV*= 0.90;
+    }
+    nav.yaw   += 0.00035*nav.drift;
+    nav.pitch += Math.sin(t*0.05)*0.00010*nav.drift;
+    nav.pitch = Math.max(-1.35, Math.min(1.35, nav.pitch));
+    nav.dist  += (nav.distTarget-nav.dist)*0.08;
+    const cd=nav.dist;
+    camera.position.x = nav.center.x + cd*Math.cos(nav.pitch)*Math.sin(nav.yaw);
+    camera.position.y = nav.center.y + cd*Math.sin(nav.pitch);
+    camera.position.z = nav.center.z + cd*Math.cos(nav.pitch)*Math.cos(nav.yaw);
+    camera.lookAt(nav.center.x,nav.center.y,nav.center.z);
   }
-  nav.yaw   += 0.00035*nav.drift;                  // 아주 느린 표류 자전
-  nav.pitch += Math.sin(t*0.05)*0.00010*nav.drift; // 미세한 끄덕임
-  nav.pitch = Math.max(-1.35, Math.min(1.35, nav.pitch));
-  nav.dist  += (nav.distTarget-nav.dist)*0.08;
-  const cd=nav.dist;
-  camera.position.x = cd*Math.cos(nav.pitch)*Math.sin(nav.yaw);
-  camera.position.y = cd*Math.sin(nav.pitch);
-  camera.position.z = cd*Math.cos(nav.pitch)*Math.cos(nav.yaw);
-  camera.lookAt(0,0,0);
 
   // ── 미지의 별 — 느린 표류 ──
   const pos=pts.geometry.attributes.position.array;
@@ -905,6 +943,35 @@ function pickBook(mx,my){
   if(hits.length){ return BOOKS[hits[0].index]||null; }
   return null;
 }
+
+// ── 유성의 곡선 비행 시작 ──
+window.flyTo=function(book,onArrive){
+  const nav=window._nav, cam=window.camera;
+  if(!book||!book._p3||!cam){ if(onArrive) onArrive(); return; }
+  const star=book._p3;
+  const p0={x:cam.position.x,y:cam.position.y,z:cam.position.z};
+  const arrive=42;                       // 도착 시 별로부터의 거리
+  let ax=p0.x-star.x, ay=p0.y-star.y, az=p0.z-star.z;
+  let al=Math.hypot(ax,ay,az);
+  if(al<1){ ax=0; ay=0.2; az=1; al=Math.hypot(ax,ay,az); }  // 이미 별 위면 임의 방향
+  ax/=al; ay/=al; az/=al;
+  const p1={x:star.x+ax*arrive, y:star.y+ay*arrive, z:star.z+az*arrive};
+  const mid={x:(p0.x+p1.x)/2, y:(p0.y+p1.y)/2, z:(p0.z+p1.z)/2};
+  const dx=p1.x-p0.x, dy=p1.y-p0.y, dz=p1.z-p0.z;
+  const dlen=Math.max(1,Math.hypot(dx,dy,dz));
+  // 진행방향 × up(0,1,0) = (-dz,0,dx) → 수평 수직벡터로 휨
+  let px=-dz, pz=dx;
+  const pl=Math.hypot(px,pz)||1; px/=pl; pz/=pl;
+  const rnd=seededRand(book.id*977+13);
+  const side=(rnd()<0.5?-1:1);
+  const bend=dlen*0.22;                   // 멀수록 크게 휘고, 가까우면 거의 직진
+  const lift=dlen*0.10*(0.5+rnd()*0.6);
+  nav.pc={x:mid.x+px*bend*side, y:mid.y+lift, z:mid.z+pz*bend*side};
+  nav.p0=p0; nav.p1=p1;
+  nav.center={x:star.x, y:star.y, z:star.z};
+  nav.flying=true; nav.flyT=0; nav.flyStep=1/96;  // ~1.6초
+  nav.dragging=false; nav.onArrive=onArrive||null;
+};
 
 fetch('books.json')
   .then(r=>r.json())
@@ -1444,6 +1511,7 @@ PHASES.forEach((phase,i)=>{
 let isDragging=false, mdX=0, mdY=0, mdT=0, lastMX=0, lastMY=0;
 
 tlCanvas.addEventListener('mousedown',e=>{
+  if(window._nav.flying) return;
   isDragging=true; mdX=lastMX=e.clientX; mdY=lastMY=e.clientY; mdT=Date.now();
   const nav=window._nav; nav.dragging=true; nav.interactT=performance.now();
   nav.yawV=0; nav.pitchV=0;
@@ -1472,6 +1540,7 @@ window.addEventListener('mouseup',e=>{
 });
 tlCanvas.addEventListener('wheel',e=>{
   e.preventDefault();
+  if(window._nav.flying) return;
   const nav=window._nav;
   nav.distTarget=Math.max(70,Math.min(280, nav.distTarget+e.deltaY*0.12));
   nav.interactT=performance.now();
@@ -1480,6 +1549,7 @@ tlCanvas.addEventListener('wheel',e=>{
 // 터치 — 한 손가락 회전, 탭으로 픽
 let tDX=0,tDY=0,tDT=0,tLX=0,tLY=0;
 tlCanvas.addEventListener('touchstart',e=>{
+  if(window._nav.flying) return;
   const tch=e.touches[0];
   tDX=tLX=tch.clientX; tDY=tLY=tch.clientY; tDT=Date.now();
   const nav=window._nav; nav.dragging=true; nav.interactT=performance.now();
@@ -2286,15 +2356,12 @@ whenSB(bumpSite);
     if(panelBook && panelBook!==book) flushPanel();
     pinnedBook=book; hoveredBook=book;
     if(typeof refreshFocus==='function') refreshFocus();
-    // (2단계: 여기에 유성 곡선 비행이 들어옴) — 지금은 카메라를 그 별 방향으로 향함
-    if(book._p3){
-      const p=book._p3, nav=window._nav;
-      nav.yaw=Math.atan2(p.x,p.z);
-      const r=Math.max(1,Math.hypot(p.x,p.y,p.z));
-      nav.pitch=Math.max(-1.2,Math.min(1.2,Math.asin(p.y/r)));
-      nav.interactT=performance.now();
+    // 유성의 곡선 비행 — 그 별로 날아가 도착하면 패널이 열림
+    if(book._p3 && window.flyTo){
+      window.flyTo(book, ()=>openPanel(book));
+    } else {
+      openPanel(book);
     }
-    openPanel(book);
   }
   window.selectBook=selectBook;
 
