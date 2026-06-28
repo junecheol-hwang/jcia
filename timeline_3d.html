@@ -427,11 +427,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
     <div id="header-title"></div>
   </div>
 
-  <div id="syn-gauges" style="position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:300;display:flex;gap:20px;padding:9px 20px;background:rgba(8,12,20,0.85);border:0.5px solid rgba(150,180,220,0.35);border-radius:0 0 12px 12px;font-family:sans-serif;font-size:11px;color:#cfe0f5;pointer-events:auto;-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);letter-spacing:0.03em;">
-    <label style="display:flex;flex-direction:column;gap:4px;align-items:center;">가닥 수 <span id="sg-count-v">3</span><input id="sg-count" type="range" min="1" max="8" step="1" value="3" style="width:110px;"></label>
-    <label style="display:flex;flex-direction:column;gap:4px;align-items:center;">수명(초) <span id="sg-life-v">2.4</span><input id="sg-life" type="range" min="0.8" max="5" step="0.1" value="2.4" style="width:110px;"></label>
-    <label style="display:flex;flex-direction:column;gap:4px;align-items:center;">이어짐 간격(초) <span id="sg-gap-v">0.0</span><input id="sg-gap" type="range" min="0" max="2" step="0.1" value="0" style="width:110px;"></label>
-  </div>
   <canvas id="tl-canvas"></canvas>
   <div id="scroll-hint">← scroll →</div>
   <div id="nav"></div>
@@ -795,7 +790,7 @@ function animate(){
   // ── 책 별 반짝임 ──
   if(window._bookMat) window._bookMat.uniforms.uTime.value=t;
   // ── 시냅스 점화 ──
-  if(window.updateSynapses) window.updateSynapses(now);
+  if(window._web) window._web.mat.uniforms.uTime.value=t;
 
   renderer.render(scene,camera);
 }
@@ -945,108 +940,69 @@ function buildBookStars(){
   nav.pitch = Math.max(-1.0, Math.min(1.0, Math.asin(vy/vl)));
   nav.interactT = performance.now()-9999;
 
-  buildSynapses();   // 시냅스 점화 시작
+  buildWeb();   // 그물망 생성
 }
 
-// ── 시냅스(우연의 점화) — 늘 두세 가닥이 별 사이에서 숨 쉼 ──
-const SYN_COLORS=[ [0.30,0.88,0.82], [0.88,0.36,0.82] ];  // 청록 · 자홍
-window._synTune={ count:3, life:2.4, gap:0 };  // 게이지(셋팅 후 제거 예정)
-function buildSynapses(){
+// ── 살아 숨 쉬는 그물망 — 별마다 가까운 이웃을 잇고, 밝기 파동만 흐름 ──
+function buildWeb(){
   const THREE=window.THREE;
-  if(!THREE||!window.scene||!window._bookPts) return;
-  const MAX=8, PTS=22, TOT=MAX*PTS;
-  const pos=new Float32Array(TOT*3);
-  const col=new Float32Array(TOT*3);
-  const alp=new Float32Array(TOT);
+  if(!THREE||!window.scene||!BOOKS.length) return;
+  const K=5, SEG=9;
+  const edges=[]; const seen=new Set();
+  for(let i=0;i<BOOKS.length;i++){
+    const A=BOOKS[i]; if(!A._p3) continue;
+    const ds=[];
+    for(let j=0;j<BOOKS.length;j++){
+      if(i===j) continue; const B=BOOKS[j]; if(!B._p3) continue;
+      const dx=B._p3.x-A._p3.x,dy=B._p3.y-A._p3.y,dz=B._p3.z-A._p3.z;
+      ds.push({j,d2:dx*dx+dy*dy+dz*dz});
+    }
+    ds.sort((x,y)=>x.d2-y.d2);
+    for(let k=0;k<Math.min(K,ds.length);k++){
+      const j=ds[k].j, key=i<j?i+'_'+j:j+'_'+i;
+      if(seen.has(key)) continue; seen.add(key);
+      edges.push([A._p3, BOOKS[j]._p3]);
+    }
+  }
+  const TOT=edges.length*SEG;
+  const pos=new Float32Array(TOT*3), ph=new Float32Array(TOT);
+  let p=0;
+  for(const e of edges){
+    const a=e[0], b=e[1];
+    const eph=(a.x+a.y+a.z+b.x+b.y+b.z)*0.04 + Math.random()*6.283;
+    for(let sg=0;sg<SEG;sg++){
+      const tt=sg/(SEG-1);
+      pos[p*3]=a.x+(b.x-a.x)*tt; pos[p*3+1]=a.y+(b.y-a.y)*tt; pos[p*3+2]=a.z+(b.z-a.z)*tt;
+      ph[p]=eph; p++;
+    }
+  }
   const g=new THREE.BufferGeometry();
   g.setAttribute('position',new THREE.BufferAttribute(pos,3));
-  g.setAttribute('aColor',new THREE.BufferAttribute(col,3));
-  g.setAttribute('aAlpha',new THREE.BufferAttribute(alp,1));
+  g.setAttribute('aPhase',new THREE.BufferAttribute(ph,1));
   const m=new THREE.ShaderMaterial({
-    uniforms:{ uTex:{value:window._bookTex||null} },
+    uniforms:{ uTex:{value:window._bookTex||null}, uTime:{value:0} },
     vertexShader:`
-      attribute vec3 aColor; attribute float aAlpha;
-      varying vec3 vC; varying float vA;
-      void main(){ vC=aColor; vA=aAlpha;
+      attribute float aPhase; varying float vW; uniform float uTime;
+      void main(){
+        vW=0.5+0.5*sin(uTime*0.5+aPhase);
         vec4 mv=modelViewMatrix*vec4(position,1.0);
-        gl_PointSize=4.6*(360.0/-mv.z);
-        gl_Position=projectionMatrix*mv; }`,
+        gl_PointSize=3.2*(360.0/-mv.z);
+        gl_Position=projectionMatrix*mv;
+      }`,
     fragmentShader:`
-      uniform sampler2D uTex; varying vec3 vC; varying float vA;
-      void main(){ gl_FragColor=vec4(vC,vA)*texture2D(uTex,gl_PointCoord); }`,
+      uniform sampler2D uTex; varying float vW;
+      void main(){
+        vec3 teal=vec3(0.30,0.85,0.82), mag=vec3(0.80,0.40,0.82);
+        vec3 c=mix(teal,mag,vW*0.45);
+        float a=0.10+0.42*vW;
+        gl_FragColor=vec4(c,a)*texture2D(uTex,gl_PointCoord);
+      }`,
     blending:THREE.AdditiveBlending, depthTest:false, depthWrite:false, transparent:true
   });
   const pts=new THREE.Points(g,m); pts.frustumCulled=false;
   window.scene.add(pts);
-  window._syn={ pts, geo:g, pos, col, alp, MAX, PTS, strands:new Array(MAX).fill(null) };
+  window._web={ pts, mat:m };
 }
-function spawnStrand(slot){
-  const syn=window._syn; if(!syn||!BOOKS.length) return;
-  const A=BOOKS[Math.floor(Math.random()*BOOKS.length)];
-  if(!A._p3) return;
-  const ap=A._p3;
-  let near=[];
-  for(const b of BOOKS){
-    if(b===A||!b._p3) continue;
-    const dx=b._p3.x-ap.x, dy=b._p3.y-ap.y, dz=b._p3.z-ap.z;
-    const d2=dx*dx+dy*dy+dz*dz;
-    if(d2<900) near.push(b);              // 거리 < 30 (가까운 별)
-  }
-  if(!near.length){
-    let best=null,bd=1e9;
-    for(const b of BOOKS){ if(b===A||!b._p3)continue; const dx=b._p3.x-ap.x,dy=b._p3.y-ap.y,dz=b._p3.z-ap.z; const d2=dx*dx+dy*dy+dz*dz; if(d2<bd){bd=d2;best=b;} }
-    if(best) near=[best];
-  }
-  if(!near.length) return;
-  const C=near[Math.floor(Math.random()*near.length)];
-  const col=SYN_COLORS[Math.floor(Math.random()*SYN_COLORS.length)];
-  const mid={x:(ap.x+C._p3.x)/2, y:(ap.y+C._p3.y)/2, z:(ap.z+C._p3.z)/2};
-  const off=()=>(Math.random()-0.5)*7;
-  const lf=(window._synTune?window._synTune.life:2.4)*1000;
-  syn.strands[slot]={ a:ap, c:{x:mid.x+off(),y:mid.y+off(),z:mid.z+off()}, b:C._p3,
-                      t0:performance.now(), life:lf*(0.6+Math.random()*0.8), col, deadAt:0 };
-}
-window.updateSynapses=function(now){
-  const syn=window._syn; if(!syn) return;
-  const tune=window._synTune||{count:3,life:2.4,gap:0};
-  for(let s=0;s<syn.MAX;s++){
-    if(s>=tune.count){ for(let i=0;i<syn.PTS;i++) syn.alp[s*syn.PTS+i]=0; syn.strands[s]=null; continue; }
-    let st=syn.strands[s];
-    if(!st){ spawnStrand(s); st=syn.strands[s]; if(!st){ for(let i=0;i<syn.PTS;i++) syn.alp[s*syn.PTS+i]=0; continue; } }
-    const age=(now-st.t0)/st.life;
-    if(age>=1){
-      if(!st.deadAt) st.deadAt=now;
-      if(now-st.deadAt >= tune.gap*1000){ spawnStrand(s); st=syn.strands[s]; if(!st) continue; }
-      else { for(let i=0;i<syn.PTS;i++) syn.alp[s*syn.PTS+i]=0; continue; }
-    }
-    const a2=(now-st.t0)/st.life;
-    const env=Math.sin(Math.min(1,a2)*Math.PI);
-    const head=a2;
-    for(let i=0;i<syn.PTS;i++){
-      const idx=s*syn.PTS+i, tt=i/(syn.PTS-1), u=1-tt;
-      syn.pos[idx*3]  =u*u*st.a.x+2*u*tt*st.c.x+tt*tt*st.b.x;
-      syn.pos[idx*3+1]=u*u*st.a.y+2*u*tt*st.c.y+tt*tt*st.b.y;
-      syn.pos[idx*3+2]=u*u*st.a.z+2*u*tt*st.c.z+tt*tt*st.b.z;
-      const flow=Math.max(0, 1-Math.abs(tt-head)*3.5);
-      syn.alp[idx]=env*(0.32+0.68*flow);
-      syn.col[idx*3]=st.col[0]; syn.col[idx*3+1]=st.col[1]; syn.col[idx*3+2]=st.col[2];
-    }
-  }
-  syn.geo.attributes.position.needsUpdate=true;
-  syn.geo.attributes.aAlpha.needsUpdate=true;
-  syn.geo.attributes.aColor.needsUpdate=true;
-};
-
-(function initSynGauges(){
-  const gc=document.getElementById('sg-count'), gl=document.getElementById('sg-life'), gg=document.getElementById('sg-gap');
-  if(!gc||!gl||!gg) return;
-  const vc=document.getElementById('sg-count-v'), vl=document.getElementById('sg-life-v'), vg=document.getElementById('sg-gap-v');
-  function up(){
-    window._synTune.count=+gc.value; window._synTune.life=+gl.value; window._synTune.gap=+gg.value;
-    vc.textContent=gc.value; vl.textContent=(+gl.value).toFixed(1); vg.textContent=(+gg.value).toFixed(1);
-  }
-  gc.addEventListener('input',up); gl.addEventListener('input',up); gg.addEventListener('input',up); up();
-})();
 
 // ── 3D → 화면 좌표 투영 (라벨용) ──
 function project3d(p){
