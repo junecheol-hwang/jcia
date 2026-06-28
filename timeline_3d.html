@@ -789,6 +789,8 @@ function animate(){
 
   // ── 책 별 반짝임 ──
   if(window._bookMat) window._bookMat.uniforms.uTime.value=t;
+  // ── 시냅스 점화 ──
+  if(window.updateSynapses) window.updateSynapses(now);
 
   renderer.render(scene,camera);
 }
@@ -937,7 +939,90 @@ function buildBookStars(){
   nav.yaw   = Math.atan2(vx, vz);
   nav.pitch = Math.max(-1.0, Math.min(1.0, Math.asin(vy/vl)));
   nav.interactT = performance.now()-9999;
+
+  buildSynapses();   // 시냅스 점화 시작
 }
+
+// ── 시냅스(우연의 점화) — 늘 두세 가닥이 별 사이에서 숨 쉼 ──
+const SYN_COLORS=[ [0.30,0.88,0.82], [0.88,0.36,0.82] ];  // 청록 · 자홍
+function buildSynapses(){
+  const THREE=window.THREE;
+  if(!THREE||!window.scene||!window._bookPts) return;
+  const MAX=3, PTS=22, TOT=MAX*PTS;
+  const pos=new Float32Array(TOT*3);
+  const col=new Float32Array(TOT*3);
+  const alp=new Float32Array(TOT);
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  g.setAttribute('aColor',new THREE.BufferAttribute(col,3));
+  g.setAttribute('aAlpha',new THREE.BufferAttribute(alp,1));
+  const m=new THREE.ShaderMaterial({
+    uniforms:{ uTex:{value:window._bookTex||null} },
+    vertexShader:`
+      attribute vec3 aColor; attribute float aAlpha;
+      varying vec3 vC; varying float vA;
+      void main(){ vC=aColor; vA=aAlpha;
+        vec4 mv=modelViewMatrix*vec4(position,1.0);
+        gl_PointSize=4.6*(360.0/-mv.z);
+        gl_Position=projectionMatrix*mv; }`,
+    fragmentShader:`
+      uniform sampler2D uTex; varying vec3 vC; varying float vA;
+      void main(){ gl_FragColor=vec4(vC,vA)*texture2D(uTex,gl_PointCoord); }`,
+    blending:THREE.AdditiveBlending, depthTest:false, depthWrite:false, transparent:true
+  });
+  const pts=new THREE.Points(g,m); pts.frustumCulled=false;
+  window.scene.add(pts);
+  window._syn={ pts, geo:g, pos, col, alp, MAX, PTS, strands:new Array(MAX).fill(null) };
+  for(let i=0;i<MAX;i++) spawnStrand(i);
+}
+function spawnStrand(slot){
+  const syn=window._syn; if(!syn||!BOOKS.length) return;
+  const A=BOOKS[Math.floor(Math.random()*BOOKS.length)];
+  if(!A._p3) return;
+  const ap=A._p3;
+  let near=[];
+  for(const b of BOOKS){
+    if(b===A||!b._p3) continue;
+    const dx=b._p3.x-ap.x, dy=b._p3.y-ap.y, dz=b._p3.z-ap.z;
+    const d2=dx*dx+dy*dy+dz*dz;
+    if(d2<900) near.push(b);              // 거리 < 30 (가까운 별)
+  }
+  if(!near.length){
+    let best=null,bd=1e9;
+    for(const b of BOOKS){ if(b===A||!b._p3)continue; const dx=b._p3.x-ap.x,dy=b._p3.y-ap.y,dz=b._p3.z-ap.z; const d2=dx*dx+dy*dy+dz*dz; if(d2<bd){bd=d2;best=b;} }
+    if(best) near=[best];
+  }
+  if(!near.length) return;
+  const C=near[Math.floor(Math.random()*near.length)];
+  const col=SYN_COLORS[Math.floor(Math.random()*SYN_COLORS.length)];
+  const mid={x:(ap.x+C._p3.x)/2, y:(ap.y+C._p3.y)/2, z:(ap.z+C._p3.z)/2};
+  const off=()=>(Math.random()-0.5)*7;
+  syn.strands[slot]={ a:ap, c:{x:mid.x+off(),y:mid.y+off(),z:mid.z+off()}, b:C._p3,
+                      t0:performance.now(), life:1500+Math.random()*1900, col };
+}
+window.updateSynapses=function(now){
+  const syn=window._syn; if(!syn) return;
+  for(let s=0;s<syn.MAX;s++){
+    const st=syn.strands[s];
+    if(!st){ spawnStrand(s); continue; }
+    const age=(now-st.t0)/st.life;
+    if(age>=1){ spawnStrand(s); continue; }
+    const env=Math.sin(age*Math.PI);     // 점화 → 소멸 (0→1→0)
+    const head=age;                      // 빛이 곡선을 따라 흐름
+    for(let i=0;i<syn.PTS;i++){
+      const idx=s*syn.PTS+i, tt=i/(syn.PTS-1), u=1-tt;
+      syn.pos[idx*3]  =u*u*st.a.x+2*u*tt*st.c.x+tt*tt*st.b.x;
+      syn.pos[idx*3+1]=u*u*st.a.y+2*u*tt*st.c.y+tt*tt*st.b.y;
+      syn.pos[idx*3+2]=u*u*st.a.z+2*u*tt*st.c.z+tt*tt*st.b.z;
+      const flow=Math.max(0, 1-Math.abs(tt-head)*3.5);
+      syn.alp[idx]=env*(0.32+0.68*flow);
+      syn.col[idx*3]=st.col[0]; syn.col[idx*3+1]=st.col[1]; syn.col[idx*3+2]=st.col[2];
+    }
+  }
+  syn.geo.attributes.position.needsUpdate=true;
+  syn.geo.attributes.aAlpha.needsUpdate=true;
+  syn.geo.attributes.aColor.needsUpdate=true;
+};
 
 // ── 3D → 화면 좌표 투영 (라벨용) ──
 function project3d(p){
