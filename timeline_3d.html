@@ -731,17 +731,11 @@ function animate(){
     const e=ftt*ftt*ftt*(ftt*(ftt*6-15)+10);  // smootherstep
     const L=bez3(nav.p0,nav.pc,nav.p1,e);      // 빛 점(앞서가는 시점)
 
-    // 궤적 — 출발점에서 현재까지
+    // 궤적 — 경로는 이미 깔려 있고, 빛 머리 위치(uHead)만 갱신
     const ft=window._flyTrail;
     if(ft){
-      for(let i=0;i<ft.N;i++){
-        const tt=(i/(ft.N-1))*e;
-        const Q=bez3(nav.p0,nav.pc,nav.p1,tt);
-        ft.pos[i*3]=Q.x; ft.pos[i*3+1]=Q.y; ft.pos[i*3+2]=Q.z;
-      }
-      ft.geo.attributes.position.needsUpdate=true;
-      ft.geo.setDrawRange(0,ft.N);
-      ft.mat.opacity=0.85*Math.min(1,ftt/0.1)*Math.min(1,(1-ftt)/0.1+0.0001);
+      ft.mat.uniforms.uHead.value=e;
+      ft.mat.uniforms.uOpacity.value=0.95*Math.min(1,ftt/0.08)*Math.min(1,(1-ftt)/0.12+0.0001);
     }
     const fp=window._flyPoint;
     if(fp){
@@ -975,13 +969,32 @@ function buildBookStars(){
 function buildFlyFx(){
   const THREE=window.THREE;
   if(!THREE||!window.scene) return;
-  const TN=72;
+  const TN=96;
   const tg=new THREE.BufferGeometry();
   const tp=new Float32Array(TN*3);
+  const tprog=new Float32Array(TN);
+  for(let i=0;i<TN;i++) tprog[i]=i/(TN-1);
   tg.setAttribute('position',new THREE.BufferAttribute(tp,3));
-  const tm=new THREE.PointsMaterial({size:5.5, sizeAttenuation:true, transparent:true, opacity:0.0,
-            map:window._bookTex||null, color:0x9ad8ff,
-            blending:THREE.AdditiveBlending, depthTest:false, depthWrite:false});
+  tg.setAttribute('prog',new THREE.BufferAttribute(tprog,1));
+  const tm=new THREE.ShaderMaterial({
+    uniforms:{ uHead:{value:0}, uTex:{value:window._bookTex||null}, uColor:{value:new THREE.Color(0x9ad8ff)}, uOpacity:{value:0} },
+    vertexShader:`
+      attribute float prog; varying float vA; uniform float uHead;
+      void main(){
+        float behind=step(prog,uHead);                       // 지나간 길
+        float d=uHead-prog;
+        float tail=behind*clamp(1.0-d*1.5,0.0,1.0);          // 꼬리 — 머리 가까울수록 밝게
+        float ahead=(1.0-behind)*0.16;                       // 앞길 은은
+        vA=max(tail,ahead);
+        vec4 mv=modelViewMatrix*vec4(position,1.0);
+        gl_PointSize=7.0*(360.0/-mv.z)*(0.55+vA);
+        gl_Position=projectionMatrix*mv;
+      }`,
+    fragmentShader:`
+      uniform sampler2D uTex; uniform vec3 uColor; uniform float uOpacity; varying float vA;
+      void main(){ gl_FragColor=vec4(uColor,vA*uOpacity)*texture2D(uTex,gl_PointCoord); }`,
+    blending:THREE.AdditiveBlending, depthTest:false, depthWrite:false, transparent:true
+  });
   const trail=new THREE.Points(tg,tm);
   trail.frustumCulled=false; trail.visible=false;
   window.scene.add(trail);
@@ -1048,7 +1061,18 @@ window.flyTo=function(book,onArrive){
   nav.flying=true; nav.flyT=0; nav.flyStep=1/frames;
   nav.dragging=false; nav.onArrive=onArrive||null;
   if(window._flyPoint) window._flyPoint.pts.visible=true;
-  if(window._flyTrail) window._flyTrail.line.visible=true;
+  const ftL=window._flyTrail;
+  if(ftL){
+    for(let i=0;i<ftL.N;i++){
+      const tt=i/(ftL.N-1), u=1-tt;
+      ftL.pos[i*3]  =u*u*p0.x+2*u*tt*nav.pc.x+tt*tt*p1.x;
+      ftL.pos[i*3+1]=u*u*p0.y+2*u*tt*nav.pc.y+tt*tt*p1.y;
+      ftL.pos[i*3+2]=u*u*p0.z+2*u*tt*nav.pc.z+tt*tt*p1.z;
+    }
+    ftL.geo.attributes.position.needsUpdate=true;
+    ftL.mat.uniforms.uHead.value=0;
+    ftL.line.visible=true;
+  }
 };
 
 fetch('books.json')
