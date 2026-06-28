@@ -878,6 +878,16 @@ function buildBookStars(){
 
   bookRay=new THREE.Raycaster();
   bookRay.params.Points.threshold=2.6;
+
+  // ── 성단 안에서 깨어나기 — 가장 촘촘한 무리 곁에서 시작 (시드 고정) ──
+  let startNeb=NEB_SEEDS[0];
+  for(const s of NEB_SEEDS) if(s.w<startNeb.w) startNeb=s;  // w 작을수록 촘촘
+  const mr=Math.hypot(startNeb.x,startNeb.y,startNeb.z);
+  const nav=window._nav;
+  nav.yaw   = Math.atan2(startNeb.x, startNeb.z);
+  nav.pitch = Math.max(-1.0, Math.min(1.0, Math.asin(startNeb.y/Math.max(1,mr))));
+  nav.dist  = nav.distTarget = Math.max(34, mr*0.6);  // 별들 사이에서 — 줌아웃하면 전체 성운
+  nav.interactT = performance.now()-9999;
 }
 
 // ── 3D → 화면 좌표 투영 (라벨용) ──
