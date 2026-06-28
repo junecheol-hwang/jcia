@@ -597,7 +597,7 @@ import * as THREE from 'three';
 window.THREE=THREE;
 const container=document.getElementById('three-container');
 const clock=new THREE.Clock();
-const N=7000;
+const N=10000;
 const basePos=new Float32Array(N*3);
 const sizes  =new Float32Array(N);
 const colors =new Float32Array(N*3);
@@ -625,7 +625,7 @@ function init(){
     basePos[i3]=x; basePos[i3+1]=y; basePos[i3+2]=z;
     const df=1-Math.abs(z)/280*0.6;
     // 미지의 별 — 아직 이름 없는, 어둑하고 차갑게 잠든 별들
-    const bright=(0.20+df*0.42)*0.9;
+    const bright=(0.28+df*0.50)*1.0;
     const tint=Math.random();
     // 차가운 청회색 — 불 밝히지 못한 가능태
     colors[i3]  =(0.56+tint*0.14)*bright;
