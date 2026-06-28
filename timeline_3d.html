@@ -755,9 +755,9 @@ function animate(){
     const Lh=bez3(nav.p0,nav.pc,nav.p1,Math.min(1,e+0.02));
     let tx=Lh.x-L.x, ty=Lh.y-L.y, tz=Lh.z-L.z;
     const tl=Math.hypot(tx,ty,tz)||1; tx/=tl; ty/=tl; tz/=tl;
-    // 빛 한 발 뒤 + 살짝 위에서 추격
-    const follow=16, lift=5;
-    const obs={x:L.x-tx*follow, y:L.y-ty*follow+lift, z:L.z-tz*follow};
+    // 빛이 지나간 그 길 위, 한 발 뒤에서 정면으로 쫓음 (위로 들어올리지 않음)
+    const follow=18;
+    const obs={x:L.x-tx*follow, y:L.y-ty*follow, z:L.z-tz*follow};
 
     // 이음매 — 시작/끝 12% 부드럽게
     const sm=(k)=>k*k*(3-2*k);
