@@ -427,6 +427,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
     <div id="header-title"></div>
   </div>
 
+  <div id="fly-gauges" style="position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:300;display:flex;gap:20px;padding:9px 20px;background:rgba(8,12,20,0.85);border:0.5px solid rgba(150,180,220,0.35);border-radius:0 0 12px 12px;font-family:sans-serif;font-size:11px;color:#cfe0f5;pointer-events:auto;-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);letter-spacing:0.03em;">
+    <label style="display:flex;flex-direction:column;gap:4px;align-items:center;">꼬리 길이 <span id="g-tail-v">1.50</span><input id="g-tail" type="range" min="0.2" max="4" step="0.05" value="1.5" style="width:120px;"></label>
+    <label style="display:flex;flex-direction:column;gap:4px;align-items:center;">앞길 밝기 <span id="g-ahead-v">0.16</span><input id="g-ahead" type="range" min="0" max="1.5" step="0.02" value="0.16" style="width:120px;"></label>
+    <label style="display:flex;flex-direction:column;gap:4px;align-items:center;">빛 속도 <span id="g-speed-v">1.00</span><input id="g-speed" type="range" min="0.3" max="2.5" step="0.05" value="1.0" style="width:120px;"></label>
+  </div>
   <canvas id="tl-canvas"></canvas>
   <div id="scroll-hint">← scroll →</div>
   <div id="nav"></div>
@@ -753,26 +758,28 @@ function animate(){
     const follow=18;
     const obs={x:L.x-tx*follow, y:L.y-ty*follow, z:L.z-tz*follow};
 
-    // 이음매 — 시작/끝 12% 부드럽게
+    // 이음매 — 시작 12%는 1인칭→추격, 도착부는 위치는 빛 뒤 그대로 두고 시선만 별로
     const sm=(k)=>k*k*(3-2*k);
     let camP, look;
     if(ftt<0.12){
       const k=sm(ftt/0.12);
       camP={x:nav.flyStart.x+(obs.x-nav.flyStart.x)*k, y:nav.flyStart.y+(obs.y-nav.flyStart.y)*k, z:nav.flyStart.z+(obs.z-nav.flyStart.z)*k};
       look={x:nav.flyStartLook.x+(L.x-nav.flyStartLook.x)*k, y:nav.flyStartLook.y+(L.y-nav.flyStartLook.y)*k, z:nav.flyStartLook.z+(L.z-nav.flyStartLook.z)*k};
-    } else if(ftt>0.88){
-      const k=sm((ftt-0.88)/0.12);
-      camP={x:obs.x+(nav.flyEnd.x-obs.x)*k, y:obs.y+(nav.flyEnd.y-obs.y)*k, z:obs.z+(nav.flyEnd.z-obs.z)*k};
-      look={x:L.x+(nav.center.x-L.x)*k, y:L.y+(nav.center.y-L.y)*k, z:L.z+(nav.center.z-L.z)*k};
     } else {
-      camP=obs; look={x:L.x,y:L.y,z:L.z};
+      camP=obs;
+      if(ftt>0.84){
+        const k=sm((ftt-0.84)/0.16);
+        look={x:L.x+(nav.center.x-L.x)*k, y:L.y+(nav.center.y-L.y)*k, z:L.z+(nav.center.z-L.z)*k};
+      } else {
+        look={x:L.x,y:L.y,z:L.z};
+      }
     }
     camera.position.set(camP.x,camP.y,camP.z);
     camera.lookAt(look.x,look.y,look.z);
 
     if(ftt>=1){
       nav.flying=false;
-      nav.pos={x:nav.p1.x, y:nav.p1.y, z:nav.p1.z};
+      nav.pos={x:obs.x, y:obs.y, z:obs.z};   // 빛 뒤 그 자리에 머묾
       const vx=nav.center.x-nav.pos.x, vy=nav.center.y-nav.pos.y, vz=nav.center.z-nav.pos.z;
       const vl=Math.max(1,Math.hypot(vx,vy,vz));
       nav.yaw=Math.atan2(vx,vz);
@@ -977,17 +984,18 @@ function buildFlyFx(){
   tg.setAttribute('position',new THREE.BufferAttribute(tp,3));
   tg.setAttribute('prog',new THREE.BufferAttribute(tprog,1));
   const tm=new THREE.ShaderMaterial({
-    uniforms:{ uHead:{value:0}, uTex:{value:window._bookTex||null}, uColor:{value:new THREE.Color(0x9ad8ff)}, uOpacity:{value:0} },
+    uniforms:{ uHead:{value:0}, uTex:{value:window._bookTex||null}, uColor:{value:new THREE.Color(0x9ad8ff)}, uOpacity:{value:0}, uTailLen:{value:1.5}, uAhead:{value:0.16}, uSize:{value:7.0} },
     vertexShader:`
-      attribute float prog; varying float vA; uniform float uHead;
+      attribute float prog; varying float vA;
+      uniform float uHead; uniform float uTailLen; uniform float uAhead; uniform float uSize;
       void main(){
-        float behind=step(prog,uHead);                       // 지나간 길
+        float behind=step(prog,uHead);
         float d=uHead-prog;
-        float tail=behind*clamp(1.0-d*1.5,0.0,1.0);          // 꼬리 — 머리 가까울수록 밝게
-        float ahead=(1.0-behind)*0.16;                       // 앞길 은은
+        float tail=behind*clamp(1.0-d*uTailLen,0.0,1.0);
+        float ahead=(1.0-behind)*uAhead;
         vA=max(tail,ahead);
         vec4 mv=modelViewMatrix*vec4(position,1.0);
-        gl_PointSize=7.0*(360.0/-mv.z)*(0.55+vA);
+        gl_PointSize=uSize*(360.0/-mv.z)*(0.55+vA);
         gl_Position=projectionMatrix*mv;
       }`,
     fragmentShader:`
@@ -1009,6 +1017,21 @@ function buildFlyFx(){
   window.scene.add(pt);
   window._flyPoint={pts:pt, geo:pg, mat:pm};
 }
+
+// ── 비행 튜닝 게이지 (셋팅 후 제거 예정) ──
+window._flyTune={tailLen:1.5, ahead:0.16, speed:1.0};
+(function initGauges(){
+  const gt=document.getElementById('g-tail'), ga=document.getElementById('g-ahead'), gs=document.getElementById('g-speed');
+  if(!gt||!ga||!gs) return;
+  const vt=document.getElementById('g-tail-v'), va=document.getElementById('g-ahead-v'), vs=document.getElementById('g-speed-v');
+  function up(){
+    window._flyTune.tailLen=+gt.value; window._flyTune.ahead=+ga.value; window._flyTune.speed=+gs.value;
+    vt.textContent=(+gt.value).toFixed(2); va.textContent=(+ga.value).toFixed(2); vs.textContent=(+gs.value).toFixed(2);
+    if(window._flyTrail){ window._flyTrail.mat.uniforms.uTailLen.value=+gt.value; window._flyTrail.mat.uniforms.uAhead.value=+ga.value; }
+  }
+  gt.addEventListener('input',up); ga.addEventListener('input',up); gs.addEventListener('input',up);
+  up();
+})();
 
 // ── 3D → 화면 좌표 투영 (라벨용) ──
 function project3d(p){
@@ -1057,7 +1080,8 @@ window.flyTo=function(book,onArrive){
   nav.flyStartLook={x:nav.pos.x+sdx, y:nav.pos.y+sdy, z:nav.pos.z+sdz};
   nav.flyEnd={x:p1.x, y:p1.y, z:p1.z};
   nav.flyDlen=dlen;
-  const frames=Math.max(150, Math.min(340, Math.round(dlen*0.9)));  // 거리에 비례, 느리게 음미
+  const sp=(window._flyTune&&window._flyTune.speed)||1;
+  const frames=Math.max(60, Math.min(600, Math.round(dlen*0.9/sp)));  // 게이지 속도 반영
   nav.flying=true; nav.flyT=0; nav.flyStep=1/frames;
   nav.dragging=false; nav.onArrive=onArrive||null;
   if(window._flyPoint) window._flyPoint.pts.visible=true;
