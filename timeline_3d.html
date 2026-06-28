@@ -427,6 +427,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
     <div id="header-title"></div>
   </div>
 
+  <div id="syn-gauges" style="position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:300;display:flex;gap:20px;padding:9px 20px;background:rgba(8,12,20,0.85);border:0.5px solid rgba(150,180,220,0.35);border-radius:0 0 12px 12px;font-family:sans-serif;font-size:11px;color:#cfe0f5;pointer-events:auto;-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);letter-spacing:0.03em;">
+    <label style="display:flex;flex-direction:column;gap:4px;align-items:center;">가닥 수 <span id="sg-count-v">3</span><input id="sg-count" type="range" min="1" max="8" step="1" value="3" style="width:110px;"></label>
+    <label style="display:flex;flex-direction:column;gap:4px;align-items:center;">수명(초) <span id="sg-life-v">2.4</span><input id="sg-life" type="range" min="0.8" max="5" step="0.1" value="2.4" style="width:110px;"></label>
+    <label style="display:flex;flex-direction:column;gap:4px;align-items:center;">이어짐 간격(초) <span id="sg-gap-v">0.0</span><input id="sg-gap" type="range" min="0" max="2" step="0.1" value="0" style="width:110px;"></label>
+  </div>
   <canvas id="tl-canvas"></canvas>
   <div id="scroll-hint">← scroll →</div>
   <div id="nav"></div>
@@ -945,10 +950,11 @@ function buildBookStars(){
 
 // ── 시냅스(우연의 점화) — 늘 두세 가닥이 별 사이에서 숨 쉼 ──
 const SYN_COLORS=[ [0.30,0.88,0.82], [0.88,0.36,0.82] ];  // 청록 · 자홍
+window._synTune={ count:3, life:2.4, gap:0 };  // 게이지(셋팅 후 제거 예정)
 function buildSynapses(){
   const THREE=window.THREE;
   if(!THREE||!window.scene||!window._bookPts) return;
-  const MAX=3, PTS=22, TOT=MAX*PTS;
+  const MAX=8, PTS=22, TOT=MAX*PTS;
   const pos=new Float32Array(TOT*3);
   const col=new Float32Array(TOT*3);
   const alp=new Float32Array(TOT);
@@ -973,7 +979,6 @@ function buildSynapses(){
   const pts=new THREE.Points(g,m); pts.frustumCulled=false;
   window.scene.add(pts);
   window._syn={ pts, geo:g, pos, col, alp, MAX, PTS, strands:new Array(MAX).fill(null) };
-  for(let i=0;i<MAX;i++) spawnStrand(i);
 }
 function spawnStrand(slot){
   const syn=window._syn; if(!syn||!BOOKS.length) return;
@@ -997,18 +1002,26 @@ function spawnStrand(slot){
   const col=SYN_COLORS[Math.floor(Math.random()*SYN_COLORS.length)];
   const mid={x:(ap.x+C._p3.x)/2, y:(ap.y+C._p3.y)/2, z:(ap.z+C._p3.z)/2};
   const off=()=>(Math.random()-0.5)*7;
+  const lf=(window._synTune?window._synTune.life:2.4)*1000;
   syn.strands[slot]={ a:ap, c:{x:mid.x+off(),y:mid.y+off(),z:mid.z+off()}, b:C._p3,
-                      t0:performance.now(), life:1500+Math.random()*1900, col };
+                      t0:performance.now(), life:lf*(0.6+Math.random()*0.8), col, deadAt:0 };
 }
 window.updateSynapses=function(now){
   const syn=window._syn; if(!syn) return;
+  const tune=window._synTune||{count:3,life:2.4,gap:0};
   for(let s=0;s<syn.MAX;s++){
-    const st=syn.strands[s];
-    if(!st){ spawnStrand(s); continue; }
+    if(s>=tune.count){ for(let i=0;i<syn.PTS;i++) syn.alp[s*syn.PTS+i]=0; syn.strands[s]=null; continue; }
+    let st=syn.strands[s];
+    if(!st){ spawnStrand(s); st=syn.strands[s]; if(!st){ for(let i=0;i<syn.PTS;i++) syn.alp[s*syn.PTS+i]=0; continue; } }
     const age=(now-st.t0)/st.life;
-    if(age>=1){ spawnStrand(s); continue; }
-    const env=Math.sin(age*Math.PI);     // 점화 → 소멸 (0→1→0)
-    const head=age;                      // 빛이 곡선을 따라 흐름
+    if(age>=1){
+      if(!st.deadAt) st.deadAt=now;
+      if(now-st.deadAt >= tune.gap*1000){ spawnStrand(s); st=syn.strands[s]; if(!st) continue; }
+      else { for(let i=0;i<syn.PTS;i++) syn.alp[s*syn.PTS+i]=0; continue; }
+    }
+    const a2=(now-st.t0)/st.life;
+    const env=Math.sin(Math.min(1,a2)*Math.PI);
+    const head=a2;
     for(let i=0;i<syn.PTS;i++){
       const idx=s*syn.PTS+i, tt=i/(syn.PTS-1), u=1-tt;
       syn.pos[idx*3]  =u*u*st.a.x+2*u*tt*st.c.x+tt*tt*st.b.x;
@@ -1023,6 +1036,17 @@ window.updateSynapses=function(now){
   syn.geo.attributes.aAlpha.needsUpdate=true;
   syn.geo.attributes.aColor.needsUpdate=true;
 };
+
+(function initSynGauges(){
+  const gc=document.getElementById('sg-count'), gl=document.getElementById('sg-life'), gg=document.getElementById('sg-gap');
+  if(!gc||!gl||!gg) return;
+  const vc=document.getElementById('sg-count-v'), vl=document.getElementById('sg-life-v'), vg=document.getElementById('sg-gap-v');
+  function up(){
+    window._synTune.count=+gc.value; window._synTune.life=+gl.value; window._synTune.gap=+gg.value;
+    vc.textContent=gc.value; vl.textContent=(+gl.value).toFixed(1); vg.textContent=(+gg.value).toFixed(1);
+  }
+  gc.addEventListener('input',up); gl.addEventListener('input',up); gg.addEventListener('input',up); up();
+})();
 
 // ── 3D → 화면 좌표 투영 (라벨용) ──
 function project3d(p){
