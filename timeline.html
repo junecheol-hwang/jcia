@@ -148,9 +148,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 #essay-pen:hover{opacity:1;}
 #essay-editor{position:fixed;top:0;left:50%;transform:translate(-50%,-115%);
   width:min(680px,92vw);max-height:84vh;z-index:60;display:flex;flex-direction:column;
-  background:rgba(7,11,20,0.97);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  border:0.5px solid rgba(217,169,110,0.28);border-top:none;border-radius:0 0 16px 16px;
-  box-shadow:0 14px 50px rgba(0,0,0,0.55);
+  background:rgba(10,14,26,0.55);backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);
+  border:0.5px solid rgba(217,169,110,0.3);border-top:none;border-radius:0 0 16px 16px;
+  box-shadow:0 14px 50px rgba(0,0,0,0.5);
   transition:transform 0.55s cubic-bezier(.22,.61,.36,1);font-family:'Gowun Batang',serif;}
 #essay-editor.open{transform:translate(-50%,0);}
 #essay-tools{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:11px 15px;
@@ -178,6 +178,33 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 #bp-essay-mark{display:inline-flex;align-items:center;gap:5px;cursor:pointer;
   font-size:0.74rem;color:var(--orange-pale);margin-top:4px;animation:essayPulse 2.4s ease-in-out infinite;}
 @keyframes essayPulse{0%,100%{opacity:0.4;}50%{opacity:1;}}
+/* 새 책 더하기 */
+#addbook-btn{position:fixed;left:3rem;bottom:1.5rem;z-index:46;cursor:pointer;
+  font-family:'EB Garamond',serif;font-size:0.8rem;letter-spacing:0.07em;
+  color:var(--gray-dark);opacity:0.55;transition:opacity 0.3s,color 0.3s;}
+#addbook-btn:hover{opacity:1;color:var(--orange-faded);}
+#addbook-modal{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;
+  background:rgba(2,4,9,0.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);}
+#addbook-modal.open{display:flex;}
+.ab-card{width:min(440px,92vw);background:rgba(10,14,26,0.97);
+  border:0.5px solid rgba(217,169,110,0.3);border-radius:14px;padding:26px 28px;
+  font-family:'Gowun Batang',serif;box-shadow:0 20px 60px rgba(0,0,0,0.6);}
+.ab-title{font-size:1rem;color:var(--orange-pale);margin-bottom:18px;letter-spacing:0.04em;}
+.ab-card input,.ab-card select{width:100%;box-sizing:border-box;margin-bottom:10px;
+  background:rgba(255,255,255,0.04);border:0.5px solid rgba(110,108,102,0.4);border-radius:4px;
+  padding:9px 11px;color:var(--gray-light);font-size:0.82rem;font-family:inherit;outline:none;}
+.ab-card input:focus,.ab-card select:focus{border-color:rgba(217,169,110,0.6);}
+#ab-add{width:100%;background:rgba(217,169,110,0.12);border:0.5px solid rgba(217,169,110,0.45);
+  color:var(--orange-pale);cursor:pointer;margin-bottom:14px;padding:9px;border-radius:4px;font-size:0.82rem;}
+#ab-add:hover{background:rgba(217,169,110,0.2);}
+#ab-list{max-height:140px;overflow-y:auto;margin-bottom:14px;}
+.ab-item{font-size:0.72rem;color:var(--gray-mid);padding:4px 0;border-bottom:0.5px solid rgba(110,108,102,0.15);}
+.ab-foot{display:flex;gap:8px;justify-content:flex-end;}
+.ab-foot button{background:transparent;border:0.5px solid rgba(110,108,102,0.4);border-radius:4px;
+  color:var(--gray-mid);padding:7px 14px;cursor:pointer;font-size:0.76rem;font-family:inherit;transition:border-color 0.15s;}
+#ab-download{border-color:rgba(217,169,110,0.5)!important;color:var(--orange-pale)!important;}
+.ab-foot button:hover{border-color:rgba(217,169,110,0.7);}
+.ab-note{font-size:0.66rem;color:var(--gray-dark);margin-top:13px;line-height:1.65;}
 .bp-calli-ctrl{display:flex;align-items:center;gap:7px;margin-top:7px;}
 .bp-calli-ctrl span{font-size:0.62rem;color:var(--gray-dark);white-space:nowrap;}
 .bp-calli-ctrl input[type=range]{flex:1;}
@@ -546,6 +573,25 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   </div>
 </div>
 
+<!-- 새 책 더하기 -->
+<div id="addbook-btn">＋ 새 책 더하기</div>
+<div id="addbook-modal">
+  <div class="ab-card">
+    <div class="ab-title">새 책을 별밭에 더하기</div>
+    <input id="ab-title" placeholder="제목" autocomplete="off" spellcheck="false">
+    <input id="ab-author" placeholder="저자" autocomplete="off" spellcheck="false">
+    <input id="ab-publisher" placeholder="출판사" autocomplete="off" spellcheck="false">
+    <select id="ab-phase"></select>
+    <button id="ab-add">＋ 더하기</button>
+    <div id="ab-list"></div>
+    <div class="ab-foot">
+      <button id="ab-download">books.json 내려받기</button>
+      <button id="ab-close">닫기</button>
+    </div>
+    <div class="ab-note">내려받은 books.json을 GitHub에 올리면 영구히 반영됩니다. 지금 더한 책은 새로고침 전까지 별밭에 떠 있어요.</div>
+  </div>
+</div>
+
 <!-- 로그인 (magic link) — 좌측 하단 -->
 <div id="auth-box">
   <div id="auth-status"></div>
@@ -716,6 +762,7 @@ const PHASES=[
 
 // ── 데이터 — books.json에서 fetch ────────────────────
 let BOOKS = [];
+let booksData = null;   // 전체 {meta,phases,books} — 새 책 추가/내려받기용
 let dataReady = false;
 
 function assignStarColors(){
@@ -728,6 +775,7 @@ function assignStarColors(){
 fetch('books.json')
   .then(r=>r.json())
   .then(data=>{
+    booksData = data;
     BOOKS = data.books;
     assignStarColors();
     dataReady = true;
@@ -1782,6 +1830,61 @@ async function loadEssayStars(){
   var dl=document.getElementById('essay-del'); if(dl) dl.addEventListener('click',deleteEssay);
   var cl=document.getElementById('essay-close'); if(cl) cl.addEventListener('click',closeEssay);
   loadEssayStars();
+})();
+
+// ── 새 책 더하기 → books.json 내려받기 ──────────────────
+function addBook(title,author,publisher,phase){
+  if(!booksData) return null;
+  var maxId=BOOKS.reduce(function(m,b){return Math.max(m,b.id);},0);
+  var ph=PHASES[phase-1];
+  var nb={id:maxId+1, title:title, author:author, publisher:publisher,
+          phase:phase, phase_name:ph.name, subtitle:ph.desc};
+  BOOKS.push(nb);
+  booksData.books=BOOKS;
+  if(booksData.meta) booksData.meta.total=BOOKS.length;
+  if(booksData.phases){
+    var pp=booksData.phases.filter(function(p){return p.id===phase;})[0];
+    if(pp) pp.count=(pp.count||0)+1;
+  }
+  assignStarColors();
+  return nb;
+}
+function downloadBooksJson(){
+  if(!booksData) return;
+  var blob=new Blob([JSON.stringify(booksData,null,2)],{type:'application/json'});
+  var u=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=u; a.download='books.json'; document.body.appendChild(a); a.click();
+  document.body.removeChild(a); setTimeout(function(){URL.revokeObjectURL(u);},1000);
+}
+(function(){
+  var btn=document.getElementById('addbook-btn'), modal=document.getElementById('addbook-modal');
+  if(!btn||!modal) return;
+  var sel=document.getElementById('ab-phase');
+  PHASES.forEach(function(p){ var o=document.createElement('option'); o.value=p.id; o.textContent=p.id+' · '+p.name; sel.appendChild(o); });
+  btn.addEventListener('click',function(){
+    if(!booksData){ return; }
+    modal.classList.add('open'); document.getElementById('ab-title').focus();
+  });
+  document.getElementById('ab-close').addEventListener('click',function(){ modal.classList.remove('open'); });
+  modal.addEventListener('click',function(e){ if(e.target===modal) modal.classList.remove('open'); });
+  document.getElementById('ab-add').addEventListener('click',function(){
+    var t=document.getElementById('ab-title').value.trim();
+    var au=document.getElementById('ab-author').value.trim();
+    var pu=document.getElementById('ab-publisher').value.trim();
+    var ph=+document.getElementById('ab-phase').value;
+    if(!t){ document.getElementById('ab-title').focus(); return; }
+    var nb=addBook(t,au,pu,ph);
+    if(nb){
+      var div=document.createElement('div'); div.className='ab-item';
+      div.textContent='#'+nb.id+'  '+nb.title+(au?' — '+au:'')+'   ['+nb.phase_name+']';
+      document.getElementById('ab-list').appendChild(div);
+      document.getElementById('ab-title').value='';
+      document.getElementById('ab-author').value='';
+      document.getElementById('ab-publisher').value='';
+      document.getElementById('ab-title').focus();
+    }
+  });
+  document.getElementById('ab-download').addEventListener('click',downloadBooksJson);
 })();
 
 function bpLinkify(text){
