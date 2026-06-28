@@ -427,10 +427,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
     <div id="header-title"></div>
   </div>
 
-  <div id="web-gauge" style="position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:300;display:flex;gap:22px;padding:9px 22px;background:rgba(8,12,20,0.85);border:0.5px solid rgba(150,180,220,0.35);border-radius:0 0 12px 12px;font-family:sans-serif;font-size:11px;color:#cfe0f5;pointer-events:auto;-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);letter-spacing:0.03em;align-items:center;">
-    <label style="display:flex;flex-direction:column;gap:4px;align-items:center;">그물 처짐 <span id="wg-sag-v">1.00</span><input id="wg-sag" type="range" min="0" max="3" step="0.05" value="1.0" style="width:140px;"></label>
-    <label style="display:flex;flex-direction:column;gap:4px;align-items:center;">그물 밝기 <span id="wg-bright-v">0.25</span><input id="wg-bright" type="range" min="0" max="2.5" step="0.05" value="0.25" style="width:140px;"></label>
-  </div>
   <canvas id="tl-canvas"></canvas>
   <div id="scroll-hint">← scroll →</div>
   <div id="nav"></div>
@@ -991,7 +987,7 @@ function buildWeb(){
   g.setAttribute('aPhase',new THREE.BufferAttribute(ph,1));
   g.setAttribute('aDrop',new THREE.BufferAttribute(drp,1));
   const m=new THREE.ShaderMaterial({
-    uniforms:{ uTex:{value:window._bookTex||null}, uTime:{value:0}, uBright:{value:0.25}, uSagMul:{value:1.0} },
+    uniforms:{ uTex:{value:window._bookTex||null}, uTime:{value:0}, uBright:{value:0.1}, uSagMul:{value:0.0} },
     vertexShader:`
       attribute float aPhase; attribute float aDrop; varying float vW; varying float vH;
       uniform float uTime; uniform float uSagMul;
@@ -1022,14 +1018,6 @@ function buildWeb(){
   window.scene.add(pts);
   window._web={ pts, mat:m };
 }
-
-(function initWebGauge(){
-  const gs=document.getElementById('wg-sag'), gb=document.getElementById('wg-bright');
-  if(!gs||!gb) return;
-  const vs=document.getElementById('wg-sag-v'), vb=document.getElementById('wg-bright-v');
-  gs.addEventListener('input',function(){ vs.textContent=(+gs.value).toFixed(2); if(window._web) window._web.mat.uniforms.uSagMul.value=+gs.value; });
-  gb.addEventListener('input',function(){ vb.textContent=(+gb.value).toFixed(2); if(window._web) window._web.mat.uniforms.uBright.value=+gb.value; });
-})();
 
 // ── 3D → 화면 좌표 투영 (라벨용) ──
 function project3d(p){
