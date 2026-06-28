@@ -427,8 +427,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
     <div id="header-title"></div>
   </div>
 
-  <div id="web-gauge" style="position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:300;display:flex;gap:18px;padding:9px 22px;background:rgba(8,12,20,0.85);border:0.5px solid rgba(150,180,220,0.35);border-radius:0 0 12px 12px;font-family:sans-serif;font-size:11px;color:#cfe0f5;pointer-events:auto;-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);letter-spacing:0.03em;align-items:center;">
-    <label style="display:flex;flex-direction:column;gap:4px;align-items:center;">그물 밝기 <span id="wg-bright-v">1.00</span><input id="wg-bright" type="range" min="0" max="2.5" step="0.05" value="1.0" style="width:160px;"></label>
+  <div id="web-gauge" style="position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:300;display:flex;gap:22px;padding:9px 22px;background:rgba(8,12,20,0.85);border:0.5px solid rgba(150,180,220,0.35);border-radius:0 0 12px 12px;font-family:sans-serif;font-size:11px;color:#cfe0f5;pointer-events:auto;-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);letter-spacing:0.03em;align-items:center;">
+    <label style="display:flex;flex-direction:column;gap:4px;align-items:center;">그물 처짐 <span id="wg-sag-v">1.00</span><input id="wg-sag" type="range" min="0" max="3" step="0.05" value="1.0" style="width:140px;"></label>
+    <label style="display:flex;flex-direction:column;gap:4px;align-items:center;">그물 밝기 <span id="wg-bright-v">0.25</span><input id="wg-bright" type="range" min="0" max="2.5" step="0.05" value="0.25" style="width:140px;"></label>
   </div>
   <canvas id="tl-canvas"></canvas>
   <div id="scroll-hint">← scroll →</div>
@@ -968,28 +969,37 @@ function buildWeb(){
     }
   }
   const TOT=edges.length*SEG;
-  const pos=new Float32Array(TOT*3), ph=new Float32Array(TOT);
+  const pos=new Float32Array(TOT*3), ph=new Float32Array(TOT), drp=new Float32Array(TOT);
   let p=0;
   for(const e of edges){
     const a=e[0], b=e[1];
     const eph=(a.x+a.y+a.z+b.x+b.y+b.z)*0.04 + Math.random()*6.283;
+    const len=Math.hypot(b.x-a.x,b.y-a.y,b.z-a.z);
+    const sag=len*0.14;                          // 실 길이에 비례한 기준 처짐
     for(let sg=0;sg<SEG;sg++){
       const tt=sg/(SEG-1);
-      pos[p*3]=a.x+(b.x-a.x)*tt; pos[p*3+1]=a.y+(b.y-a.y)*tt; pos[p*3+2]=a.z+(b.z-a.z)*tt;
-      ph[p]=eph; p++;
+      pos[p*3]=a.x+(b.x-a.x)*tt;                 // 직선으로 깔고 (처짐은 셰이더에서)
+      pos[p*3+1]=a.y+(b.y-a.y)*tt;
+      pos[p*3+2]=a.z+(b.z-a.z)*tt;
+      ph[p]=eph;
+      drp[p]=sag*4.0*tt*(1.0-tt);                // 가운데가 가장 늘어지는 기준량
+      p++;
     }
   }
   const g=new THREE.BufferGeometry();
   g.setAttribute('position',new THREE.BufferAttribute(pos,3));
   g.setAttribute('aPhase',new THREE.BufferAttribute(ph,1));
+  g.setAttribute('aDrop',new THREE.BufferAttribute(drp,1));
   const m=new THREE.ShaderMaterial({
-    uniforms:{ uTex:{value:window._bookTex||null}, uTime:{value:0}, uBright:{value:1.0} },
+    uniforms:{ uTex:{value:window._bookTex||null}, uTime:{value:0}, uBright:{value:0.25}, uSagMul:{value:1.0} },
     vertexShader:`
-      attribute float aPhase; varying float vW; varying float vH; uniform float uTime;
+      attribute float aPhase; attribute float aDrop; varying float vW; varying float vH;
+      uniform float uTime; uniform float uSagMul;
       void main(){
         vW=0.5+0.5*sin(uTime*0.5+aPhase);
         vH=fract(aPhase*0.159 + uTime*0.015);        // 엣지마다 색이 다르고, 아주 천천히 흐름
-        vec4 mv=modelViewMatrix*vec4(position,1.0);
+        vec3 pos2=position; pos2.y -= uSagMul*aDrop;  // 중력 방향 처짐 (게이지 조절)
+        vec4 mv=modelViewMatrix*vec4(pos2,1.0);
         gl_PointSize=3.2*(360.0/-mv.z);
         gl_Position=projectionMatrix*mv;
       }`,
@@ -1014,12 +1024,11 @@ function buildWeb(){
 }
 
 (function initWebGauge(){
-  const gb=document.getElementById('wg-bright'); if(!gb) return;
-  const vb=document.getElementById('wg-bright-v');
-  gb.addEventListener('input',function(){
-    vb.textContent=(+gb.value).toFixed(2);
-    if(window._web) window._web.mat.uniforms.uBright.value=+gb.value;
-  });
+  const gs=document.getElementById('wg-sag'), gb=document.getElementById('wg-bright');
+  if(!gs||!gb) return;
+  const vs=document.getElementById('wg-sag-v'), vb=document.getElementById('wg-bright-v');
+  gs.addEventListener('input',function(){ vs.textContent=(+gs.value).toFixed(2); if(window._web) window._web.mat.uniforms.uSagMul.value=+gs.value; });
+  gb.addEventListener('input',function(){ vb.textContent=(+gb.value).toFixed(2); if(window._web) window._web.mat.uniforms.uBright.value=+gb.value; });
 })();
 
 // ── 3D → 화면 좌표 투영 (라벨용) ──
