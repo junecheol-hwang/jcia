@@ -15,6 +15,8 @@
 <script>
   // [모바일] 터치 기기 여부를 일찍 판정 — 항법·렌더가 처음부터 참조
   window._MOBILE = (matchMedia('(pointer:coarse)').matches) || innerWidth<=820;
+  // 아무것도 안 할 때 우주가 아주 천천히 도는 명상적 회전 (멀미 시 false 로)
+  window._AMBIENT_SPIN = true;
 </script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
@@ -837,7 +839,7 @@ function animate(){
     // ── 정·동의 호흡 — 제자리에서 시선을 돌림 (룩어라운드) ──
     const since=now-nav.interactT;
     let wantDrift = nav.dragging ? 0 : Math.min(1, Math.max(0,(since-700)/2600));
-    if(window._MOBILE || window._panelOpen) wantDrift=0;   // [모바일] 자동 표류 끔 — 손 떼면 완전 정지
+    if(window._panelOpen || (window._MOBILE && !window._AMBIENT_SPIN)) wantDrift=0;   // 패널 열림 중엔 정지 / 모바일 자동 회전은 _AMBIENT_SPIN 으로
     nav.drift += (wantDrift-nav.drift)*0.02;
     if(!nav.dragging){
       nav.yaw   += nav.yawV;
