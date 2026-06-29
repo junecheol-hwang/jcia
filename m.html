@@ -2636,7 +2636,7 @@ whenSB(bumpSite);
   const ih     = ()=>innerHeight;
   const fullH  = ()=>0.86*ih();        // CSS height:86vh 와 일치
   const halfH  = ()=>0.46*ih();
-  const peekH  = ()=>104;              // 핸들+제목만
+  const peekH  = ()=>50;               // 핸들만 살짝 — 별 위 라벨이 식별을 맡음
 
   let curTY = fullH();                 // translateY(px): 클수록 내려가 적게 보임
   let state = 'closed';
@@ -2663,8 +2663,14 @@ whenSB(bumpSite);
     else if(s==='half') setTY(fullH()-halfH(), true);
     else if(s==='full') setTY(0, true);
   }
-  window._sheetOpen  = ()=>snapTo('half');     // 패널 열릴 때 절반으로 — 별·패널 공존
+  window._sheetOpen  = ()=>snapTo('peek');     // 도착 시 자동은 peek 까지만 — 펼침은 사용자가 직접
   window._sheetClose = ()=>snapTo('closed');
+
+  // 비행이 시작되면(다른 별로 옮겨가면) 머물던 별의 패널을 먼저 내림
+  const _origFly = window.flyTo;
+  if(typeof _origFly==='function'){
+    window.flyTo = function(book, onArrive){ snapTo('closed'); return _origFly.call(this, book, onArrive); };
+  }
 
   // ── 핸들/헤더 드래그로 높이 조절 ──
   let dY0=0, dTY0=0, dT0=0, dragging=false;
