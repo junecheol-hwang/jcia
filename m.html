@@ -443,11 +443,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   #calli-sky{ width:100vw; } #calli-img{ max-width:74%; max-height:42vh; }
 
   /* 에세이 에디터 — 전체화면 모달 */
-  #essay-editor{ width:100vw; max-width:none; left:0; transform:translate(0,-118%); height:92vh; max-height:92vh; border-radius:0 0 16px 16px; }
+  #essay-editor{ width:100vw; max-width:none; left:0; transform:translate(0,-118%);
+    height:90vh; height:90dvh; max-height:90vh; max-height:90dvh; border-radius:0 0 16px 16px; }
   #essay-editor.open{ transform:translate(0,0); }
   #essay-body{ font-size:1rem; min-height:0; }
   #essay-tools button,#essay-tools select{ font-size:0.82rem; padding:7px 11px; }
   .essay-acts button{ padding:9px 16px; font-size:0.82rem; }
+  #essay-foot{ padding-bottom:calc(env(safe-area-inset-bottom,0px) + 12px); }
   #essay-pen{ top:auto; left:auto; right:14px; transform:none;
     bottom:calc(env(safe-area-inset-bottom,0px) + 14px);
     width:46px; height:46px; border-radius:50%; background:rgba(6,9,18,0.7);
@@ -842,6 +844,13 @@ function animate(){
       nav.pitch += nav.pitchV;
       nav.yawV  *= 0.90;
       nav.pitchV*= 0.90;
+      // [모바일] 핀치 줌 관성 — 손 뗀 뒤 시선방향으로 잠깐 미끄러지다 멈춤
+      if(nav.zoomV){
+        const zx=Math.cos(nav.pitch)*Math.sin(nav.yaw), zy=Math.sin(nav.pitch), zz=Math.cos(nav.pitch)*Math.cos(nav.yaw);
+        nav.pos.x+=zx*nav.zoomV; nav.pos.y+=zy*nav.zoomV; nav.pos.z+=zz*nav.zoomV;
+        nav.zoomV*=0.90;
+        if(Math.abs(nav.zoomV)<0.01) nav.zoomV=0;
+      }
     }
     nav.yaw   += 0.00018*nav.drift;                  // 제자리 두리번 — 아주 느리게
     nav.pitch += Math.sin(t*0.05)*0.00008*nav.drift; // 미세한 끄덕임
@@ -1736,14 +1745,14 @@ tlCanvas.addEventListener('touchstart',e=>{
     const a=e.touches[0], b=e.touches[1];
     pinchD0=Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY);
     pinching=true; pinchLock=true; oneStarted=false;
-    nav.dragging=true; nav.yawV=0; nav.pitchV=0;
+    nav.dragging=true; nav.yawV=0; nav.pitchV=0; nav.zoomV=0;
     return;
   }
   if(pinchLock) return;                           // 핀치가 끝나기 전엔 한 손가락 입력 무시
   const tch=e.touches[0];
   tDX=tLX=tch.clientX; tDY=tLY=tch.clientY; tDT=Date.now();
   oneStarted=true; pinching=false;
-  nav.dragging=true; nav.yawV=0; nav.pitchV=0;
+  nav.dragging=true; nav.yawV=0; nav.pitchV=0; nav.zoomV=0;
 },{passive:true});
 tlCanvas.addEventListener('touchmove',e=>{
   const nav=window._nav;
@@ -1754,6 +1763,7 @@ tlCanvas.addEventListener('touchmove',e=>{
     const dirx=Math.cos(nav.pitch)*Math.sin(nav.yaw), diry=Math.sin(nav.pitch), dirz=Math.cos(nav.pitch)*Math.cos(nav.yaw);
     const step=delta*0.12;
     nav.pos.x+=dirx*step; nav.pos.y+=diry*step; nav.pos.z+=dirz*step;
+    nav.zoomV=step;                                 // [관성] 마지막 줌 속도 기억
     nav.interactT=performance.now();
     return;
   }
@@ -1764,7 +1774,7 @@ tlCanvas.addEventListener('touchmove',e=>{
   tLX=tch.clientX; tLY=tch.clientY;
   nav.yaw-=dx*0.0035; nav.pitch+=dy*0.0035;       // 감도 ↓ (멀미 완화)
   nav.pitch=Math.max(-1.35,Math.min(1.35,nav.pitch));
-  nav.yawV=-dx*0.0007; nav.pitchV=dy*0.0007;
+  nav.yawV=-dx*0.0011; nav.pitchV=dy*0.0011;      // [관성] 손 뗀 뒤 잠깐 미끄러짐
   nav.interactT=performance.now();
 },{passive:true});
 tlCanvas.addEventListener('touchend',e=>{
@@ -1776,7 +1786,7 @@ tlCanvas.addEventListener('touchend',e=>{
   // 모든 손가락이 떨어짐 — 상태 정리
   const wasTap = oneStarted && !pinchLock;         // 핀치가 섞이지 않은 순수 한 손가락만 탭 후보
   nav.dragging=false; pinching=false; pinchLock=false; oneStarted=false;
-  nav.yawV=0; nav.pitchV=0;                         // 떼는 순간 잔여 관성 제거 → 튐 없음
+  // yawV·pitchV·zoomV 는 남겨 둠 → 손 뗀 뒤 잠깐 미끄러지다 멈춤(관성)
   if(wasTap){
     const ch=e.changedTouches[0];
     const dx=ch.clientX-tDX, dy=ch.clientY-tDY;
