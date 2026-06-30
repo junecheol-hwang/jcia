@@ -137,35 +137,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   max-width:44%;max-height:54vh;object-fit:contain;
   filter:drop-shadow(0 0 5px #ffe6a8) drop-shadow(0 0 15px #ffd98a) drop-shadow(0 0 34px rgba(255,200,110,0.55));
 }
-/* 대문 천문 — 우측 하단 버튼 (뒤 배경에 영향 없음: 배경판·블러 없이 색/투명도만) */
-#home-calli-btn{position:fixed;right:1.5rem;bottom:1.4rem;z-index:47;
-  display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;
-  font-family:'Gowun Batang',serif;font-size:0.82rem;letter-spacing:0.05em;
-  color:var(--orange-faded);opacity:0.5;transition:opacity 0.3s,color 0.3s;
-  -webkit-tap-highlight-color:transparent;}
-#home-calli-btn:hover{opacity:1;color:var(--orange-pale);}
-#home-calli-btn svg{width:15px;height:15px;flex:none;}
-#home-calli-btn.hidden{display:none;}
-#home-calli-edit{position:fixed;right:1.5rem;bottom:3.5rem;z-index:48;width:232px;
-  background:rgba(18,17,15,0.93);border:1px solid rgba(217,169,110,0.28);border-radius:10px;
-  padding:13px 14px;box-shadow:0 8px 30px rgba(0,0,0,0.5);
-  font-family:'Gowun Batang',serif;color:var(--gray-light);display:none;}
-#home-calli-edit.open{display:block;}
-#home-calli-edit .hc-title{font-size:0.78rem;color:var(--orange-faded);margin:0 0 9px;letter-spacing:0.05em;}
-#home-calli-edit .hc-prev{min-height:60px;display:flex;align-items:center;justify-content:center;margin-bottom:9px;}
-#home-calli-edit .hc-prev canvas,#home-calli-edit .hc-prev img{max-width:60%;max-height:90px;object-fit:contain;}
-#home-calli-edit .hc-ctrl{display:flex;align-items:center;gap:8px;font-size:0.68rem;color:var(--gray-mid);margin:5px 0;}
-#home-calli-edit .hc-ctrl span{width:26px;flex:none;}
-#home-calli-edit .hc-ctrl input[type=range]{flex:1;accent-color:var(--orange-faded);}
-#home-calli-edit .hc-sws{display:flex;gap:7px;margin:8px 0;}
-#home-calli-edit .hc-sw{width:18px;height:18px;border-radius:50%;border:1px solid rgba(255,255,255,0.25);cursor:pointer;padding:0;}
-#home-calli-edit .hc-sw.on{outline:2px solid var(--orange-faded);outline-offset:1px;}
-#home-calli-edit .hc-row{display:flex;gap:7px;margin-top:10px;}
-#home-calli-edit .hc-row button{flex:1;font-family:'Gowun Batang',serif;font-size:0.72rem;padding:6px 0;
-  background:none;border:1px solid rgba(217,169,110,0.4);border-radius:6px;color:var(--orange-faded);cursor:pointer;transition:background 0.2s;}
-#home-calli-edit .hc-row button:hover{background:rgba(217,169,110,0.12);}
-#home-calli-edit .hc-row button.primary{background:rgba(217,169,110,0.18);color:var(--orange-pale);}
-#home-calli-edit .hc-empty{font-size:0.68rem;color:var(--gray-dark);line-height:1.5;margin:0 0 4px;}
 /* 붓글씨 — 패널 업로드 UI */
 .bp-calli-empty{font-size:0.7rem;color:var(--gray-dark);line-height:1.5;}
 .bp-calli-up{display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-size:0.7rem;
@@ -495,13 +466,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   #auth-send{ min-width:42px; min-height:38px; }
   #auth-msg{ max-width:240px; }
 
-  /* 대문천문 — 버튼은 좌하단(우하단 글쓰기 FAB와 분리), 편집 패널은 풀폭 */
-  #home-calli-btn{ left:1.2rem; right:auto; bottom:calc(env(safe-area-inset-bottom,0px) + 16px); padding:9px 13px; }
-  #home-calli-btn svg{ width:17px; height:17px; }
-  #home-calli-edit{ left:0.7rem; right:0.7rem; width:auto; bottom:calc(env(safe-area-inset-bottom,0px) + 62px); }
-  #home-calli-edit .hc-sw{ width:24px; height:24px; }
-  #home-calli-edit .hc-ctrl input[type=range]{ height:24px; }
-  #home-calli-edit .hc-row button{ padding:9px 0; font-size:0.8rem; }
 
   #tl-canvas{ touch-action:none; }
 
@@ -517,8 +481,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   /* iOS 사파리 하단 툴바(← → ⋯)에 가리지 않게 — dvh 지원 시 툴바 높이(100vh-100dvh)만큼 자동으로 밀어 올림 */
   @supports (height:100dvh){
     #book-panel{ bottom:calc(100vh - 100dvh); }
-    #home-calli-btn{ bottom:calc(env(safe-area-inset-bottom,0px) + 16px + 100vh - 100dvh); }
-    #home-calli-edit{ bottom:calc(env(safe-area-inset-bottom,0px) + 62px + 100vh - 100dvh); }
     #essay-pen{ bottom:calc(env(safe-area-inset-bottom,0px) + 14px + 100vh - 100dvh); }
     #bgm-ctrl{ bottom:calc(4.7rem + 100vh - 100dvh); }
   }
@@ -648,12 +610,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 
 <div id="calli-sky"><img id="calli-img" alt=""></div>
 
-<!-- 대문 천문 — 우측 하단 -->
-<button id="home-calli-btn" class="hidden" title="대문에 천문 띄우기">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19c4-13 7-2 9-9s4 7 7-2"/><circle cx="19" cy="7" r="0.9" fill="currentColor" stroke="none"/></svg>
-  <span>천문</span>
-</button>
-<div id="home-calli-edit"></div>
 
 <!-- 글쓰기: 상단 펜 + 내려오는 에디터 -->
 <div id="essay-pen" title="이 별에 글 쓰기">
@@ -1887,7 +1843,6 @@ function handleClick(mx,my){
   } else {
     flushPanel();
     pinnedBook=null; panelBook=null; hideCalli();
-    _lastAtHome=false;                     // 대문으로 돌아옴 — 대문 천문 재평가
     document.getElementById('book-panel').classList.remove('open');
     if(window._sheetClose) window._sheetClose();         // [모바일] 빈 곳 탭 → 시트 닫음
     if(typeof refreshFocus==='function') refreshFocus();
@@ -1920,7 +1875,6 @@ document.addEventListener('keydown',e=>{
     if(panelBook){
       flushPanel();
       panelBook=null; pinnedBook=null; hideCalli();
-      _lastAtHome=false;                   // 대문으로 돌아옴 — 대문 천문 재평가
       document.getElementById('book-panel').classList.remove('open');
       if(typeof refreshFocus==='function') refreshFocus();
     }
@@ -2061,142 +2015,6 @@ function showCalli(meta){
 function hideCalli(){
   var sky=document.getElementById('calli-sky');
   if(sky) sky.classList.remove('show');
-}
-// ── 대문 천문 (Home 천문) ──────────────────────────────
-// 손님(비로그인 방문자)에게도 대문 천문을 보이려면 아래에 소유자 user.id 를 한 줄 넣으세요.
-var HOME_CALLI_OWNER = '';
-var homeCalliEditState = null;
-var _lastAtHome = false;
-function homeCalliMeta(){
-  try{ var s=JSON.parse(localStorage.getItem('jcia_home_calli')); if(s&&s.url) return s; }catch(e){}
-  if(window.sb && HOME_CALLI_OWNER){
-    var pub=window.sb.storage.from('calligraphy').getPublicUrl(HOME_CALLI_OWNER+'/_home.png');
-    return {url:pub.data.publicUrl, color:'#ffd98a', size:44};
-  }
-  return null;
-}
-function showHomeCalli(){
-  if(viewMode!=='timeline' || panelBook) return;
-  var m=homeCalliMeta();
-  if(!m){ hideCalli(); return; }
-  var probe=new Image();
-  probe.onload=function(){ if(viewMode==='timeline' && !panelBook) showCalli(m); };
-  probe.onerror=function(){ hideCalli(); };
-  probe.src=m.url;
-}
-// 대문에 도착한 순간(패널 없음·비행 아님·timeline)을 받아채 대문 천문을 띄움
-function syncHomeCalli(){
-  var atHome = viewMode==='timeline' && !panelBook && !(window._nav && window._nav.flying);
-  if(atHome!==_lastAtHome){
-    _lastAtHome=atHome;
-    if(atHome) showHomeCalli();
-  }
-}
-function refreshHomeCalliBtn(){
-  var b=document.getElementById('home-calli-btn');
-  if(b) b.classList.toggle('hidden', !currentUser);
-}
-function closeHomeCalliEditor(){
-  var el=document.getElementById('home-calli-edit');
-  if(homeCalliEditState && homeCalliEditState.objurl) URL.revokeObjectURL(homeCalliEditState.objurl);
-  homeCalliEditState=null;
-  if(el){ el.classList.remove('open'); el.innerHTML=''; }
-}
-function openHomeCalliEditor(){
-  if(!currentUser){ if(typeof showAuthHint==='function') showAuthHint(); return; }
-  var el=document.getElementById('home-calli-edit');
-  if(el.classList.contains('open')){ closeHomeCalliEditor(); return; }
-  el.classList.add('open'); renderHomeCalliEdit();
-}
-function pickHomeCalli(){
-  var inp=document.createElement('input');
-  inp.type='file'; inp.accept='image/png,image/jpeg,image/webp,image/*';
-  inp.style.position='fixed'; inp.style.left='-10000px'; inp.style.top='0'; inp.style.opacity='0';
-  document.body.appendChild(inp);
-  inp.addEventListener('change',function(e){
-    var f=e.target.files&&e.target.files[0];
-    if(inp.parentNode) inp.parentNode.removeChild(inp);
-    if(!f) return;
-    var u=URL.createObjectURL(f), im=new Image();
-    im.onload=function(){
-      if(homeCalliEditState && homeCalliEditState.objurl) URL.revokeObjectURL(homeCalliEditState.objurl);
-      homeCalliEditState={img:im, objurl:u, thr:155, soft:20, color:'#ffd98a', size:44, canvas:null};
-      renderHomeCalliEdit();
-    };
-    im.onerror=function(){ URL.revokeObjectURL(u); };
-    im.src=u;
-  });
-  inp.click();
-}
-function renderHomeCalliEdit(){
-  var el=document.getElementById('home-calli-edit'); if(!el) return;
-  var st=homeCalliEditState;
-  if(st && st.img){
-    var sw=function(c,n){ return '<button class="hc-sw'+(st.color===c?' on':'')+'" data-c="'+c+'" title="'+n+'" style="background:'+c+'"></button>'; };
-    el.innerHTML='<p class="hc-title">대문에 띄울 천문</p>'
-      +'<div class="hc-prev"><canvas id="hc-cv"></canvas></div>'
-      +'<div class="hc-sws">'+sw('#ffd98a','금빛')+sw('#dfe9ff','달빛')+sw('#a9e6cf','비취')+sw('#f3b0c3','매화')+'</div>'
-      +'<div class="hc-ctrl"><span>감도</span><input type="range" id="hc-thr" min="40" max="235" value="'+st.thr+'" step="1"></div>'
-      +'<div class="hc-ctrl"><span>번짐</span><input type="range" id="hc-soft" min="2" max="70" value="'+st.soft+'" step="1"></div>'
-      +'<div class="hc-ctrl"><span>크기</span><input type="range" id="hc-size" min="20" max="72" value="'+st.size+'" step="1"></div>'
-      +'<div class="hc-row"><button class="primary" id="hc-save">하늘에 새기기</button><button id="hc-cancel">취소</button></div>';
-    var redraw=function(){
-      var cv=calliExtract(st.img, +document.getElementById('hc-thr').value, +document.getElementById('hc-soft').value);
-      if(!cv) return;
-      var disp=document.getElementById('hc-cv'); disp.width=cv.width; disp.height=cv.height;
-      disp.getContext('2d').drawImage(cv,0,0); st.canvas=cv;
-      disp.style.maxWidth=st.size+'%'; disp.style.filter=calliGlow(st.color);
-    };
-    redraw();
-    document.getElementById('hc-thr').addEventListener('input',function(){ st.thr=+this.value; redraw(); });
-    document.getElementById('hc-soft').addEventListener('input',function(){ st.soft=+this.value; redraw(); });
-    document.getElementById('hc-size').addEventListener('input',function(){ st.size=+this.value; redraw(); });
-    Array.prototype.forEach.call(el.querySelectorAll('.hc-sw'),function(b){
-      b.addEventListener('click',function(){ st.color=b.getAttribute('data-c'); el.querySelectorAll('.hc-sw').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); redraw(); });
-    });
-    document.getElementById('hc-cancel').addEventListener('click',closeHomeCalliEditor);
-    document.getElementById('hc-save').addEventListener('click',async function(){
-      var btn=this;
-      if(!st.canvas){ btn.textContent='이미지 오류 — 취소 후 재시도'; return; }
-      btn.textContent='새기는 중…'; btn.disabled=true;
-      var r=await homeCalliUpload(st.canvas);
-      if(r.ok){
-        var meta={url:r.url, color:st.color, size:st.size};
-        try{ localStorage.setItem('jcia_home_calli', JSON.stringify(meta)); }catch(e){}
-        closeHomeCalliEditor();
-        if(viewMode==='timeline' && !panelBook){ _lastAtHome=true; showCalli(meta); }
-      } else {
-        btn.disabled=false; btn.textContent = r.reason==='not-logged-in' ? '로그인이 필요해요' : '실패 — 다시';
-      }
-    });
-  } else {
-    var hasOne = !!homeCalliMeta();
-    el.innerHTML='<p class="hc-title">대문 천문</p>'
-      +(hasOne?'<p class="hc-empty">대문에 천문이 새겨져 있어요.</p>':'<p class="hc-empty">대문에 띄울 글씨 한 장을 올려보세요.</p>')
-      +'<div class="hc-row"><button class="primary" id="hc-pick">'+(hasOne?'다시 올리기':'천문 올리기')+'</button>'
-      +(hasOne?'<button id="hc-del">지우기</button>':'<button id="hc-close">닫기</button>')+'</div>';
-    document.getElementById('hc-pick').addEventListener('click',pickHomeCalli);
-    var dl=document.getElementById('hc-del');
-    if(dl) dl.addEventListener('click',function(){
-      try{ localStorage.removeItem('jcia_home_calli'); }catch(e){}
-      if(window.sb && currentUser){ window.sb.storage.from('calligraphy').remove([currentUser.id+'/_home.png']).catch(function(){}); }
-      closeHomeCalliEditor();
-      _lastAtHome=false;
-      if(viewMode==='timeline' && !panelBook) hideCalli();
-    });
-    var cl=document.getElementById('hc-close');
-    if(cl) cl.addEventListener('click',closeHomeCalliEditor);
-  }
-}
-async function homeCalliUpload(canvas){
-  if(!window.sb||!currentUser) return {ok:false, reason:'not-logged-in'};
-  var blob=await new Promise(function(res){ canvas.toBlob(res,'image/png'); });
-  if(!blob) return {ok:false, reason:'blob-failed'};
-  var path=currentUser.id+'/_home.png';
-  var up=await window.sb.storage.from('calligraphy').upload(path, blob, {upsert:true, contentType:'image/png'});
-  if(up.error){ console.warn('home calli upload', up.error); return {ok:false, error:up.error}; }
-  var pub=window.sb.storage.from('calligraphy').getPublicUrl(path);
-  return {ok:true, url:pub.data.publicUrl+'?t='+Date.now()};
 }
 async function calliUpload(book, canvas){
   if(!window.sb||!currentUser) return {ok:false, reason:'not-logged-in'};
@@ -2641,7 +2459,6 @@ function setUser(u){
   } else {
     status.style.display='none'; login.style.display='flex';
   }
-  refreshHomeCalliBtn();
 }
 async function initAuth(){
   if(!window.sb){ document.getElementById('auth-box').style.display='none'; return; }
@@ -2824,13 +2641,6 @@ whenSB(bumpSite);
   document.addEventListener('mousedown',e=>{ if(!box.contains(e.target)) close(); });
 })();
 
-// 대문 천문 — 버튼 바인딩 + 대문 도착 감시 (뷰 전환 코드를 건드리지 않고 폴링으로 받아챔)
-(function bindHomeCalli(){
-  var b=document.getElementById('home-calli-btn');
-  if(b) b.addEventListener('click',openHomeCalliEditor);
-  refreshHomeCalliBtn();
-  (function watch(){ syncHomeCalli(); requestAnimationFrame(watch); })();
-})();
 
 window.addEventListener('resize',resize);
 resize();
