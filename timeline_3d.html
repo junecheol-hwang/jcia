@@ -1966,7 +1966,7 @@ function showHomeCalli(){
   var m=homeCalliMeta();
   if(!m){ hideCalli(); return; }
   var probe=new Image();
-  probe.onload=function(){ if(viewMode==='timeline' && !panelBook) showCalli(m, function(l,t){ if(m){m.left=l;m.top=t;} }); };
+  probe.onload=function(){ if(viewMode==='timeline' && !panelBook) showCalli(m, function(l,t){ if(m){m.left=l;m.top=t;} try{var hs=JSON.parse(localStorage.getItem('jcia_home_calli'))||{};hs.left=l;hs.top=t;localStorage.setItem('jcia_home_calli',JSON.stringify(hs));}catch(e){} }); };
   probe.onerror=function(){ hideCalli(); };
   probe.src=m.url;
 }
@@ -2050,7 +2050,7 @@ function renderHomeCalliEdit(){
         var meta={url:r.url, color:st.color, size:st.size};
         try{ localStorage.setItem('jcia_home_calli', JSON.stringify(meta)); }catch(e){}
         closeHomeCalliEditor();
-        if(viewMode==='timeline' && !panelBook){ _lastAtHome=true; showCalli(meta, function(l,t){ if(meta){meta.left=l;meta.top=t;} }); }
+        if(viewMode==='timeline' && !panelBook){ _lastAtHome=true; showCalli(meta, function(l,t){ if(meta){meta.left=l;meta.top=t;} try{var hs=JSON.parse(localStorage.getItem('jcia_home_calli'))||{};hs.left=l;hs.top=t;localStorage.setItem('jcia_home_calli',JSON.stringify(hs));}catch(e){} }); }
       } else {
         btn.disabled=false; btn.textContent = r.reason==='not-logged-in' ? '로그인이 필요해요' : '실패 — 다시';
       }
@@ -2164,7 +2164,7 @@ function renderCalli(book){
         calliEdit=null;
         await saveBook(book.id, d);
         renderCalli(book);
-        if(panelBook===book) showCalli(meta, function(l,t){ if(meta){meta.left=l;meta.top=t;} });
+        if(panelBook===book) showCalli(meta, function(l,t){ if(meta){meta.left=l;meta.top=t;saveBook(book.id,d);} });
       } else {
         btn.disabled=false;
         btn.textContent = r.reason==='not-logged-in' ? '로그인이 필요해요' : '실패 — 다시';
@@ -2317,12 +2317,12 @@ async function openPanel(book){
   hideCalli();                                   // 이전 별의 글씨는 스러짐
   renderLists(book); renderDial(book); renderCalli(book); renderEssayMark(book);   // 우선 로컬(기존) 렌더
   const local=ensureData(book);
-  if(local.calligraphy) showCalli(local.calligraphy, function(l,t){ if(local.calligraphy&&typeof local.calligraphy==='object'){local.calligraphy.left=l;local.calligraphy.top=t;} });       // 로컬에 이미 있으면 즉시 띄움
+  if(local.calligraphy) showCalli(local.calligraphy, function(l,t){ if(local.calligraphy&&typeof local.calligraphy==='object'){local.calligraphy.left=l;local.calligraphy.top=t;saveBook(book.id,local);} });       // 로컬에 이미 있으면 즉시 띄움
   const remote=await loadBook(book.id);          // 그 책의 저장된 노트 불러오기
   if(panelBook===book && remote){                // 그새 다른 책으로 넘어가지 않았으면 반영
     bookData[book.id]=remote;
     renderLists(book); renderDial(book); renderCalli(book); renderEssayMark(book);
-    if(remote.calligraphy) showCalli(remote.calligraphy, function(l,t){ if(remote.calligraphy&&typeof remote.calligraphy==='object'){remote.calligraphy.left=l;remote.calligraphy.top=t;} }); else hideCalli();
+    if(remote.calligraphy) showCalli(remote.calligraphy, function(l,t){ if(remote.calligraphy&&typeof remote.calligraphy==='object'){remote.calligraphy.left=l;remote.calligraphy.top=t;saveBook(book.id,remote);} }); else hideCalli();
   }
 }
 // 별을 열 때 Supabase 함수로 +1, 반환된 누적값을 패널에 표시
