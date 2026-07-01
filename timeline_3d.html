@@ -1953,6 +1953,32 @@ function hideCalli(){
 var HOME_CALLI_OWNER = '';
 var homeCalliEditState = null;
 var _lastAtHome = false;
+async function homeCalliSaveRemote(meta){
+  if(!window.sb||!currentUser) return;
+  try{
+    await window.sb.from('books_notes').upsert({
+      user_id:currentUser.id, book_id:0,
+      music:[],movie:[],reading:[],lines:[],
+      calligraphy:JSON.stringify(meta),
+      updated_at:new Date().toISOString()
+    },{onConflict:'user_id,book_id'});
+  }catch(e){ console.warn('대문천문 원격 저장', e); }
+}
+async function homeCalliDeleteRemote(){
+  if(!window.sb||!currentUser) return;
+  try{ await window.sb.from('books_notes').delete().eq('user_id',currentUser.id).eq('book_id',0); }catch(e){}
+}
+async function homeCalliLoadRemote(){
+  if(!window.sb) return null;
+  try{
+    var res=await window.sb.from('books_notes').select('calligraphy').eq('book_id',0).maybeSingle();
+    if(res.data&&res.data.calligraphy){
+      var c=typeof res.data.calligraphy==='string'?JSON.parse(res.data.calligraphy):res.data.calligraphy;
+      if(c&&c.url) return c;
+    }
+  }catch(e){ console.warn('대문천문 원격 로드', e); }
+  return null;
+}
 function homeCalliMeta(){
   try{ var s=JSON.parse(localStorage.getItem('jcia_home_calli')); if(s&&s.url) return s; }catch(e){}
   if(window.sb && HOME_CALLI_OWNER){
@@ -1963,10 +1989,16 @@ function homeCalliMeta(){
 }
 function showHomeCalli(){
   if(viewMode!=='timeline' || panelBook) return;
-  var m=homeCalliMeta();
-  if(!m){ hideCalli(); return; }
+  homeCalliLoadRemote().then(function(rm){
+    var m = rm || homeCalliMeta();
+    if(!m){ hideCalli(); return; }
+    if(viewMode!=='timeline' || panelBook) return;
+    _showHomeCalliImg(m);
+  });
+}
+function _showHomeCalliImg(m){
   var probe=new Image();
-  probe.onload=function(){ if(viewMode==='timeline' && !panelBook) showCalli(m, function(l,t){ if(m){m.left=l;m.top=t;} try{var hs=JSON.parse(localStorage.getItem('jcia_home_calli'))||{};hs.left=l;hs.top=t;localStorage.setItem('jcia_home_calli',JSON.stringify(hs));}catch(e){} }); };
+  probe.onload=function(){ if(viewMode==='timeline' && !panelBook) showCalli(m, function(l,t){ if(m){m.left=l;m.top=t;} try{var hs=JSON.parse(localStorage.getItem('jcia_home_calli'))||{};hs.left=l;hs.top=t;localStorage.setItem('jcia_home_calli',JSON.stringify(hs));}catch(e){} m.left=l; m.top=t; homeCalliSaveRemote(m); }); };
   probe.onerror=function(){ hideCalli(); };
   probe.src=m.url;
 }
@@ -2049,6 +2081,7 @@ function renderHomeCalliEdit(){
       if(r.ok){
         var meta={url:r.url, color:st.color, size:st.size};
         try{ localStorage.setItem('jcia_home_calli', JSON.stringify(meta)); }catch(e){}
+        homeCalliSaveRemote(meta);   // 모두에게 보이도록 원격에도
         closeHomeCalliEditor();
         if(viewMode==='timeline' && !panelBook){ _lastAtHome=true; showCalli(meta, function(l,t){ if(meta){meta.left=l;meta.top=t;} try{var hs=JSON.parse(localStorage.getItem('jcia_home_calli'))||{};hs.left=l;hs.top=t;localStorage.setItem('jcia_home_calli',JSON.stringify(hs));}catch(e){} }); }
       } else {
@@ -2066,6 +2099,7 @@ function renderHomeCalliEdit(){
     if(dl) dl.addEventListener('click',function(){
       try{ localStorage.removeItem('jcia_home_calli'); }catch(e){}
       if(window.sb && currentUser){ window.sb.storage.from('calligraphy').remove([currentUser.id+'/_home.png']).catch(function(){}); }
+      homeCalliDeleteRemote();   // 원격 메타도 삭제
       closeHomeCalliEditor();
       _lastAtHome=false;
       if(viewMode==='timeline' && !panelBook) hideCalli();
