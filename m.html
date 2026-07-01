@@ -497,11 +497,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 
 
   /* 대문천문 — "천문올리기" 버튼: 좌하단(우하단 글쓰기 FAB와 분리) · 배경 터치 격리 */
-  #home-calli-btn{ left:1.2rem; right:auto; bottom:calc(env(safe-area-inset-bottom,0px) + 16px);
+  #home-calli-btn{ left:1.2rem; right:auto; bottom:calc(env(safe-area-inset-bottom,0px) + 76px);
     padding:9px 13px; pointer-events:auto; touch-action:manipulation; }
   #home-calli-btn svg{ width:17px; height:17px; }
   #home-calli-edit{ left:0.7rem; right:0.7rem; width:auto;
-    bottom:calc(env(safe-area-inset-bottom,0px) + 62px); pointer-events:auto; touch-action:manipulation; }
+    bottom:calc(env(safe-area-inset-bottom,0px) + 128px); pointer-events:auto; touch-action:manipulation; }
   #home-calli-edit .hc-sw{ width:24px; height:24px; }
   #home-calli-edit .hc-ctrl input[type=range]{ height:24px; }
   #home-calli-edit .hc-row button{ padding:9px 0; font-size:0.8rem; }
@@ -522,8 +522,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
     #book-panel{ bottom:calc(100vh - 100dvh); }
     #essay-pen{ bottom:calc(env(safe-area-inset-bottom,0px) + 14px + 100vh - 100dvh); }
     #bgm-ctrl{ bottom:calc(4.7rem + 100vh - 100dvh); }
-    #home-calli-btn{ bottom:calc(env(safe-area-inset-bottom,0px) + 16px + 100vh - 100dvh); }
-    #home-calli-edit{ bottom:calc(env(safe-area-inset-bottom,0px) + 62px + 100vh - 100dvh); }
+    #home-calli-btn{ bottom:calc(env(safe-area-inset-bottom,0px) + 76px + 100vh - 100dvh); }
+    #home-calli-edit{ bottom:calc(env(safe-area-inset-bottom,0px) + 128px + 100vh - 100dvh); }
   }
 }
 </style>
@@ -2873,13 +2873,15 @@ resize();
       setTY(fullH(), true); window._panelOpen=false; window._sheetPhi=0;
       panel.classList.remove('visible','open'); return;
     }
-    panel.classList.add('visible','open'); window._panelOpen=true;
+    panel.classList.add('visible');
+    if(panelBook) panel.classList.add('open'); else panel.classList.remove('open');
+    window._panelOpen = !!panelBook;   // 책 선택 시만 회전 정지 — 홈(빈) peek 은 배경만 차단하고 회전 유지
     if(s==='peek')      setTY(fullH()-peekH(), true);
     else if(s==='half') setTY(fullH()-halfH(), true);
     else if(s==='full') setTY(0, true);
   }
   window._sheetOpen  = ()=>snapTo('peek');     // 도착 시 자동은 peek 까지만 — 펼침은 사용자가 직접
-  window._sheetClose = ()=>snapTo('closed');
+  window._sheetClose = ()=>snapTo('peek');     // 빈 곳 탭/홈 복귀 → 핸들만 남김(배경 차단 유지)
 
   // 비행이 시작되면(다른 별로 옮겨가면) 머물던 별의 패널을 먼저 내림
   const _origFly = window.flyTo;
@@ -2920,7 +2922,7 @@ resize();
   setTimeout(()=>{ coach.style.opacity='0'; }, 4200);
   setTimeout(()=>{ coach.remove(); }, 5600);
 
-  setTY(fullH(), true);
+  snapTo('peek');   // 최초: 핸들만 보이게 내려놓되 배경 터치는 시트가 흡수(회전은 유지)
 })();
 
 // 대문 천문 — 버튼 바인딩 + 대문 도착 감시 (뷰 전환 코드를 건드리지 않고 폴링으로 받아챔)
