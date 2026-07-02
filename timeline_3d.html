@@ -131,16 +131,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   max-width:44%;max-height:54vh;object-fit:contain;
   filter:drop-shadow(0 0 5px #ffe6a8) drop-shadow(0 0 15px #ffd98a) drop-shadow(0 0 34px rgba(255,200,110,0.55));
 }
-/* 대문 천문 — 우측 하단 버튼 (뒤 배경에 영향 없음: 배경판·블러 없이 색/투명도만) */
-#home-calli-btn{position:fixed;right:1.5rem;bottom:1.4rem;z-index:47;
-  display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;
-  font-family:'Gowun Batang',serif;font-size:0.82rem;letter-spacing:0.05em;
-  color:var(--orange-faded);opacity:0.5;transition:opacity 0.3s,color 0.3s;
-  -webkit-tap-highlight-color:transparent;}
-#home-calli-btn:hover{opacity:1;color:var(--orange-pale);}
-#home-calli-btn svg{width:15px;height:15px;flex:none;}
-#home-calli-btn.hidden{display:none;}
-#home-calli-edit{position:fixed;right:1.5rem;bottom:3.5rem;z-index:48;width:232px;
+/* 대문 천문 — 문은 상단 원자 로고에 숨어 있음: 투명한 원(#brand-door), 커서도 바뀌지 않음 */
+#brand-door{position:absolute;left:-6px;top:50%;transform:translateY(-50%);
+  width:40px;height:40px;border-radius:50%;pointer-events:auto;
+  background:transparent;-webkit-tap-highlight-color:transparent;}
+#home-calli-edit{position:fixed;right:3rem;top:3.4rem;z-index:48;width:232px;
   background:rgba(18,17,15,0.93);border:1px solid rgba(217,169,110,0.28);border-radius:10px;
   padding:13px 14px;box-shadow:0 8px 30px rgba(0,0,0,0.5);
   font-family:'Gowun Batang',serif;color:var(--gray-light);display:none;}
@@ -468,6 +463,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 
 <!-- 상단 우측 로고 -->
 <div id="brand">
+  <div id="brand-door"></div>
   <svg id="brand-mark" viewBox="0 0 44 44" fill="none" aria-hidden="true">
     <circle cx="22" cy="22" r="2.5" fill="#d9b97a"/>
     <circle cx="22" cy="22" r="5.6" stroke="#d9b97a" stroke-width="1" opacity="0.85"/>
@@ -548,11 +544,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 
 <div id="calli-sky"><img id="calli-img" alt=""></div>
 
-<!-- 대문 천문 — 우측 하단 -->
-<button id="home-calli-btn" class="hidden" title="대문에 천문 띄우기">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19c4-13 7-2 9-9s4 7 7-2"/><circle cx="19" cy="7" r="0.9" fill="currentColor" stroke="none"/></svg>
-  <span>천문</span>
-</button>
+<!-- 대문 천문 — 편집판 (문은 상단 로고에 숨어 있음) -->
 <div id="home-calli-edit"></div>
 
 <!-- 글쓰기: 상단 펜 + 내려오는 에디터 -->
@@ -2657,11 +2649,10 @@ whenSB(bumpSite);
   document.addEventListener('mousedown',e=>{ if(!box.contains(e.target)) close(); });
 })();
 
-// 대문 천문 — 버튼 바인딩 + 대문 도착 감시 (뷰 전환 코드를 건드리지 않고 폴링으로 받아챔)
+// 대문 천문 — 문은 원자 로고 위 투명한 원. 주인(로그인)에게만 열리고, 손님에겐 아무 일도 일어나지 않음
 (function bindHomeCalli(){
-  var b=document.getElementById('home-calli-btn');
-  if(b) b.addEventListener('click',openHomeCalliEditor);
-  refreshHomeCalliBtn();
+  var d=document.getElementById('brand-door');
+  if(d) d.addEventListener('click',function(){ if(!currentUser) return; openHomeCalliEditor(); });
   (function watch(){ syncHomeCalli(); requestAnimationFrame(watch); })();
 })();
 
