@@ -40,26 +40,22 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 }
 
 /* 성단 헤더 */
-/* 책 패널 — 우측, 검색창 아래 */
-#book-panel{
-  position:fixed;top:1.15rem;left:3rem;z-index:44;
-  width:clamp(240px,26vw,340px);
-  font-family:'Gowun Batang',sans-serif;
-  pointer-events:none;opacity:0;transition:opacity 0.3s ease;
+/* 문패 — 상단 서랍의 머리 (좌: 별똥별 · 우: 책이름/작가/출판사) */
+#book-panel{display:none;}                 /* 옛 카드 껍데기 — JS 호환용 */
+#bp-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:1.2rem;
+  margin:0 0 1rem;padding-bottom:0.75rem;
+  border-bottom:0.5px solid rgba(217,169,110,0.16);
+  font-family:'Gowun Batang',serif;
 }
-#book-panel.visible{opacity:1;pointer-events:auto;}
-#bp-info{
-  background:rgba(2,5,10,0.55);
-  border-radius:2px;
-  padding:0.8rem 1rem 0.7rem;
-  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-}
+#bp-views{flex:none;padding-top:3px;
+  font-size:0.7rem;color:var(--orange-worn);letter-spacing:0.08em;opacity:0.9;}
+#bp-titlebox{flex:1;min-width:0;text-align:right;}
 #bp-title{
   font-family:'Gowun Batang',serif;font-weight:700;
-  font-size:1.04rem;color:var(--orange-pale);letter-spacing:0.04em;
+  font-size:0.98rem;color:var(--orange-pale);letter-spacing:0.04em;line-height:1.45;
 }
-#bp-author{font-size:0.72rem;color:var(--gray-mid);letter-spacing:0.06em;margin-top:0.35rem;}
-#bp-views{font-size:0.64rem;color:var(--orange-worn);letter-spacing:0.08em;margin-top:0.4rem;opacity:0.85;}
+#bp-author{font-size:0.7rem;color:var(--gray-mid);letter-spacing:0.06em;margin-top:0.3rem;}
 #comet-slot{
   position:relative;height:0.95rem;margin-top:0.5rem;
 }
@@ -545,13 +541,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 </div>
 
 <!-- 책 패널 — 검색창 아래: 책 정보 + 입력/저장 -->
-<div id="book-panel">
-  <div id="bp-info">
-    <div id="bp-title"></div>
-    <div id="bp-author"></div>
-    <div id="bp-views"></div>
-  </div>
-</div>
+<div id="book-panel"><div id="bp-info"></div></div><!-- 문패는 상단 서랍 머리로 이사, 껍데기만 유지 -->
 
 <!-- 상단 서랍 다섯 — 선택된 별의 것 (별 미선택 시 잠김) -->
 <div id="drawer-icons" class="locked">
@@ -562,6 +552,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   <button data-sec="calli" title="천문">天文</button>
 </div>
 <div id="bp-body">
+  <div id="bp-head">
+    <div id="bp-views"></div>
+    <div id="bp-titlebox">
+      <div id="bp-title"></div>
+      <div id="bp-author"></div>
+    </div>
+  </div>
     <div class="bp-section">
       <div class="bp-label">♪ 같이 하면 좋을 음악</div>
       <div class="bp-add">
