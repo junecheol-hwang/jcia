@@ -42,7 +42,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 /* 성단 헤더 */
 /* 책 패널 — 우측, 검색창 아래 */
 #book-panel{
-  position:fixed;top:8.8rem;right:3rem;z-index:44;
+  position:fixed;top:1.15rem;left:3rem;z-index:44;
   width:clamp(240px,26vw,340px);
   font-family:'Gowun Batang',sans-serif;
   pointer-events:none;opacity:0;transition:opacity 0.3s ease;
@@ -220,9 +220,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   font-family:inherit;transition:border-color 0.15s;}
 .essay-acts button#essay-save{border-color:rgba(217,169,110,0.5);color:var(--orange-pale);}
 .essay-acts button:hover{border-color:rgba(217,169,110,0.7);}
-#bp-essay-mark{display:inline-flex;align-items:center;gap:5px;cursor:pointer;
-  font-size:0.74rem;color:var(--orange-pale);margin-top:4px;animation:essayPulse 2.4s ease-in-out infinite;}
-@keyframes essayPulse{0%,100%{opacity:0.4;}50%{opacity:1;}}
+#essay-pen.pulse{animation:essayPulse 2.2s ease-in-out infinite;color:var(--orange-pale);}
+@keyframes essayPulse{0%,100%{opacity:0.35;}50%{opacity:1;}}
 .bp-calli-ctrl{display:flex;align-items:center;gap:7px;margin-top:7px;}
 .bp-calli-ctrl span{font-size:0.62rem;color:var(--gray-dark);white-space:nowrap;}
 .bp-calli-ctrl input[type=range]{flex:1;}
@@ -551,7 +550,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
     <div id="bp-title"></div>
     <div id="bp-author"></div>
     <div id="bp-views"></div>
-    <div id="bp-essay-mark" style="display:none">文 &nbsp;이 별의 글</div>
   </div>
 </div>
 
@@ -2366,12 +2364,11 @@ async function deleteEssay(){
   closeEssay();
 }
 function renderEssayMark(book){
-  var el=document.getElementById('bp-essay-mark');
-  if(!el) return;
+  var pen=document.getElementById('essay-pen');
+  if(!pen) return;
   var d=ensureData(book), es=d.essay;
   var canSee = es && es.html && (es.isPublic!==false || !!currentUser);
-  if(canSee){ el.style.display='inline-flex'; el.onclick=function(){ openEssay(book); }; }
-  else { el.style.display='none'; el.onclick=null; }
+  pen.classList.toggle('pulse', !!canSee);   // 글이 있는 별 — 만년필이 숨 쉬듯 밝아졌다 어두워짐
 }
 async function loadEssayStars(){
   if(!window.sb) return;
@@ -2874,7 +2871,8 @@ whenSB(bumpSite);
   var last=null;
   (function watch(){
     var pb=(typeof panelBook!=='undefined')?panelBook:null;
-    if(pb!==last){ last=pb; strip.classList.toggle('locked', !pb); if(!pb) closeD(); }
+    if(pb!==last){ last=pb; strip.classList.toggle('locked', !pb);
+      if(!pb){ closeD(); var pn=document.getElementById('essay-pen'); if(pn) pn.classList.remove('pulse'); } }
     requestAnimationFrame(watch);
   })();
 })();
