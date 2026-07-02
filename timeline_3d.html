@@ -311,29 +311,50 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 }
 .nav-dot:hover{background:var(--orange-faded);transform:scale(1.3);}
 
-/* BGM 컨트롤 */
-#bgm-ctrl{
-  position:fixed;bottom:4.7rem;left:3rem;
-  z-index:30;display:flex;align-items:center;gap:10px;
-  pointer-events:all;
-}
-#bgm-btn{
-  width:28px;height:28px;border-radius:50%;
-  background:transparent;border:0.5px solid rgba(110,108,102,0.4);
-  cursor:pointer;display:flex;align-items:center;justify-content:center;
-  transition:all 0.25s;
-}
-#bgm-btn:hover{ border-color:var(--orange-faded); }
-#bgm-btn svg{ width:12px;height:12px; }
-#bgm-vol{
-  -webkit-appearance:none;appearance:none;
-  width:60px;height:2px;
-  background:rgba(110,108,102,0.3);border-radius:2px;outline:none;cursor:pointer;
-}
-#bgm-vol::-webkit-slider-thumb{
-  -webkit-appearance:none;width:10px;height:10px;border-radius:50%;
-  background:var(--orange-worn);cursor:pointer;
-}
+/* ── 주크박스 — 좌하단, 별밭 팔레트 재생 카드 ── */
+#jukebox{position:fixed;bottom:4.7rem;left:3rem;z-index:30;pointer-events:all;
+  font-family:'Gowun Batang',serif;}
+#jb-toggle{width:30px;height:30px;border-radius:50%;
+  background:transparent;border:0.5px solid rgba(110,108,102,0.45);
+  color:var(--orange-worn);font-size:0.85rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:border-color 0.25s,color 0.25s;-webkit-tap-highlight-color:transparent;}
+#jb-toggle:hover{border-color:var(--orange-faded);color:var(--orange-pale);}
+#jb-card{position:absolute;left:0;bottom:40px;width:296px;
+  background:rgba(6,9,18,0.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:0.5px solid rgba(217,169,110,0.28);border-radius:16px;
+  padding:0.95rem 1rem 0.85rem;box-shadow:0 10px 34px rgba(0,0,0,0.45);
+  opacity:0;transform:translateY(8px);pointer-events:none;
+  transition:opacity 0.35s,transform 0.35s;}
+#jukebox.open #jb-card{opacity:1;transform:translateY(0);pointer-events:auto;}
+#jb-top{display:flex;align-items:center;gap:0.8rem;}
+#jb-art{width:50px;height:50px;border-radius:9px;flex:none;overflow:hidden;
+  border:0.5px solid rgba(217,169,110,0.35);
+  background:linear-gradient(135deg,#1a2138,#0c1020);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--orange-faded);font-size:1.15rem;}
+#jb-art img{width:100%;height:100%;object-fit:cover;display:block;}
+#jb-meta{flex:1;min-width:0;}
+#jb-title{font-size:0.92rem;font-weight:600;color:var(--gray-light);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#jb-artist{font-size:0.72rem;color:var(--gray-mid);margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#jb-up{flex:none;width:24px;height:24px;border-radius:6px;background:none;cursor:pointer;
+  border:0.5px solid rgba(217,169,110,0.4);color:var(--orange-faded);font-size:0.85rem;
+  line-height:1;transition:color .2s,border-color .2s;}
+#jb-up:hover{color:var(--orange-pale);border-color:var(--orange-faded);}
+#jb-up.hidden{display:none;}
+#jb-prog{display:flex;align-items:center;gap:0.5rem;margin-top:0.8rem;}
+#jb-prog span{font-size:0.62rem;color:var(--gray-mid);flex:none;font-variant-numeric:tabular-nums;}
+#jb-bar{flex:1;height:3px;border-radius:2px;background:rgba(232,226,214,0.16);
+  position:relative;cursor:pointer;}
+#jb-fill{position:absolute;left:0;top:0;bottom:0;width:0%;
+  background:var(--orange-faded);border-radius:2px;pointer-events:none;}
+#jb-ctrl{display:flex;align-items:center;justify-content:center;gap:1.9rem;margin-top:0.55rem;}
+#jb-ctrl button{background:none;border:none;cursor:pointer;color:var(--gray-light);
+  font-size:0.95rem;padding:2px 6px;transition:color .2s;-webkit-tap-highlight-color:transparent;}
+#jb-ctrl button:hover{color:var(--orange-pale);}
+#jb-play{font-size:1.2rem;color:var(--orange-faded);}
 
 /* back to the timeline */
 #back-btn{
@@ -446,11 +467,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 
 <div id="three-container"></div>
 
-<!-- BGM -->
-<audio id="bgm" loop preload="auto">
-  <source src="bgm.sentient_beings.mp3" type="audio/mpeg">
-</audio>
-
 <div id="ui-layer">
   <div id="header">
     <div id="header-subtitle"></div>
@@ -462,15 +478,30 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   <div id="nav"></div>
   <div id="back-btn" onclick="exitCluster()">BACK TO THE TIMELINE</div>
 
-  <!-- BGM 컨트롤 -->
-  <div id="bgm-ctrl">
-    <button id="bgm-btn" onclick="toggleBgm()" title="음악 재생/정지">
-      <svg id="bgm-icon" viewBox="0 0 24 24" fill="none" stroke="rgba(110,108,102,0.8)" stroke-width="2">
-        <polygon points="5,3 19,12 5,21" fill="rgba(110,108,102,0.8)" stroke="none"/>
-      </svg>
-    </button>
-    <input type="range" id="bgm-vol" min="0" max="1" step="0.05" value="0.35"
-           oninput="setBgmVol(this.value)" title="볼륨">
+  <!-- 주크박스 — 좌하단 재생 카드 (♪ 단추로 여닫음) -->
+  <div id="jukebox">
+    <button id="jb-toggle" title="주크박스">♪</button>
+    <div id="jb-card">
+      <div id="jb-top">
+        <div id="jb-art"><span>♪</span></div>
+        <div id="jb-meta">
+          <div id="jb-title">별밭의 노래</div>
+          <div id="jb-artist"></div>
+        </div>
+        <button id="jb-up" class="hidden" title="곡 올리기 (mp3)">＋</button>
+        <input type="file" id="jb-file" accept="audio/mpeg,.mp3" multiple style="display:none">
+      </div>
+      <div id="jb-prog">
+        <span id="jb-t0">0:00</span>
+        <div id="jb-bar"><i id="jb-fill"></i></div>
+        <span id="jb-t1">−0:00</span>
+      </div>
+      <div id="jb-ctrl">
+        <button id="jb-prev" title="이전 곡">◀◀</button>
+        <button id="jb-play" title="재생/멈춤">▶</button>
+        <button id="jb-next" title="다음 곡">▶▶</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1790,52 +1821,170 @@ document.addEventListener('keydown',e=>{
   }
 });
 
-// ── BGM 제어 ─────────────────────────────────────────
-const bgm = document.getElementById('bgm');
-let bgmPlaying = false;
+// ── 주크박스 — Supabase Storage 'jukebox' 버킷의 mp3를 차례로 ──
+(function jukebox(){
+  var $=function(id){ return document.getElementById(id); };
+  var box=$('jukebox'); if(!box) return;
+  var audio=new Audio(); audio.preload='metadata'; audio.volume=0.5;
+  var tracks=[], idx=-1, coverUrl=null;
 
-bgm.volume = 0.35;
-
-// 첫 번째 사용자 인터랙션 시 자동 재생 시도
-function tryAutoPlay(){
-  bgm.play().then(()=>{
-    bgmPlaying = true;
-    updateBgmIcon();
-  }).catch(()=>{}); // 자동재생 차단 시 무시
-  document.removeEventListener('click', tryAutoPlay);
-  document.removeEventListener('keydown', tryAutoPlay);
-}
-document.addEventListener('click', tryAutoPlay);
-document.addEventListener('keydown', tryAutoPlay);
-
-window.toggleBgm = function(){
-  if(bgmPlaying){
-    bgm.pause();
-    bgmPlaying = false;
-  } else {
-    bgm.play();
-    bgmPlaying = true;
+  function fmt(s){ s=Math.max(0,Math.floor(s||0)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+  function nameMeta(fn){
+    var b=fn.replace(/\.[^.]+$/,'').replace(/^\d+[\s._-]+/,'');
+    var m=b.split(' - ');
+    return m.length>=2 ? {artist:m[0].trim(), title:m.slice(1).join(' - ').trim()} : {artist:'', title:b.trim()};
   }
-  updateBgmIcon();
-};
 
-window.setBgmVol = function(v){
-  bgm.volume = parseFloat(v);
-};
-
-function updateBgmIcon(){
-  const icon = document.getElementById('bgm-icon');
-  if(bgmPlaying){
-    // 일시정지 아이콘
-    icon.innerHTML = `
-      <rect x="6" y="4" width="4" height="16" fill="rgba(184,125,62,0.8)"/>
-      <rect x="14" y="4" width="4" height="16" fill="rgba(184,125,62,0.8)"/>`;
-  } else {
-    // 재생 아이콘
-    icon.innerHTML = `
-      <polygon points="5,3 19,12 5,21" fill="rgba(110,108,102,0.8)" stroke="none"/>`;
-  }
+// parseId3(bytes:Uint8Array) → {title?, artist?, coverBytes?, coverMime?} | null
+function parseId3(buf){
+  try{
+    if(buf[0]!==0x49||buf[1]!==0x44||buf[2]!==0x33) return null;   // 'ID3'
+    var ver=buf[3];
+    var syn=function(a,o){ return ((a[o]&0x7f)<<21)|((a[o+1]&0x7f)<<14)|((a[o+2]&0x7f)<<7)|(a[o+3]&0x7f); };
+    var size=syn(buf,6)+10, off=10;
+    if(buf[5]&0x40){ var ext=(ver===4)?syn(buf,10):(((buf[10]<<24)|(buf[11]<<16)|(buf[12]<<8)|buf[13])>>>0)+4; off+=ext; }
+    var dec=function(enc,b){
+      try{
+        if(enc===0) return new TextDecoder('latin1').decode(b);
+        if(enc===1) return new TextDecoder('utf-16').decode(b);
+        if(enc===2) return new TextDecoder('utf-16be').decode(b);
+        return new TextDecoder('utf-8').decode(b);
+      }catch(e){ try{ return new TextDecoder('utf-8').decode(b); }catch(_){ return ''; } }
+    };
+    var out={}, end=Math.min(size, buf.length);
+    while(off+10<=end){
+      var id=String.fromCharCode(buf[off],buf[off+1],buf[off+2],buf[off+3]);
+      if(!/^[A-Z0-9]{4}$/.test(id)) break;
+      var fsz=(ver===4)?syn(buf,off+4):(((buf[off+4]<<24)|(buf[off+5]<<16)|(buf[off+6]<<8)|buf[off+7])>>>0);
+      var st=off+10;
+      if(fsz<=0 || st>buf.length) break;
+      var data=buf.subarray(st, Math.min(st+fsz, buf.length));
+      if(id==='TIT2'||id==='TPE1'){
+        var s=dec(data[0], data.subarray(1)).replace(/\0+$/g,'').replace(/^\uFEFF/,'').trim();
+        if(id==='TIT2') out.title=s; else out.artist=s;
+      }else if(id==='APIC' && !out.coverBytes){
+        var enc=data[0], p=1;
+        while(p<data.length && data[p]!==0) p++;
+        var mime=dec(0, data.subarray(1,p)); p++;
+        p++;                                            // picture type
+        if(enc===1||enc===2){ while(p+1<data.length && !(data[p]===0&&data[p+1]===0)) p+=2; p+=2; }
+        else{ while(p<data.length && data[p]!==0) p++; p++; }
+        var img=data.subarray(p);
+        if(img.length>40){ out.coverBytes=img; out.coverMime=mime||'image/jpeg'; }
+      }
+      off=st+fsz;
+      if(out.title && out.artist && out.coverBytes) break;
+    }
+    return out;
+  }catch(e){ return null; }
 }
+
+  async function refineMeta(t){
+    try{
+      var res=await fetch(t.url,{headers:{Range:'bytes=0-262143'}});
+      var tag=parseId3(new Uint8Array(await res.arrayBuffer()));
+      if(!tag) return;
+      if(tag.title) t.title=tag.title;
+      if(tag.artist) t.artist=tag.artist;
+      if(tag.coverBytes) t.cover=new Blob([tag.coverBytes],{type:tag.coverMime});
+      if(tracks[idx]===t) paint(t);
+    }catch(e){}
+  }
+
+  function paint(t){
+    $('jb-title').textContent=t.title||'—';
+    $('jb-artist').textContent=t.artist||'';
+    var art=$('jb-art');
+    if(coverUrl){ URL.revokeObjectURL(coverUrl); coverUrl=null; }
+    if(t.cover){ coverUrl=URL.createObjectURL(t.cover); art.innerHTML='<img alt="" src="'+coverUrl+'">'; }
+    else art.innerHTML='<span>♪</span>';
+  }
+  function paintBtn(){ $('jb-play').textContent=audio.paused?'▶':'❚❚'; }
+
+  function playAt(i, autoplay){
+    if(!tracks.length) return;
+    idx=(i+tracks.length)%tracks.length;
+    var t=tracks[idx];
+    audio.src=t.url; paint(t);
+    if(!t._refined){ t._refined=true; refineMeta(t); }
+    if(autoplay!==false) audio.play().catch(function(){});
+    paintBtn();
+  }
+
+  async function loadList(first){
+    if(!window.sb){ setTimeout(function(){ loadList(first); },400); return; }
+    try{
+      var r=await window.sb.storage.from('jukebox').list('',{limit:300,sortBy:{column:'name',order:'asc'}});
+      if(r.error) throw r.error;
+      tracks=(r.data||[]).filter(function(f){ return /\.mp3$/i.test(f.name); })
+        .map(function(f){
+          var m=nameMeta(f.name);
+          return { name:f.name, title:m.title, artist:m.artist,
+                   url:window.sb.storage.from('jukebox').getPublicUrl(f.name).data.publicUrl };
+        });
+      if(tracks.length && first) playAt(0,false);          // 목록만 준비 — 소리는 첫 손짓 뒤
+      if(!tracks.length){ $('jb-title').textContent='별밭의 노래'; $('jb-artist').textContent='아직 곡이 없어요'; }
+    }catch(e){ console.warn('jukebox list', e); }
+  }
+
+  // ── 컨트롤 ──
+  $('jb-toggle').addEventListener('click',function(){ box.classList.toggle('open'); });
+  $('jb-play').addEventListener('click',function(){
+    if(idx<0){ playAt(0); return; }
+    if(audio.paused) audio.play().catch(function(){}); else audio.pause();
+  });
+  $('jb-prev').addEventListener('click',function(){ playAt(idx-1); });
+  $('jb-next').addEventListener('click',function(){ playAt(idx+1); });
+  audio.addEventListener('play',paintBtn);
+  audio.addEventListener('pause',paintBtn);
+  audio.addEventListener('ended',function(){ playAt(idx+1); });
+  audio.addEventListener('timeupdate',function(){
+    var d=audio.duration||0, c=audio.currentTime||0;
+    $('jb-fill').style.width=(d? (c/d*100):0)+'%';
+    $('jb-t0').textContent=fmt(c);
+    $('jb-t1').textContent='\u2212'+fmt(Math.max(0,d-c));
+  });
+  $('jb-bar').addEventListener('click',function(e){
+    if(!audio.duration) return;
+    var r=e.currentTarget.getBoundingClientRect();
+    audio.currentTime=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*audio.duration;
+  });
+
+  // 첫 손짓에 흐르기 — 브라우저 자동재생 규칙(사용자 입력 이후에만) 준수
+  function firstTouch(){
+    document.removeEventListener('click',firstTouch);
+    document.removeEventListener('keydown',firstTouch);
+    if(tracks.length && audio.paused && idx>=0) audio.play().catch(function(){});
+  }
+  document.addEventListener('click',firstTouch);
+  document.addEventListener('keydown',firstTouch);
+
+  // ── 곡 올리기 — 주인에게만 (+). 붓글씨 올리듯 Storage에 ──
+  setInterval(function(){
+    var up=$('jb-up'); if(!up) return;
+    var me=(typeof currentUser!=='undefined')?currentUser:null;
+    up.classList.toggle('hidden', !me);
+  },1500);
+  $('jb-up').addEventListener('click',function(){ $('jb-file').click(); });
+  $('jb-file').addEventListener('change',async function(){
+    var files=Array.prototype.slice.call(this.files||[]); this.value='';
+    if(!files.length || !window.sb) return;
+    $('jb-artist').textContent='올리는 중\u2026 0/'+files.length;
+    var done=0;
+    for(var i=0;i<files.length;i++){
+      try{
+        var f=files[i];
+        var safe=f.name.replace(/[^\w.\u3131-\uD79D\s()\[\]&+,'-]/g,'_');
+        var r=await window.sb.storage.from('jukebox').upload(safe, f, {upsert:true, contentType:'audio/mpeg'});
+        if(r.error) throw r.error;
+        done++; $('jb-artist').textContent='올리는 중\u2026 '+done+'/'+files.length;
+      }catch(e){ console.warn('jukebox upload', e); $('jb-artist').textContent='올리기 실패: '+(e.message||e); }
+    }
+    loadList(false);
+  });
+
+  loadList(true);
+})();
 
 // ── 책 패널 (정보 + 입력/저장, 세션 메모리) ───────────
 function refreshFocus(){
