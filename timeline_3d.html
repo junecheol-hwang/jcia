@@ -2460,7 +2460,7 @@ function bumpView(book){
   if(!window.sb) return;
   window.sb.rpc('bump_view',{bid:book.id}).then(({data,error})=>{
     if(!error && data!=null && panelBook===book)
-      document.getElementById('bp-views').textContent=data+'번 펼쳐봄';
+      document.getElementById('bp-views').textContent='별똥별  '+data;
   }).catch(()=>{});
 }
 // 스쳐간 혜성들 — 사이트 진입 시 +1 (페이지 로드 1회)
