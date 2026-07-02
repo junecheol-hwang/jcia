@@ -70,15 +70,35 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   text-shadow:0 0 6px rgba(217,169,110,0.25);
 }
 .comet.show{opacity:0.74;}
-#bp-body{
-  display:none;margin-top:6px;
-  background:rgba(2,5,10,0.72);
-  border-radius:2px;
-  padding:0.9rem 1rem 1rem;
-  backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
-  max-height:64vh;overflow-y:auto;
+/* ── 상단 서랍 다섯 — 선택된 별의 것 ── */
+#drawer-icons{
+  position:fixed;top:0.95rem;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:1.7rem;z-index:46;
 }
-#book-panel.open #bp-body{display:block;}
+#drawer-icons button{
+  background:none;border:none;cursor:pointer;padding:5px 7px;
+  font-family:'Gowun Batang',serif;font-size:1.02rem;letter-spacing:0.02em;
+  color:var(--orange-faded);opacity:0.72;
+  transition:opacity 0.3s,color 0.3s;-webkit-tap-highlight-color:transparent;
+}
+#drawer-icons button:hover,#drawer-icons button.on{opacity:1;color:var(--orange-pale);}
+#drawer-icons button svg{width:17px;height:17px;display:block;}
+#drawer-icons.locked button{opacity:0.16;pointer-events:none;}
+#bp-body{
+  position:fixed;top:0;left:50%;z-index:45;
+  width:min(600px,92vw);
+  transform:translate(-50%,-108%);
+  transition:transform 0.5s cubic-bezier(.22,.61,.36,1);
+  background:rgba(6,9,18,0.6);                                /* 투명 60% */
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:0.5px solid rgba(217,169,110,0.22);border-top:none;
+  border-radius:0 0 14px 14px;
+  padding:3.6rem 1.5rem 1.3rem;
+  max-height:70vh;overflow-y:auto;
+}
+#bp-body.open{transform:translate(-50%,0);}
+#bp-body .bp-section{display:none;}
+#bp-body .bp-section.active{display:block;}
 #bp-body::-webkit-scrollbar{width:5px;}
 #bp-body::-webkit-scrollbar-thumb{background:rgba(110,108,102,0.3);border-radius:3px;}
 .bp-section{margin-bottom:1.1rem;}
@@ -166,7 +186,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 .bp-calli-sw{width:19px;height:19px;border-radius:50%;border:1px solid rgba(110,108,102,0.45);cursor:pointer;padding:0;transition:box-shadow 0.2s,border-color 0.2s;}
 .bp-calli-sw.on{border-color:var(--gray-light);box-shadow:0 0 0 1.5px var(--gray-light);}
 /* 글쓰기 — 상단에서 내려오는 에디터 */
-#essay-pen{position:fixed;top:1.3rem;left:50%;transform:translateX(-50%);z-index:47;
+#essay-pen{position:fixed;top:50%;right:1.1rem;left:auto;transform:translateY(-50%);z-index:47;
   width:30px;height:30px;display:flex;align-items:center;justify-content:center;
   cursor:pointer;opacity:0.5;transition:opacity 0.3s;color:var(--orange-faded);}
 #essay-pen:hover{opacity:1;}
@@ -501,7 +521,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
     <div id="bp-views"></div>
     <div id="bp-essay-mark" style="display:none">文 &nbsp;이 별의 글</div>
   </div>
-  <div id="bp-body">
+</div>
+
+<!-- 상단 서랍 다섯 — 선택된 별의 것 (별 미선택 시 잠김) -->
+<div id="drawer-icons" class="locked">
+  <button data-sec="music" title="같이 하면 좋을 음악">♪</button>
+  <button data-sec="movie" title="같이 보면 좋을 영화"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M6.8 5v14M17.2 5v14M2.5 9.5h4.3M2.5 14.5h4.3M17.2 9.5h4.3M17.2 14.5h4.3"/></svg></button>
+  <button data-sec="reading" title="더 읽을거리들"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.2C10.2 4.8 7.9 4.2 4.5 4.2v13.6c3.4 0 5.7.6 7.5 2 1.8-1.4 4.1-2 7.5-2V4.2c-3.4 0-5.7.6-7.5 2z"/><path d="M12 6.2v13.6"/></svg></button>
+  <button data-sec="lines" title="내 마음속의 문장들">❝❞</button>
+  <button data-sec="calli" title="천문">天文</button>
+</div>
+<div id="bp-body">
     <div class="bp-section">
       <div class="bp-label">♪ 같이 하면 좋을 음악</div>
       <div class="bp-add">
@@ -540,7 +570,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
       <div id="bp-calli"></div>
     </div>
   </div>
-</div>
 
 <div id="calli-sky"><img id="calli-img" alt=""></div>
 
@@ -2660,6 +2689,39 @@ whenSB(bumpSite);
   var d=document.getElementById('brand-door');
   if(d) d.addEventListener('click',function(){ if(!currentUser) return; openHomeCalliEditor(); });
   (function watch(){ syncHomeCalli(); requestAnimationFrame(watch); })();
+})();
+
+// ── 상단 서랍 다섯 — 선택된 별의 것. 아이콘 재클릭 시 스르륵 닫힘, 별 미선택 시 잠김 ──
+(function bindDrawers(){
+  var body=document.getElementById('bp-body');
+  var strip=document.getElementById('drawer-icons');
+  if(!body || !strip) return;
+  var secOf=function(id){ var el=document.getElementById(id); return el?el.closest('.bp-section'):null; };
+  var SECS={ music:secOf('bp-music-list'), movie:secOf('bp-movie-list'),
+             reading:secOf('bp-reading-list'), lines:document.querySelector('.bp-lines-section'),
+             calli:secOf('bp-calli') };
+  var cur=null;
+  function show(sec){
+    Object.keys(SECS).forEach(function(k){ if(SECS[k]) SECS[k].classList.toggle('active', k===sec); });
+    Array.prototype.forEach.call(strip.querySelectorAll('button'),function(b){
+      b.classList.toggle('on', b.getAttribute('data-sec')===sec);
+    });
+  }
+  function openD(sec){ cur=sec; show(sec); body.classList.add('open'); }
+  function closeD(){ cur=null; show(null); body.classList.remove('open'); }
+  strip.addEventListener('click',function(e){
+    var b=e.target.closest('button'); if(!b) return;
+    if(!panelBook) return;                       // 잠김 — 별을 먼저
+    var s=b.getAttribute('data-sec');
+    if(cur===s) closeD(); else openD(s);
+  });
+  // 별 선택 감시 — 별이 닫히면 서랍도 닫히고 아이콘이 잠김
+  var last=null;
+  (function watch(){
+    var pb=(typeof panelBook!=='undefined')?panelBook:null;
+    if(pb!==last){ last=pb; strip.classList.toggle('locked', !pb); if(!pb) closeD(); }
+    requestAnimationFrame(watch);
+  })();
 })();
 
 window.addEventListener('resize',resize);
