@@ -122,19 +122,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 .bp-yt-link:hover .bp-yt-title{color:var(--orange-pale);}
 /* 붓글씨 — 하늘 글로우 레이어 (다: 패널과 함께 떴다 닫으면 스러짐) */
 #calli-sky{
-  position:fixed;inset:0;z-index:30;
+  position:fixed;top:0;left:0;width:62vw;height:100vh;z-index:30;
+  display:flex;align-items:center;justify-content:center;
   pointer-events:none;opacity:0;transition:opacity 1.3s ease;
 }
 #calli-sky.show{opacity:1;}
 #calli-img{
-  position:absolute;left:33%;top:50%;
-  transform:translate(-50%,-50%);
   max-width:44%;max-height:54vh;object-fit:contain;
-  pointer-events:auto;cursor:default;will-change:transform,left,top;
   filter:drop-shadow(0 0 5px #ffe6a8) drop-shadow(0 0 15px #ffd98a) drop-shadow(0 0 34px rgba(255,200,110,0.55));
 }
-#calli-img.editable{cursor:grab;}
-#calli-img.dragging{cursor:grabbing;}
 /* 대문 천문 — 우측 하단 버튼 (뒤 배경에 영향 없음: 배경판·블러 없이 색/투명도만) */
 #home-calli-btn{position:fixed;right:1.5rem;bottom:1.4rem;z-index:47;
   display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;
@@ -155,8 +151,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 #home-calli-edit .hc-ctrl{display:flex;align-items:center;gap:8px;font-size:0.68rem;color:var(--gray-mid);margin:5px 0;}
 #home-calli-edit .hc-ctrl span{width:26px;flex:none;}
 #home-calli-edit .hc-ctrl input[type=range]{flex:1;accent-color:var(--orange-faded);}
-#home-calli-edit .hc-sws{display:flex;gap:7px;margin:8px 0;}
-#home-calli-edit .hc-sw{width:18px;height:18px;border-radius:50%;border:1px solid rgba(255,255,255,0.25);cursor:pointer;padding:0;}
+#home-calli-edit .hc-sws{display:grid;grid-template-columns:repeat(6,20px);gap:8px 9px;margin:9px 0;justify-content:start;}
+#home-calli-edit .hc-sw{width:20px;height:20px;border-radius:0;border:1px solid rgba(255,255,255,0.25);cursor:pointer;padding:0;}
 #home-calli-edit .hc-sw.on{outline:2px solid var(--orange-faded);outline-offset:1px;}
 #home-calli-edit .hc-row{display:flex;gap:7px;margin-top:10px;}
 #home-calli-edit .hc-row button{flex:1;font-family:'Gowun Batang',serif;font-size:0.72rem;padding:6px 0;
@@ -944,10 +940,9 @@ function buildBookStars(){
   // ── 성단 안에서 깨어나기 — 가장 촘촘한 무리 곁에서 시작 (시드 고정) ──
   let startNeb=NEB_SEEDS[0];
   for(const s of NEB_SEEDS) if(s.w<startNeb.w) startNeb=s;  // w 작을수록 촘촘
-  window._startNeb=startNeb;
   const mr=Math.hypot(startNeb.x,startNeb.y,startNeb.z);
   const nav=window._nav;
-  const back=86;                       // 멀찍이서 — 더 많은 별을 품고 깨어남
+  const back=16;                       // 무리에 바짝 — 별들이 화면을 채우는 깊이
   const f=Math.max(0,(mr-back)/mr);
   nav.pos={x:startNeb.x*f, y:startNeb.y*f, z:startNeb.z*f};
   const vx=startNeb.x-nav.pos.x, vy=startNeb.y-nav.pos.y, vz=startNeb.z-nav.pos.z;
@@ -958,18 +953,6 @@ function buildBookStars(){
 
   buildWeb();   // 그물망 생성
 }
-window.setStartView=function(back){
-  const nav=window._nav, s=window._startNeb;
-  if(!nav||!s) return;
-  const mr=Math.hypot(s.x,s.y,s.z);
-  const f=(mr-back)/mr;
-  nav.pos={x:s.x*f, y:s.y*f, z:s.z*f};
-  const vx=s.x-nav.pos.x, vy=s.y-nav.pos.y, vz=s.z-nav.pos.z;
-  const vl=Math.max(1,Math.hypot(vx,vy,vz));
-  nav.yaw=Math.atan2(vx,vz);
-  nav.pitch=Math.max(-1.2,Math.min(1.2,Math.asin(vy/vl)));
-  nav.yawV=0; nav.pitchV=0; nav.drift=0;
-};
 
 // ── 살아 숨 쉬는 그물망 — 별마다 가까운 이웃을 잇고, 밝기 파동만 흐름 ──
 function buildWeb(){
@@ -1896,9 +1879,7 @@ function calliExtract(img, thr, soft){
   octx.putImageData(od,0,0);
   return out;
 }
-var _calliSaveFn=null;
-function calliCanEdit(){ return !!currentUser; }
-function showCalli(meta, saveFn){
+function showCalli(meta){
   meta=parseCalli(meta);
   if(!meta||!meta.url) return;
   var sky=document.getElementById('calli-sky'), img=document.getElementById('calli-img');
@@ -1906,44 +1887,8 @@ function showCalli(meta, saveFn){
   img.src=meta.url;
   img.style.maxWidth=(meta.size||44)+'%';
   img.style.filter=calliGlow(meta.color||'#ffd98a');
-  img.style.left=(meta.left!=null?meta.left:'33%');
-  img.style.top=(meta.top!=null?meta.top:'50%');
-  img.dataset.floating='1';
-  _calliSaveFn=(typeof saveFn==='function')?saveFn:null;
-  img.classList.toggle('editable', !!(_calliSaveFn && calliCanEdit()));
   sky.classList.add('show');
 }
-// 천문 — 드래그(주인만)와 배경별 같은 미세 부유
-(function calliInteract(){
-  var img=document.getElementById('calli-img');
-  if(!img) return;
-  function floatLoop(){
-    if(img.dataset.floating==='1' && img.dataset.dragging!=='1'){
-      var t=performance.now()*0.001;
-      var fx=Math.sin(t*0.32)*6, fy=Math.cos(t*0.24)*5;   // 제자리에서 숨 쉬듯
-      img.style.transform='translate(-50%,-50%) translate('+fx.toFixed(2)+'px,'+fy.toFixed(2)+'px)';
-    }
-    requestAnimationFrame(floatLoop);
-  }
-  requestAnimationFrame(floatLoop);
-  img.addEventListener('mousedown', function(e){
-    if(!(_calliSaveFn && calliCanEdit())) return;   // 주인만 옮김
-    e.preventDefault(); e.stopPropagation();
-    img.dataset.dragging='1'; img.classList.add('dragging');
-    function move(ev){
-      img.style.left=(ev.clientX/window.innerWidth*100).toFixed(2)+'%';
-      img.style.top=(ev.clientY/window.innerHeight*100).toFixed(2)+'%';
-    }
-    function up(){
-      img.dataset.dragging='0'; img.classList.remove('dragging');
-      document.removeEventListener('mousemove',move);
-      document.removeEventListener('mouseup',up);
-      if(_calliSaveFn) _calliSaveFn(img.style.left, img.style.top);
-    }
-    document.addEventListener('mousemove',move);
-    document.addEventListener('mouseup',up);
-  });
-})();
 function hideCalli(){
   var sky=document.getElementById('calli-sky');
   if(sky) sky.classList.remove('show');
@@ -1953,34 +1898,6 @@ function hideCalli(){
 var HOME_CALLI_OWNER = '';
 var homeCalliEditState = null;
 var _lastAtHome = false;
-async function homeCalliSaveRemote(meta){
-  if(!window.sb||!currentUser) return;
-  try{
-    var res=await window.sb.from('books_notes').upsert({
-      user_id:currentUser.id, book_id:0,
-      music:[],movie:[],reading:[],lines:[],
-      calligraphy:JSON.stringify(meta),
-      updated_at:new Date().toISOString()
-    },{onConflict:'user_id,book_id'});
-    if(res && res.error){ console.error('★ 대문천문 원격 저장 실패:', res.error); }
-    else { console.log('✓ 대문천문 원격 저장됨 (book_id=0)'); }
-  }catch(e){ console.error('★ 대문천문 원격 저장 예외:', e); }
-}
-async function homeCalliDeleteRemote(){
-  if(!window.sb||!currentUser) return;
-  try{ await window.sb.from('books_notes').delete().eq('user_id',currentUser.id).eq('book_id',0); }catch(e){}
-}
-async function homeCalliLoadRemote(){
-  if(!window.sb) return null;
-  try{
-    var res=await window.sb.from('books_notes').select('calligraphy').eq('book_id',0).maybeSingle();
-    if(res.data&&res.data.calligraphy){
-      var c=typeof res.data.calligraphy==='string'?JSON.parse(res.data.calligraphy):res.data.calligraphy;
-      if(c&&c.url) return c;
-    }
-  }catch(e){ console.warn('대문천문 원격 로드', e); }
-  return null;
-}
 function homeCalliMeta(){
   try{ var s=JSON.parse(localStorage.getItem('jcia_home_calli')); if(s&&s.url) return s; }catch(e){}
   if(window.sb && HOME_CALLI_OWNER){
@@ -1991,16 +1908,10 @@ function homeCalliMeta(){
 }
 function showHomeCalli(){
   if(viewMode!=='timeline' || panelBook) return;
-  homeCalliLoadRemote().then(function(rm){
-    var m = rm || homeCalliMeta();
-    if(!m){ hideCalli(); return; }
-    if(viewMode!=='timeline' || panelBook) return;
-    _showHomeCalliImg(m);
-  });
-}
-function _showHomeCalliImg(m){
+  var m=homeCalliMeta();
+  if(!m){ hideCalli(); return; }
   var probe=new Image();
-  probe.onload=function(){ if(viewMode==='timeline' && !panelBook) showCalli(m, function(l,t){ if(m){m.left=l;m.top=t;} try{var hs=JSON.parse(localStorage.getItem('jcia_home_calli'))||{};hs.left=l;hs.top=t;localStorage.setItem('jcia_home_calli',JSON.stringify(hs));}catch(e){} m.left=l; m.top=t; homeCalliSaveRemote(m); }); };
+  probe.onload=function(){ if(viewMode==='timeline' && !panelBook) showCalli(m); };
   probe.onerror=function(){ hideCalli(); };
   probe.src=m.url;
 }
@@ -2055,7 +1966,10 @@ function renderHomeCalliEdit(){
     var sw=function(c,n){ return '<button class="hc-sw'+(st.color===c?' on':'')+'" data-c="'+c+'" title="'+n+'" style="background:'+c+'"></button>'; };
     el.innerHTML='<p class="hc-title">대문에 띄울 천문</p>'
       +'<div class="hc-prev"><canvas id="hc-cv"></canvas></div>'
-      +'<div class="hc-sws">'+sw('#ffd98a','금빛')+sw('#dfe9ff','달빛')+sw('#a9e6cf','비취')+sw('#f3b0c3','매화')+'</div>'
+      +'<div class="hc-sws">'
+        +sw('#f4f1e8','순백')+sw('#e9ddbf','미색')+sw('#ffd98a','금빛')+sw('#d9a96e','호박')+sw('#ee8a6a','주홍')+sw('#f3b0c3','매화')
+        +sw('#c5a3e0','자란')+sw('#8fb0e8','청람')+sw('#dfe9ff','달빛')+sw('#a9e6cf','비취')+sw('#d3dc9b','송화')+sw('#b9c0cc','은회')
+      +'</div>'
       +'<div class="hc-ctrl"><span>감도</span><input type="range" id="hc-thr" min="40" max="235" value="'+st.thr+'" step="1"></div>'
       +'<div class="hc-ctrl"><span>번짐</span><input type="range" id="hc-soft" min="2" max="70" value="'+st.soft+'" step="1"></div>'
       +'<div class="hc-ctrl"><span>크기</span><input type="range" id="hc-size" min="20" max="72" value="'+st.size+'" step="1"></div>'
@@ -2083,9 +1997,8 @@ function renderHomeCalliEdit(){
       if(r.ok){
         var meta={url:r.url, color:st.color, size:st.size};
         try{ localStorage.setItem('jcia_home_calli', JSON.stringify(meta)); }catch(e){}
-        homeCalliSaveRemote(meta);   // 모두에게 보이도록 원격에도
         closeHomeCalliEditor();
-        if(viewMode==='timeline' && !panelBook){ _lastAtHome=true; showCalli(meta, function(l,t){ if(meta){meta.left=l;meta.top=t;} try{var hs=JSON.parse(localStorage.getItem('jcia_home_calli'))||{};hs.left=l;hs.top=t;localStorage.setItem('jcia_home_calli',JSON.stringify(hs));}catch(e){} }); }
+        if(viewMode==='timeline' && !panelBook){ _lastAtHome=true; showCalli(meta); }
       } else {
         btn.disabled=false; btn.textContent = r.reason==='not-logged-in' ? '로그인이 필요해요' : '실패 — 다시';
       }
@@ -2101,7 +2014,6 @@ function renderHomeCalliEdit(){
     if(dl) dl.addEventListener('click',function(){
       try{ localStorage.removeItem('jcia_home_calli'); }catch(e){}
       if(window.sb && currentUser){ window.sb.storage.from('calligraphy').remove([currentUser.id+'/_home.png']).catch(function(){}); }
-      homeCalliDeleteRemote();   // 원격 메타도 삭제
       closeHomeCalliEditor();
       _lastAtHome=false;
       if(viewMode==='timeline' && !panelBook) hideCalli();
@@ -2200,7 +2112,7 @@ function renderCalli(book){
         calliEdit=null;
         await saveBook(book.id, d);
         renderCalli(book);
-        if(panelBook===book) showCalli(meta, function(l,t){ if(meta){meta.left=l;meta.top=t;saveBook(book.id,d);} });
+        if(panelBook===book) showCalli(meta);
       } else {
         btn.disabled=false;
         btn.textContent = r.reason==='not-logged-in' ? '로그인이 필요해요' : '실패 — 다시';
@@ -2353,12 +2265,12 @@ async function openPanel(book){
   hideCalli();                                   // 이전 별의 글씨는 스러짐
   renderLists(book); renderDial(book); renderCalli(book); renderEssayMark(book);   // 우선 로컬(기존) 렌더
   const local=ensureData(book);
-  if(local.calligraphy) showCalli(local.calligraphy, function(l,t){ if(local.calligraphy&&typeof local.calligraphy==='object'){local.calligraphy.left=l;local.calligraphy.top=t;saveBook(book.id,local);} });       // 로컬에 이미 있으면 즉시 띄움
+  if(local.calligraphy) showCalli(local.calligraphy);       // 로컬에 이미 있으면 즉시 띄움
   const remote=await loadBook(book.id);          // 그 책의 저장된 노트 불러오기
   if(panelBook===book && remote){                // 그새 다른 책으로 넘어가지 않았으면 반영
     bookData[book.id]=remote;
     renderLists(book); renderDial(book); renderCalli(book); renderEssayMark(book);
-    if(remote.calligraphy) showCalli(remote.calligraphy, function(l,t){ if(remote.calligraphy&&typeof remote.calligraphy==='object'){remote.calligraphy.left=l;remote.calligraphy.top=t;saveBook(book.id,remote);} }); else hideCalli();
+    if(remote.calligraphy) showCalli(remote.calligraphy); else hideCalli();
   }
 }
 // 별을 열 때 Supabase 함수로 +1, 반환된 누적값을 패널에 표시
