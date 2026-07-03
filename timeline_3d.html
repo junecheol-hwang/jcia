@@ -3057,10 +3057,13 @@ whenSB(bumpSite);
       arr[i*3]=p.x; arr[i*3+1]=p.y; arr[i*3+2]=p.z; });
     g.setAttribute('position', new T.BufferAttribute(arr,3));
     if(!tex) tex=starTex();
-    var m=new T.PointsMaterial({size:3.1, map:tex, transparent:true, opacity:0.95,
+    var m=new T.PointsMaterial({size:4.8, map:tex, transparent:true, opacity:0.95,
       depthWrite:false, blending:T.AdditiveBlending, sizeAttenuation:true});
     pts=new T.Points(g,m); pts.frustumCulled=false;
     window.scene.add(pts);
+    if(!window._gbBreathe){ window._gbBreathe=true;
+      (function breathe(){ if(pts) pts.material.opacity=0.62+0.33*Math.sin(performance.now()*0.0016);
+        requestAnimationFrame(breathe); })(); }
     if(!gRay){ gRay=new T.Raycaster(); gRay.params.Points={threshold: window._MOBILE?7:3}; }
   }
   async function load(){
@@ -3070,7 +3073,7 @@ whenSB(bumpSite);
         .select('id,nick,body,created_at').eq('hidden',false)
         .order('created_at',{ascending:false}).limit(30);
       if(r.error) throw r.error;
-      notes=r.data||[]; build();
+      notes=r.data||[]; console.info('[방명록] 맺힌 별', notes.length+'개'); build();
     }catch(e){ console.warn('guestbook', e); }
   }
 
@@ -3131,12 +3134,24 @@ whenSB(bumpSite);
       if(!window.sb){ msg.textContent='연결이 아직입니다 — 잠시 후 다시.'; return; }
       msg.textContent='별을 올리는 중…';
       try{
-        var r=await window.sb.from('guestbook').insert({ body:body, nick:nick||null });
+        var r=await window.sb.from('guestbook').insert({ body:body, nick:nick||null })
+          .select('id').single();
         if(r.error) throw r.error;
         ta.value=''; document.getElementById('gb-nick').value=''; cnt.textContent='0 / 200';
         msg.textContent='';
         comp.classList.remove('open');
-        load();                                        // 방금 글이 곧장 별로 맺힘
+        await load();                                  // 방금 글이 곧장 별로 맺힘
+        if(r.data && r.data.id!=null){                 // 시선이 그 별을 찾아감
+          computeShell();
+          var p=posOf(r.data.id), nav=window._nav;
+          if(nav && !nav.flying){
+            var vx=p.x-nav.pos.x, vy=p.y-nav.pos.y, vz=p.z-nav.pos.z;
+            var vl=Math.max(1,Math.hypot(vx,vy,vz));
+            nav.yaw=Math.atan2(vx,vz);
+            nav.pitch=Math.max(-1.35,Math.min(1.35,Math.asin(vy/vl)));
+            nav.yawV=0; nav.pitchV=0; nav.interactT=performance.now();
+          }
+        }
       }catch(e){ msg.textContent='실패: '+(e.message||e); }
     });
   }
