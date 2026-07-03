@@ -463,6 +463,58 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 .bs-af-dl:hover{border-color:rgba(217,169,110,0.5);color:var(--orange-pale);}
 .bs-af-note{font-size:0.63rem;color:var(--gray-dark);line-height:1.6;}
 
+/* ── 방명록 — 낯선 이의 별 ── */
+#gb-btn{position:fixed;right:3rem;bottom:1.4rem;z-index:47;
+  background:none;border:none;cursor:pointer;
+  font-family:'Gowun Batang',serif;font-size:0.78rem;letter-spacing:0.08em;
+  color:var(--orange-worn);opacity:0.6;transition:opacity 0.3s,color 0.3s;
+  -webkit-tap-highlight-color:transparent;}
+#gb-btn:hover{opacity:1;color:var(--orange-pale);}
+#gb-compose{position:fixed;right:3rem;bottom:3.6rem;z-index:48;width:300px;
+  background:rgba(6,9,18,0.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:0.5px solid rgba(217,169,110,0.28);border-radius:14px;
+  padding:1rem 1.05rem 0.9rem;box-shadow:0 10px 34px rgba(0,0,0,0.45);
+  font-family:'Gowun Batang',serif;
+  opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .35s,transform .35s;}
+#gb-compose.open{opacity:1;transform:translateY(0);pointer-events:auto;}
+#gb-compose .gb-title{font-size:0.8rem;color:var(--orange-pale);letter-spacing:0.06em;margin-bottom:0.6rem;}
+#gb-body{width:100%;height:88px;resize:none;background:rgba(2,5,10,0.55);
+  border:0.5px solid rgba(110,108,102,0.4);border-radius:8px;outline:none;
+  color:var(--gray-light);font-family:'Gowun Batang',serif;font-size:0.8rem;line-height:1.7;
+  padding:0.55rem 0.65rem;}
+#gb-body:focus{border-color:rgba(217,169,110,0.6);}
+#gb-compose .gb-row{display:flex;align-items:center;gap:0.6rem;margin-top:0.55rem;}
+#gb-nick{flex:1;min-width:0;background:rgba(2,5,10,0.55);border:0.5px solid rgba(110,108,102,0.4);
+  border-radius:8px;outline:none;color:var(--gray-light);
+  font-family:'Gowun Batang',serif;font-size:0.74rem;padding:0.42rem 0.6rem;}
+#gb-nick:focus{border-color:rgba(217,169,110,0.6);}
+#gb-count{flex:none;font-size:0.62rem;color:var(--gray-mid);}
+#gb-msg{min-height:0.9rem;font-size:0.64rem;color:var(--orange-worn);margin-top:0.35rem;}
+#gb-compose .gb-acts{display:flex;justify-content:flex-end;gap:0.5rem;margin-top:0.2rem;}
+#gb-compose .gb-acts button{background:none;border:0.5px solid rgba(110,108,102,0.4);border-radius:8px;
+  color:var(--gray-light);font-family:'Gowun Batang',serif;font-size:0.72rem;
+  padding:0.35rem 0.85rem;cursor:pointer;transition:border-color .2s,color .2s;}
+#gb-compose .gb-acts button:hover{border-color:var(--orange-faded);color:var(--orange-pale);}
+#gb-send{border-color:rgba(217,169,110,0.5) !important;color:var(--orange-pale) !important;}
+#gb-note{position:fixed;left:50%;bottom:6.5rem;transform:translate(-50%,10px);z-index:48;
+  width:min(340px,86vw);background:rgba(6,9,18,0.65);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:0.5px solid rgba(217,169,110,0.3);border-radius:14px;
+  padding:0.9rem 1.05rem 0.85rem;box-shadow:0 10px 34px rgba(0,0,0,0.45);
+  font-family:'Gowun Batang',serif;
+  opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;}
+#gb-note.open{opacity:1;transform:translate(-50%,0);pointer-events:auto;}
+#gb-note .gbn-nick{font-size:0.74rem;color:var(--orange-pale);letter-spacing:0.05em;}
+#gb-note .gbn-date{font-size:0.6rem;color:var(--gray-mid);margin-left:0.55rem;letter-spacing:0.04em;}
+#gb-note .gbn-body{font-size:0.82rem;color:var(--gray-light);line-height:1.8;margin-top:0.5rem;
+  word-break:break-word;white-space:pre-wrap;}
+#gb-note .gbn-hide{margin-top:0.6rem;background:none;border:0.5px solid rgba(110,108,102,0.4);
+  border-radius:7px;color:var(--gray-mid);font-family:'Gowun Batang',serif;font-size:0.64rem;
+  padding:0.28rem 0.7rem;cursor:pointer;}
+#gb-note .gbn-hide:hover{border-color:var(--orange-faded);color:var(--orange-pale);}
+#gb-note .gbn-x{position:absolute;top:6px;right:10px;background:none;border:none;
+  color:var(--gray-mid);font-size:1rem;cursor:pointer;}
+
 /* ══════════ 모바일 층 — 폰 화면 맞춤 (레이아웃 문법은 데스크탑과 동일) ══════════ */
 @media (max-width:820px){
   html,body{overscroll-behavior:none;-webkit-text-size-adjust:100%;}
@@ -504,6 +556,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   /* 좌하단 제목 · 하단 버튼 */
   #header{left:1rem;bottom:7.4rem;}
   #back-btn{bottom:calc(env(safe-area-inset-bottom,0px) + 0.9rem);}
+
+  /* 방명록 — 우하단, 홈 인디케이터 위 */
+  #gb-btn{right:1rem;bottom:calc(env(safe-area-inset-bottom,0px) + 0.9rem);}
+  #gb-compose{right:0.8rem;left:0.8rem;width:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 3.2rem);}
+  #gb-body,#gb-nick{font-size:16px;}              /* iOS 자동 확대 방지 */
+  #gb-note{bottom:calc(env(safe-area-inset-bottom,0px) + 5.4rem);}
 }
 </style>
 </head>
@@ -651,6 +709,20 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 
 <!-- 대문 천문 — 편집판 (문은 상단 로고에 숨어 있음) -->
 <div id="home-calli-edit"></div>
+
+<!-- 방명록 — 낯선 이의 별: 로그인 없이 대문에 한 줄, 별로 맺힘 -->
+<button id="gb-btn" title="대문에 흔적 남기기">✶ 흔적 남기기</button>
+<div id="gb-compose">
+  <div class="gb-title">지나는 별 하나, 대문에</div>
+  <textarea id="gb-body" maxlength="200" placeholder="짧은 글 한 줄 — 이 별밭에 흔적으로 남습니다 (200자)"></textarea>
+  <div class="gb-row">
+    <input id="gb-nick" maxlength="20" placeholder="이름 (선택)">
+    <span id="gb-count">0 / 200</span>
+  </div>
+  <div id="gb-msg"></div>
+  <div class="gb-acts"><button id="gb-cancel">닫기</button><button id="gb-send">남기기</button></div>
+</div>
+<div id="gb-note"></div>
 
 <!-- 글쓰기: 우측 서랍 — 왼쪽 모서리의 만년필 손잡이로 여닫음 -->
 <div id="essay-editor">
@@ -1883,6 +1955,9 @@ function handleClick(mx,my){
     if(typeof refreshFocus==='function') refreshFocus();
     openPanel(clicked);
   } else {
+    var gn=(typeof window.pickGuest==='function') ? window.pickGuest(mx,my) : null;
+    if(gn){ if(window.showGuestNote) window.showGuestNote(gn); return; }   // 낯선 이의 별 — 쪽지
+    if(window.hideGuestNote) window.hideGuestNote();
     flushPanel();
     pinnedBook=null; panelBook=null; hideCalli();
     _lastAtHome=false;                     // 대문으로 돌아옴 — 대문 천문 재평가
@@ -2947,6 +3022,126 @@ whenSB(bumpSite);
   var d=document.getElementById('brand-door');
   if(d) d.addEventListener('click',function(){ if(!currentUser) return; openHomeCalliEditor(); });
   (function watch(){ syncHomeCalli(); requestAnimationFrame(watch); })();
+})();
+
+// ── 방명록 — 낯선 이의 별: 최근 30개가 성단 가장자리에 호박빛 잔별로 맺힘 ──
+(function guestbook(){
+  var pts=null, notes=[], tex=null, gRay=null, shellR=118;
+
+  function computeShell(){
+    var r=0;
+    if(typeof BOOKS!=='undefined') BOOKS.forEach(function(b){
+      if(b._p3){ var d=Math.hypot(b._p3.x,b._p3.y,b._p3.z); if(d>r) r=d; } });
+    if(r>0) shellR=r*1.06;                 // 책별 가장 바깥보다 살짝 바깥 껍질
+  }
+  function starTex(){
+    var c=document.createElement('canvas'); c.width=c.height=64;
+    var x=c.getContext('2d'), g=x.createRadialGradient(32,32,0,32,32,32);
+    g.addColorStop(0,'rgba(255,224,178,1)'); g.addColorStop(0.35,'rgba(217,169,110,0.85)');
+    g.addColorStop(1,'rgba(217,169,110,0)');
+    x.fillStyle=g; x.fillRect(0,0,64,64);
+    var t=new window.THREE.CanvasTexture(c); return t;
+  }
+  function posOf(id){
+    var r=seededRand(id*97+11);
+    var a=r()*Math.PI*2, p=Math.acos(2*r()-1), rad=shellR*(0.98+r()*0.10);
+    return {x:rad*Math.sin(p)*Math.cos(a), y:rad*Math.sin(p)*Math.sin(a)*0.72, z:rad*Math.cos(p)};
+  }
+  function build(){
+    if(!window.THREE || !window.scene){ setTimeout(build,120); return; }
+    if(pts){ window.scene.remove(pts); pts.geometry.dispose(); pts.material.dispose(); pts=null; }
+    if(!notes.length) return;
+    computeShell();
+    var T=window.THREE, g=new T.BufferGeometry(), arr=new Float32Array(notes.length*3);
+    notes.forEach(function(n,i){ var p=posOf(n.id); n._p3=p;
+      arr[i*3]=p.x; arr[i*3+1]=p.y; arr[i*3+2]=p.z; });
+    g.setAttribute('position', new T.BufferAttribute(arr,3));
+    if(!tex) tex=starTex();
+    var m=new T.PointsMaterial({size:3.1, map:tex, transparent:true, opacity:0.95,
+      depthWrite:false, blending:T.AdditiveBlending, sizeAttenuation:true});
+    pts=new T.Points(g,m); pts.frustumCulled=false;
+    window.scene.add(pts);
+    if(!gRay){ gRay=new T.Raycaster(); gRay.params.Points={threshold: window._MOBILE?7:3}; }
+  }
+  async function load(){
+    if(!window.sb){ setTimeout(load,500); return; }
+    try{
+      var r=await window.sb.from('guestbook')
+        .select('id,nick,body,created_at').eq('hidden',false)
+        .order('created_at',{ascending:false}).limit(30);
+      if(r.error) throw r.error;
+      notes=r.data||[]; build();
+    }catch(e){ console.warn('guestbook', e); }
+  }
+
+  // 별 판정 — handleClick 의 빈 곳 가지에서 호출
+  window.pickGuest=function(mx,my){
+    if(!pts || !gRay || !window.camera) return null;
+    var v=new window.THREE.Vector2((mx/innerWidth)*2-1, -(my/innerHeight)*2+1);
+    gRay.setFromCamera(v, window.camera);
+    var hits=gRay.intersectObject(pts,false);
+    return hits.length ? (notes[hits[0].index]||null) : null;
+  };
+
+  function esc(s){ return String(s||'').replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  window.showGuestNote=function(n){
+    var el=document.getElementById('gb-note'); if(!el) return;
+    var d=new Date(n.created_at);
+    var ds=d.getFullYear()+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+String(d.getDate()).padStart(2,'0');
+    el.innerHTML='<div class="gbn-nick">'+esc(n.nick||'지나는 별')
+      +'<span class="gbn-date">'+ds+'</span></div>'
+      +'<div class="gbn-body">'+esc(n.body)+'</div>'
+      +((typeof currentUser!=='undefined'&&currentUser)?'<button class="gbn-hide">숨기기</button>':'')
+      +'<button class="gbn-x" title="닫기">×</button>';
+    el.classList.add('open');
+    el.querySelector('.gbn-x').onclick=function(){ el.classList.remove('open'); };
+    var h=el.querySelector('.gbn-hide');
+    if(h) h.onclick=async function(){
+      try{
+        var r=await window.sb.from('guestbook').update({hidden:true}).eq('id',n.id);
+        if(r.error) throw r.error;
+        el.classList.remove('open'); load();
+      }catch(e){ alert('숨기기 실패: '+(e.message||e)); }
+    };
+  };
+  window.hideGuestNote=function(){
+    var el=document.getElementById('gb-note'); if(el) el.classList.remove('open');
+  };
+
+  // 쓰기 카드
+  var btn=document.getElementById('gb-btn'), comp=document.getElementById('gb-compose');
+  if(btn && comp){
+    btn.addEventListener('click',function(){
+      comp.classList.toggle('open');
+      if(comp.classList.contains('open')) setTimeout(function(){
+        var t=document.getElementById('gb-body'); if(t) t.focus(); },80);
+    });
+    document.getElementById('gb-cancel').addEventListener('click',function(){ comp.classList.remove('open'); });
+    var ta=document.getElementById('gb-body'), cnt=document.getElementById('gb-count');
+    ta.addEventListener('input',function(){
+      if(ta.value.length>200) ta.value=ta.value.slice(0,200);
+      cnt.textContent=ta.value.length+' / 200';
+    });
+    document.getElementById('gb-send').addEventListener('click',async function(){
+      var msg=document.getElementById('gb-msg');
+      var body=ta.value.trim();
+      var nick=document.getElementById('gb-nick').value.trim().slice(0,20);
+      if(!body){ msg.textContent='한 글자라도 남겨 주세요.'; return; }
+      if(!window.sb){ msg.textContent='연결이 아직입니다 — 잠시 후 다시.'; return; }
+      msg.textContent='별을 올리는 중…';
+      try{
+        var r=await window.sb.from('guestbook').insert({ body:body, nick:nick||null });
+        if(r.error) throw r.error;
+        ta.value=''; document.getElementById('gb-nick').value=''; cnt.textContent='0 / 200';
+        msg.textContent='';
+        comp.classList.remove('open');
+        load();                                        // 방금 글이 곧장 별로 맺힘
+      }catch(e){ msg.textContent='실패: '+(e.message||e); }
+    });
+  }
+
+  load();
 })();
 
 // ── 상단 서랍 다섯 — 선택된 별의 것. 아이콘 재클릭 시 스르륵 닫힘, 별 미선택 시 잠김 ──
