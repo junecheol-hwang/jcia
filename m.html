@@ -62,16 +62,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   font-size:0.98rem;color:var(--orange-pale);letter-spacing:0.04em;line-height:1.45;
 }
 #bp-author{font-size:0.7rem;color:var(--gray-mid);letter-spacing:0.06em;margin-top:0.3rem;}
-#comet-slot{
-  position:relative;height:0.95rem;margin-top:0.5rem;
-}
+#comet-slot{display:flex;align-items:baseline;gap:10px;}
 .comet{
-  position:absolute;right:0;top:0;z-index:25;white-space:nowrap;
-  font-family:'Gowun Batang',serif;font-size:0.66rem;color:var(--orange-pale);
-  letter-spacing:0.06em;opacity:0;transition:opacity 0.7s;pointer-events:none;text-align:right;
-  text-shadow:0 0 6px rgba(217,169,110,0.25);
+  display:none;white-space:nowrap;
+  font-family:'Gowun Batang',serif;font-size:0.62rem;color:var(--gray-mid);
+  letter-spacing:0.12em;pointer-events:none;
 }
-.comet.show{opacity:0.74;}
+.comet b{font-weight:600;color:var(--orange-pale);letter-spacing:0.03em;
+  font-variant-numeric:tabular-nums;text-shadow:0 0 6px rgba(217,169,110,0.3);}
+.comet.show{display:block;}
 /* ── 상단 서랍 다섯 — 선택된 별의 것 ── */
 #drawer-icons{
   position:fixed;top:0.95rem;left:50%;transform:translateX(-50%);
@@ -273,11 +272,19 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 #auth-box{
   position:fixed;right:3rem;top:3.05rem;z-index:45;text-align:right;
   display:flex;flex-direction:column;gap:4px;align-items:flex-end;
+}
+#auth-box::before{content:'';width:190px;height:1px;margin-bottom:3px;
+  background:linear-gradient(90deg,transparent,rgba(217,169,110,0.55));}   /* 낙관의 금선 */
+#auth-line{display:flex;align-items:baseline;justify-content:flex-end;gap:11px;
+  flex-wrap:wrap;
   font-family:'Gowun Batang',sans-serif;pointer-events:auto;
 }
 #auth-box.flash{animation:authflash 1.6s;}
 @keyframes authflash{0%,100%{opacity:1}30%{opacity:0.3}}
-#auth-status{display:none;font-size:0.6rem;color:var(--gray-mid);letter-spacing:0.08em;text-decoration:none;border-bottom:none;}
+#auth-status{display:none;font-family:'EB Garamond','Gowun Batang',serif;
+  font-size:0.62rem;color:var(--gray-mid);letter-spacing:0.07em;text-decoration:none;border-bottom:none;}
+#auth-status::before{content:'';display:inline-block;width:4px;height:4px;border-radius:50%;
+  background:var(--orange-faded);margin-right:6px;vertical-align:1.5px;}   /* 로그인됨 — 호박 점 */
 #auth-login{display:flex;gap:6px;align-items:center;justify-content:flex-end;}
 #auth-email{
   background:rgba(2,5,10,0.7);border:0.5px solid rgba(110,108,102,0.4);border-radius:2px;
@@ -784,14 +791,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 
 <!-- 로그인 (magic link) — 좌측 하단 -->
 <div id="auth-box">
-  <div id="auth-status"></div>
+  <div id="auth-line">
+    <div id="auth-status"></div>
+    <div id="comet-slot">
+      <div id="comet-site" class="comet"></div>
+      <div id="comet-phase" class="comet"></div>
+    </div>
+  </div>
   <div id="auth-login">
     <input id="auth-email" type="email" autocomplete="email" spellcheck="false" placeholder="이메일로 로그인">
     <button id="auth-send" title="로그인 링크 받기">→</button>
-  </div>
-  <div id="comet-slot">
-    <div id="comet-site" class="comet"></div>
-    <div id="comet-phase" class="comet"></div>
   </div>
   <div id="auth-msg"></div>
 </div>
@@ -1969,10 +1978,10 @@ function handleClick(mx,my){
     if(typeof refreshFocus==='function') refreshFocus();
     openPanel(clicked);
   } else {
+    // 빈 하늘 클릭 — 서랍만 접고, 잡은 별과의 연(緣)은 다른 별을 고르기 전까지 유지
     flushPanel();
-    pinnedBook=null; panelBook=null; hideCalli();
-    _lastAtHome=false;                     // 대문으로 돌아옴 — 대문 천문 재평가
-    document.getElementById('book-panel').classList.remove('open');
+    hideCalli();
+    if(window._drawerClose) window._drawerClose();
     if(typeof refreshFocus==='function') refreshFocus();
   }
 }
@@ -2664,7 +2673,7 @@ function bumpSite(){
   window.sb.rpc('bump_site').then(({data,error})=>{
     if(!error && data!=null){
       const el=document.getElementById('comet-site');
-      el.textContent='스쳐간 혜성  '+data;
+      el.innerHTML='혜성&nbsp;<b>'+data+'</b>';
       if(viewMode==='timeline') el.classList.add('show');
     }
   }).catch(()=>{});
@@ -2674,7 +2683,7 @@ function bumpPhase(phaseId){
   if(!window.sb) return;
   window.sb.rpc('bump_phase',{pid:phaseId}).then(({data,error})=>{
     if(!error && data!=null)
-      document.getElementById('comet-phase').textContent='근접한 혜성  '+data;
+      document.getElementById('comet-phase').innerHTML='근접한 혜성&nbsp;<b>'+data+'</b>';
   }).catch(()=>{});
 }
 function renderLists(book){
@@ -2845,7 +2854,7 @@ function setUser(u){
   const login=document.getElementById('auth-login');
   const msg=document.getElementById('auth-msg');
   if(u){
-    status.textContent='✓ '+(u.email||'기록 가능');
+    status.textContent=(u.email||'기록 가능');
     status.style.display='block'; login.style.display='none';
     if(msg) msg.textContent='';
   } else {
@@ -3167,6 +3176,7 @@ whenSB(bumpSite);
   }
   function openD(sec){ cur=sec; show(sec); body.classList.add('open'); }
   function closeD(){ cur=null; show(null); body.classList.remove('open'); }
+  window._drawerClose=closeD;              // 빈 하늘 클릭이 서랍만 접을 수 있게
   strip.addEventListener('click',function(e){
     var b=e.target.closest('button'); if(!b) return;
     if(!panelBook) return;                       // 잠김 — 별을 먼저
