@@ -3057,12 +3057,12 @@ whenSB(bumpSite);
       arr[i*3]=p.x; arr[i*3+1]=p.y; arr[i*3+2]=p.z; });
     g.setAttribute('position', new T.BufferAttribute(arr,3));
     if(!tex) tex=starTex();
-    var m=new T.PointsMaterial({size:4.8, map:tex, transparent:true, opacity:0.95,
-      depthWrite:false, blending:T.AdditiveBlending, sizeAttenuation:true});
+    var m=new T.PointsMaterial({size:6, map:tex, transparent:true, opacity:0.95, fog:false,
+      depthWrite:false, depthTest:false, blending:T.AdditiveBlending, sizeAttenuation:true});
     pts=new T.Points(g,m); pts.frustumCulled=false;
     window.scene.add(pts);
     if(!window._gbBreathe){ window._gbBreathe=true;
-      (function breathe(){ if(pts) pts.material.opacity=0.62+0.33*Math.sin(performance.now()*0.0016);
+      (function breathe(){ if(pts) pts.material.opacity=0.775+0.225*Math.sin(performance.now()*0.0016);
         requestAnimationFrame(breathe); })(); }
     if(!gRay){ gRay=new T.Raycaster(); gRay.params.Points={threshold: window._MOBILE?7:3}; }
   }
