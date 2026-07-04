@@ -533,6 +533,55 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   cursor:pointer;padding:0 2px;line-height:1;}
 .gbt-x:hover{color:var(--orange-pale);}
 
+/* ── 대문: 눈을 뜨다 ── */
+body.gated #three-container, body.gated #tl-canvas{filter:blur(10px) brightness(0.75);}
+body.gated.eye-open #three-container, body.gated.eye-open #tl-canvas{
+  animation:gateFocus 3s cubic-bezier(.4,0,.4,1) forwards;}      /* 초점 사냥 */
+@keyframes gateFocus{
+  0%  {filter:blur(10px) brightness(0.75);}
+  28% {filter:blur(2.5px) brightness(0.9);}
+  44% {filter:blur(6px)   brightness(0.85);}
+  62% {filter:blur(1.2px) brightness(0.97);}
+  76% {filter:blur(3px)   brightness(0.93);}
+  100%{filter:blur(0)     brightness(1);}
+}
+#gate{position:fixed;inset:0;z-index:200;cursor:pointer;}
+.gate-lid{position:absolute;left:0;right:0;height:58%;
+  background:linear-gradient(180deg,#070a15,#04060d);will-change:transform;}
+.gate-lid.top{top:0;
+  -webkit-mask-image:radial-gradient(72% 15% at 50% 100%, transparent 98%, #000 100%);
+          mask-image:radial-gradient(72% 15% at 50% 100%, transparent 98%, #000 100%);}
+.gate-lid.bot{bottom:0;
+  -webkit-mask-image:radial-gradient(72% 15% at 50% 0%,   transparent 98%, #000 100%);
+          mask-image:radial-gradient(72% 15% at 50% 0%,   transparent 98%, #000 100%);}
+#gate-lash{position:absolute;left:8%;right:8%;top:50%;height:1px;transform:translateY(-50%);
+  background:linear-gradient(90deg,transparent,rgba(217,169,110,0.8) 25%,rgba(217,169,110,0.8) 75%,transparent);
+  filter:drop-shadow(0 0 7px rgba(217,169,110,0.8));
+  animation:gateBreath 3s ease-in-out infinite;}
+@keyframes gateBreath{0%,100%{opacity:0.3;}50%{opacity:0.85;}}
+#gate-plate{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  display:flex;flex-direction:column;align-items:center;gap:14px;transition:opacity 0.8s;}
+#gate-plate svg{width:36px;height:36px;filter:drop-shadow(0 0 10px rgba(217,169,110,0.35));}
+#gate-plate .gate-word{font-family:'Cardo','Song Myung','Noto Serif KR',serif;
+  font-size:1.15rem;letter-spacing:0.5em;margin-left:0.5em;
+  color:#eec48b;text-shadow:0 0 14px rgba(217,169,110,0.4);}
+#gate-plate .gate-enter{font-family:'Song Myung','Noto Serif KR',serif;
+  font-size:0.66rem;letter-spacing:0.46em;margin-left:0.46em;
+  color:rgba(200,197,190,0.55);animation:gateBreath 3s ease-in-out infinite;}
+body.eye-open .gate-lid.top{animation:gateLidTop 2.7s cubic-bezier(.55,.02,.3,1) forwards;}
+body.eye-open .gate-lid.bot{animation:gateLidBot 2.7s cubic-bezier(.55,.02,.3,1) forwards;}
+@keyframes gateLidTop{
+  0%{transform:translateY(0);} 30%{transform:translateY(-34%);}
+  46%{transform:translateY(-26%);}                     /* 실눈 — 초점이 흔들리는 순간 */
+  100%{transform:translateY(-106%);}}
+@keyframes gateLidBot{
+  0%{transform:translateY(0);} 30%{transform:translateY(34%);}
+  46%{transform:translateY(26%);}
+  100%{transform:translateY(106%);}}
+body.eye-open #gate-lash{opacity:0;transition:opacity 0.4s;animation:none;}
+body.eye-open #gate-plate{opacity:0;}
+#gate.gone{display:none;}
+
 /* ══════════ 모바일 층 — 폰 화면 맞춤 (레이아웃 문법은 데스크탑과 동일) ══════════ */
 @media (max-width:820px){
   html,body{overscroll-behavior:none;-webkit-text-size-adjust:100%;}
@@ -590,6 +639,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 </style>
 </head>
 <body>
+<!-- ── 대문: 눈을 뜨다 — 첫 탭에 눈꺼풀이 열리고, 초점이 헤매다 별밭이 맺힘 ── -->
+<div id="gate">
+  <div class="gate-lid top"></div>
+  <div class="gate-lid bot"></div>
+  <div id="gate-lash"></div>
+  <div id="gate-plate">
+    <svg viewBox="0 0 44 44" fill="none"><circle cx="22" cy="22" r="2.5" fill="#d9b97a"/><circle cx="22" cy="22" r="5.6" stroke="#d9b97a" stroke-width="1" opacity="0.85"/><g fill="#d9b97a"><circle cx="22" cy="6.5" r="1.6"/><circle cx="32.95" cy="11.05" r="1.6"/><circle cx="37.5" cy="22" r="1.6"/><circle cx="32.95" cy="32.95" r="1.6"/><circle cx="22" cy="37.5" r="1.6"/><circle cx="11.05" cy="32.95" r="1.6"/><circle cx="6.5" cy="22" r="1.6"/><circle cx="11.05" cy="11.05" r="1.6"/></g></svg>
+    <div class="gate-word">읽는 jcia</div>
+    <div class="gate-enter">눈 을 뜨 다</div>
+  </div>
+</div>
 
 <div id="three-container"></div>
 
@@ -656,7 +716,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
       <circle cx="11.05" cy="11.05" r="1.6"/>
     </g>
   </svg>
-  <span id="brand-name">studio-jcia</span>
+  <span id="brand-name">읽는 jcia</span>
 </div>
 
 <!-- 책 검색창 — 우측 상단 -->
@@ -3205,6 +3265,23 @@ whenSB(bumpSite);
 window.addEventListener('resize',resize);
 resize();
 loop();
+</script>
+<script>
+// ── 대문: 눈을 뜨다 — 첫 탭이 곧 첫 손짓이라, 하늘과 음악이 함께 옵니다 ──
+(function(){
+  document.body.classList.add('gated');
+  var g=document.getElementById('gate');
+  function openEye(){
+    if(!g || g.classList.contains('gone') || document.body.classList.contains('eye-open')) return;
+    document.body.classList.add('eye-open');
+    setTimeout(function(){
+      g.classList.add('gone');
+      document.body.classList.remove('gated','eye-open');   // 필터 완전 해제 — GPU 원상복귀
+    },3050);
+  }
+  if(g) g.addEventListener('click',openEye);
+  window.addEventListener('keydown',openEye);
+})();
 </script>
 </body>
 </html>
