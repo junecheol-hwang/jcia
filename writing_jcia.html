@@ -142,35 +142,42 @@
   .dock-item.active::before{ content:'●'; color:var(--seal); font-size:0.45rem; margin-right:0.55rem; vertical-align:middle; }
 
   /* 무대 — 아주 옅은 집중 조명 */
-  .hall-stage { flex:1; display:flex; align-items:center; justify-content:center;
-    padding:1rem 2rem; min-width:0;
+  .hall-stage { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:1.6rem; padding:4vh 4vw; min-width:0; overflow:hidden;
     background:radial-gradient(closest-side at 50% 46%, #FFFFFF 55%, #FAF9F6 100%); }
-  .work { display:flex; flex-direction:column; align-items:center; gap:1.5rem;
-    max-width:34rem; }
+  .work { display:flex; align-items:center; justify-content:center; min-height:0; }
+  .work.portrait  { flex-direction:row; gap:clamp(1.5rem,4vw,3.4rem); }
+  .work.landscape { flex-direction:column; gap:1.3rem; }
   .work-appear { animation:inkSoak 1.4s ease forwards; }
   @keyframes inkSoak {
     0%{opacity:0; filter:blur(14px);} 60%{opacity:0.9; filter:blur(2px);} 100%{opacity:1; filter:blur(0);}
   }
   .work.fading { opacity:0; filter:blur(10px); transition:opacity .55s ease, filter .55s ease; }
 
-  /* 화폭 — 세로 족자 / 가로 횡권, 사진 비율 따라 */
+  /* 화폭 — 세로 족자(높이 기준·왼쪽) / 가로 횡권(폭 기준·중앙) */
   .scroll-frame { position:relative; display:flex; align-items:center; justify-content:center;
-    border:1px solid rgba(20,20,20,0.09); background:var(--white); }
-  .scroll-frame.portrait  { width:clamp(160px,32vmin,250px); aspect-ratio:5/7; }
-  .scroll-frame.landscape { width:clamp(260px,52vmin,420px); aspect-ratio:7/4; }
+    border:1px solid rgba(20,20,20,0.09); background:var(--white); flex:none; }
+  .scroll-frame.portrait  { height:min(74vh,540px); aspect-ratio:5/7; }
+  .scroll-frame.landscape { width:min(58vw,720px);  aspect-ratio:7/4; }
+  /* 실제 서예 이미지가 걸리면 족자 틀을 벗고 이미지가 곧 화폭이 된다 (낙관은 이미 작품에 있음) */
+  .scroll-frame.has-img { border:none; background:none; aspect-ratio:auto; width:auto; height:auto; }
+  .work.portrait  .has-img #workImg { height:min(74vh,540px); width:auto; max-width:44vw; }
+  .work.landscape .has-img #workImg { width:min(58vw,720px); height:auto; max-height:58vh; }
+  .scroll-frame.has-img.rubbing { background:#141414; border-radius:6px; padding:3vh 3vw; }
   .work-char { font-family:'Noto Serif KR',serif; font-weight:900; color:var(--ink); user-select:none; }
-  .portrait  .work-char{ font-size:clamp(5rem,19vmin,8.5rem); }
-  .landscape .work-char{ font-size:clamp(4rem,15vmin,6.5rem); letter-spacing:0.1em; }
-  .seal { position:absolute; right:6.5%; bottom:8%; width:1.5rem; height:1.5rem; background:var(--seal);
-    display:flex; align-items:center; justify-content:center;
-    font-family:'Noto Serif KR',serif; font-weight:600; font-size:0.66rem; color:var(--white); line-height:1; }
-  .landscape .seal{ right:4%; bottom:10%; }
+  .portrait  .work-char{ font-size:clamp(5rem,16vmin,8.5rem); }
+  .landscape .work-char{ font-size:clamp(4rem,13vmin,6.5rem); letter-spacing:0.1em; }
 
-  .caption { text-align:center; display:flex; flex-direction:column; gap:0.65rem; }
-  .caption .title { font-family:'Noto Serif KR',serif; font-weight:600; font-size:0.92rem; letter-spacing:0.4em; text-indent:0.4em; }
-  .caption .thought { font-size:0.87rem; line-height:1.95; color:#4c4c48; word-break:keep-all; max-width:27rem; }
+  .caption { display:flex; flex-direction:column; gap:0.7rem; }
+  .work.portrait  .caption { text-align:left;   align-items:flex-start; max-width:min(30vw,22rem); }
+  .work.landscape .caption { text-align:center; align-items:center;    max-width:34rem; }
+  .caption .title { font-family:'Noto Serif KR',serif; font-weight:600; font-size:0.95rem; letter-spacing:0.4em; text-indent:0.4em; }
+  .caption .reading { font-family:'Gowun Batang',serif; font-size:0.8rem; color:var(--gray); letter-spacing:0.14em; }
+  .caption .thought { font-size:0.87rem; line-height:1.95; color:#4c4c48; word-break:keep-all; }
 
-  .work-acts { display:flex; align-items:center; gap:1.3rem; }
+  .work-acts { display:flex; align-items:center; gap:1.3rem; margin-top:0.5rem; }
+  .work.portrait  .work-acts { justify-content:flex-start; }
+  .work.landscape .work-acts { justify-content:center; }
   .heart-btn { background:none; border:none; cursor:pointer; font-size:1.05rem; color:var(--gray);
     line-height:1; padding:0.3rem; transition:color .25s, transform .25s; }
   .heart-btn.liked{ color:var(--seal); transform:scale(1.15); }
@@ -180,11 +187,19 @@
     color:var(--ink); transition:border-color .3s, color .3s; }
   .share-btn:hover{ border-color:var(--seal); color:var(--seal); }
 
-  .hall-bottom { display:flex; justify-content:center; align-items:baseline; gap:2.6rem; padding:0 0 1.7rem; }
+  .hall-bottom { display:flex; justify-content:center; align-items:baseline; gap:2.6rem; }
   .nav-btn { background:none; border:none; cursor:pointer; font-size:0.82rem;
     letter-spacing:0.3em; text-indent:0.3em; color:var(--gray); padding:0.4rem 0.8rem; transition:color .3s; }
   .nav-btn:hover{ color:var(--ink); }
   #counter { font-family:'Noto Serif KR',serif; font-weight:400; font-size:0.82rem; letter-spacing:0.25em; color:var(--gray); }
+
+  /* 좁은 화면 — 세로 작품의 좌우가 눌리면 위아래로 접는다 */
+  @media (max-width:820px){
+    .work.portrait { flex-direction:column; gap:1.2rem; }
+    .work.portrait .caption { text-align:center; align-items:center; max-width:88vw; }
+    .work.portrait .has-img #workImg { height:auto; max-height:52vh; max-width:82vw; width:auto; }
+    .scroll-frame.portrait { height:auto; width:min(52vw,240px); }
+  }
 
   /* ═══════ 芳名錄 ═══════ */
   #guestbook { flex:1; display:none; flex-direction:column; max-width:34rem; margin:0 auto;
@@ -382,17 +397,22 @@
         <div class="scroll-frame portrait" id="frame">
           <div class="work-char" id="workChar"></div>
           <img id="workImg" alt="" style="display:none">
-          <div class="seal" id="workSeal"></div>
         </div>
         <div class="caption">
           <div class="title" id="workTitle"></div>
+          <div class="reading" id="workReading"></div>
           <div class="thought" id="workThought"></div>
+          <div class="work-acts">
+            <button class="heart-btn" id="heartBtn" aria-label="마음 남기기">♡</button>
+            <span class="heart-count" id="heartCount"></span>
+            <button class="share-btn" id="shareBtn">퍼가기</button>
+          </div>
         </div>
-        <div class="work-acts">
-          <button class="heart-btn" id="heartBtn" aria-label="마음 남기기">♡</button>
-          <span class="heart-count" id="heartCount"></span>
-          <button class="share-btn" id="shareBtn">퍼가기</button>
-        </div>
+      </div>
+      <div class="hall-bottom" id="hallBottom">
+        <button class="nav-btn" id="prevBtn">이전</button>
+        <span id="counter"></span>
+        <button class="nav-btn" id="nextBtn">다음</button>
       </div>
     </div>
 
@@ -411,12 +431,6 @@
       </div>
       <div class="gb-list" id="gbList"></div>
     </div>
-  </div>
-
-  <div class="hall-bottom" id="hallBottom">
-    <button class="nav-btn" id="prevBtn">이전</button>
-    <span id="counter"></span>
-    <button class="nav-btn" id="nextBtn">다음</button>
   </div>
 </div>
 
@@ -542,8 +556,8 @@ const likedSet=new Set();
 const $=id=>document.getElementById(id);
 const gate=$('gate');
 const dockEl=$('dock'), stageEl=$('stage'), gbEl=$('guestbook');
-const workEl=$('work'), frameEl=$('frame'), charEl=$('workChar'), sealEl=$('workSeal'), imgEl=$('workImg');
-const titleEl=$('workTitle'), thoughtEl=$('workThought'), counterEl=$('counter');
+const workEl=$('work'), frameEl=$('frame'), charEl=$('workChar'), imgEl=$('workImg');
+const titleEl=$('workTitle'), readingEl=$('workReading'), thoughtEl=$('workThought'), counterEl=$('counter');
 const heartBtn=$('heartBtn'), heartCount=$('heartCount');
 
 /* ── 대문: 눈을 뜨다 — 읽는 jcia와 동일. 첫 탭/키가 곧 첫 손짓 ── */
@@ -612,16 +626,18 @@ function selectCategory(name){
 function renderWork(appear){
   const list=WORKS[currentCat]||[]; if(!list.length) return;
   const w=list[workIdx];
-  frameEl.className='scroll-frame '+(w.orient||'portrait')+(w.invert?' rubbing':'');
+  const orient=w.orient||'portrait';
+  workEl.className='work '+orient;
+  frameEl.className='scroll-frame '+orient+(w.img?' has-img':'')+(w.invert?' rubbing':'');
   if(w.img){
-    imgEl.src=w.img; imgEl.style.display='block'; imgEl.style.maxWidth=(w.size||70)+'%';
-    charEl.style.display='none';
+    imgEl.src=w.img; imgEl.style.display='block'; charEl.style.display='none';
   } else {
     imgEl.style.display='none'; charEl.style.display='';
-    charEl.textContent=w.char;
+    charEl.textContent=w.char||'';
   }
-  sealEl.textContent=w.char.length>1?w.char[0]:w.char;
-  titleEl.textContent=w.title; thoughtEl.textContent=w.thought;
+  titleEl.textContent=w.title||'';
+  readingEl.textContent=w.reading||'';
+  thoughtEl.textContent=w.thought||'';
   counterEl.textContent=toHanja(workIdx+1)+' / '+toHanja(list.length);
   const key=currentCat+workIdx;
   heartBtn.textContent=likedSet.has(key)?'♥':'♡';
@@ -882,7 +898,7 @@ async function galleryRegister(){
       edit_meta, gua_no:(parseInt($('edGua').value,10)||null), sort:list.length };
     const ins=await window.sb.from('gallery_works').insert(row).select().single();
     if(ins.error){ edReg('등록 오류: '+ins.error.message,false); btn.disabled=false; return; }
-    const w={ char:title, title:($('edReading').value.trim()||''), thought:(row.thought||''), orient:row.orient,
+    const w={ char:title, title:title, reading:($('edReading').value.trim()||''), thought:(row.thought||''), orient:row.orient,
       likes:0, img:pub, size:ed.size, invert:ed.invert, dbId:ins.data.id };
     list.push(w); workIdx=list.length-1; renderWork(true);
     edReg('하늘에 새겼습니다 ✔'); btn.disabled=false;
@@ -913,9 +929,37 @@ edBuildPal(); edBuildSws();
    2) gallery_works insert: category·char·title·thought·img_url·palette·color·invert·orient·sort
    3) 매직링크(signInWithOtp→verifyOtp) 로그인 세션에서만 등록 허용 (owner=junecheol.hwang@gmail.com) ── */
 
+/* ══ 전시 로드 — gallery_works에서 카테고리별로 불러와 흰 벽에 건다 ══ */
+async function loadWorks(){
+  if(!window.sb) return;
+  try{
+    const {data,error}=await window.sb.from('gallery_works').select('*').order('sort',{ascending:true});
+    if(error||!data||!data.length) return;
+    const byCat={};
+    data.forEach(r=>{ (byCat[r.category]=byCat[r.category]||[]).push({
+      char:(r.title||''), title:(r.title||''), reading:(r.reading||''), thought:(r.thought||''),
+      orient:(r.orient||'portrait'), img:r.image_url, invert:!!(r.edit_meta&&r.edit_meta.invert),
+      size:((r.edit_meta&&r.edit_meta.size)||70), likes:0, dbId:r.id, gua:r.gua_no
+    }); });
+    Object.keys(byCat).forEach(c=>{ WORKS[c]=byCat[c]; });
+    if(WORKS[currentCat] && !gbEl.classList.contains('visible')){ workIdx=0; renderWork(false); }
+  }catch(e){ console.warn('loadWorks',e); }
+}
+
+/* ══ 혜성 — 쓰는 jcia 전용 방문 카운터 (읽는 jcia와 따로 센다) ══ */
+async function bumpVisit(){
+  if(!window.sb) return;
+  try{
+    const {data,error}=await window.sb.rpc('bump_writing_visit');
+    if(!error && data!=null){ const el=$('comet-n'); if(el) el.textContent=data; }
+  }catch(e){ console.warn('visit',e); }
+}
+
 /* ── 시작 ── */
 renderDock();
 renderWork(false);
+whenSB(loadWorks);
+whenSB(bumpVisit);
 </script>
 </body>
 </html>
