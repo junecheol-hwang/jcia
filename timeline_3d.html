@@ -7,6 +7,9 @@
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#060912">
 <link rel="apple-touch-icon" href="/icon-180.png">
+<!-- 브라우저 탭 파비콘 — 순청자 인장 (인라인 data URI, 별도 파일 불필요) -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20240%20240%22%3E%3Crect%20x%3D%2214%22%20y%3D%2214%22%20width%3D%22212%22%20height%3D%22212%22%20rx%3D%2234%22%20fill%3D%22%23E9EDE6%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%22120%22%20r%3D%2268%22%20fill%3D%22none%22%20stroke%3D%22%2382A894%22%20stroke-width%3D%228%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%22120%22%20r%3D%2230%22%20fill%3D%22none%22%20stroke%3D%22%2382A894%22%20stroke-width%3D%228%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%22120%22%20r%3D%2213%22%20fill%3D%22%233E4A46%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%2290%22%20r%3D%227%22%20fill%3D%22%2354796B%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%22150%22%20r%3D%227%22%20fill%3D%22%2354796B%22/%3E%3Ccircle%20cx%3D%22188%22%20cy%3D%22120%22%20r%3D%227%22%20fill%3D%22%2354796B%22/%3E%3Ccircle%20cx%3D%22168.1%22%20cy%3D%22168.1%22%20r%3D%227%22%20fill%3D%22%2354796B%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%22188%22%20r%3D%227%22%20fill%3D%22%2354796B%22/%3E%3Ccircle%20cx%3D%2271.9%22%20cy%3D%22168.1%22%20r%3D%227%22%20fill%3D%22%2354796B%22/%3E%3Ccircle%20cx%3D%2252%22%20cy%3D%22120%22%20r%3D%227%22%20fill%3D%22%2354796B%22/%3E%3Ccircle%20cx%3D%2271.9%22%20cy%3D%2271.9%22%20r%3D%227%22%20fill%3D%22%2354796B%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%2252%22%20r%3D%227%22%20fill%3D%22%2354796B%22/%3E%3Ccircle%20cx%3D%22168.1%22%20cy%3D%2271.9%22%20r%3D%227%22%20fill%3D%22%2354796B%22/%3E%3C/svg%3E">
+<link rel="icon" type="image/png" href="/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="도반의 여정">
@@ -308,6 +311,24 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 }
 #auth-send:hover{background:rgba(217,169,110,0.22);}
 #auth-msg{font-size:0.6rem;color:var(--gray-dark);margin-top:5px;letter-spacing:0.04em;min-height:0.8rem;max-width:200px;margin-left:auto;}
+/* 6자리 코드 입력 — PWA(홈 화면 앱)는 메일 링크가 사파리와 다른 저장공간을 쓰므로
+   링크 클릭이 아니라 코드 직접 입력으로 같은 창 안에서 로그인을 끝낸다 */
+#auth-otp{display:none;gap:6px;align-items:center;justify-content:flex-end;margin-top:6px;}
+#auth-otp.show{display:flex;}
+#auth-code{
+  background:rgba(2,5,10,0.7);border:0.5px solid rgba(110,108,102,0.4);border-radius:2px;
+  padding:0.4rem 0.6rem;width:90px;color:var(--gray-light);
+  font-size:0.85rem;font-weight:300;outline:none;letter-spacing:0.3em;text-align:center;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+}
+#auth-code:focus{border-color:rgba(217,169,110,0.6);}
+#auth-code::placeholder{color:rgba(110,108,102,0.75);letter-spacing:0.1em;}
+#auth-verify{
+  width:28px;height:28px;flex:none;
+  background:rgba(217,169,110,0.12);border:0.5px solid rgba(217,169,110,0.4);border-radius:2px;
+  color:var(--orange-pale);cursor:pointer;font-size:0.85rem;
+}
+#auth-verify:hover{background:rgba(217,169,110,0.22);}
 
 #tl-canvas{position:fixed;inset:0;z-index:15;pointer-events:all;}
 
@@ -883,7 +904,11 @@ body.eye-open #gate-plate{opacity:0;}
   </div>
   <div id="auth-login">
     <input id="auth-email" type="email" autocomplete="email" spellcheck="false" placeholder="이메일로 로그인">
-    <button id="auth-send" title="로그인 링크 받기">→</button>
+    <button id="auth-send" title="로그인 코드 받기">→</button>
+  </div>
+  <div id="auth-otp">
+    <input id="auth-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="코드 6자리">
+    <button id="auth-verify" title="코드 확인">✓</button>
   </div>
   <div id="auth-msg"></div>
 </div>
@@ -2864,9 +2889,26 @@ function addItem(kind){
       const ls=document.getElementById('bp-dial').querySelectorAll('.bp-line');
       if(ls.length){ ls[ls.length-1].scrollIntoView({block:'center'}); updateDialFocus(); }
     });
+    saveNow(panelBook);   // 문장은 소중하니 입력 즉시 서버로 — 패널 닫기를 기다리지 않는다
   } else {
     d[kind].push(v); panelDirty=true; inp.value=''; renderLists(panelBook);
+    saveNow(panelBook);
   }
+}
+// 즉시 저장 — 결과를 문장 카운트 옆에 사람이 읽을 수 있게 표시
+function saveNow(book){
+  if(!book) return;
+  const d=bookData[book.id]; if(!d) return;
+  const cnt=document.getElementById('bp-line-count');
+  const base=d.lines.length?d.lines.length+' 문장':'';
+  if(cnt) cnt.textContent=base+' · 저장 중…';
+  saveBook(book.id, d).then(res=>{
+    panelDirty=false;
+    if(!cnt) return;
+    if(res && res.ok){ cnt.textContent=base+' · 새겨짐 ✓'; setTimeout(()=>{ if(cnt) cnt.textContent=base; },1600); }
+    else if(res && res.reason==='not-logged-in'){ cnt.textContent=base+' · 로그인 필요'; showAuthHint(); }
+    else { cnt.textContent=base+' · 저장 실패(콘솔 확인)'; console.error('saveNow 실패', res && res.error); }
+  });
 }
 // 패널 입력 이벤트 바인딩 — 이벤트 위임(타이밍·순서 무관하게 항상 작동)
 document.addEventListener('click',e=>{
@@ -2906,16 +2948,26 @@ async function saveBook(bookId, d){
   if(!window.sb) return {ok:false, reason:'no-client'};
   if(!currentUser) return {ok:false, reason:'not-logged-in'};
   try{
-    const { error } = await window.sb.from('books_notes').upsert({
+    const payload={
       user_id: currentUser.id, book_id: bookId,
       music:d.music, movie:d.movie||[], reading:d.reading, lines:d.lines,
       calligraphy:d.calligraphy?JSON.stringify(d.calligraphy):null,
       essay:d.essay?JSON.stringify(d.essay):null,
       updated_at: new Date().toISOString()
-    }, { onConflict:'user_id,book_id' });
-    if(error){ console.warn('saveBook', error); return {ok:false, reason:'error', error}; }
-    return {ok:true};
-  }catch(e){ console.warn('saveBook 예외', e); return {ok:false, reason:'error'}; }
+    };
+    // .select() 를 붙여야 upsert 결과(실제로 쓰인 행)가 돌아온다.
+    // RLS 가 막으면 error 없이 data 가 빈 배열로 오므로 그것까지 실패로 판정.
+    const { data, error } = await window.sb.from('books_notes')
+      .upsert(payload, { onConflict:'user_id,book_id' })
+      .select('book_id,lines');
+    if(error){ console.error('[saveBook] 에러', {code:error.code, message:error.message, details:error.details, hint:error.hint}); return {ok:false, reason:'error', error}; }
+    if(!data || data.length===0){
+      console.error('[saveBook] 행이 쓰이지 않음 — RLS(WITH CHECK) 가 조용히 막았을 가능성. user_id=', currentUser.id);
+      return {ok:false, reason:'rls-blocked'};
+    }
+    console.log('[saveBook] 저장 성공 — book_id=', bookId, '· lines=', (data[0].lines||[]).length);
+    return {ok:true, data};
+  }catch(e){ console.error('[saveBook] 예외', e); return {ok:false, reason:'error'}; }
 }
 
 // 패널 내용이 바뀐 채로 닫히거나 다른 책으로 넘어갈 때 저장
@@ -2925,7 +2977,10 @@ function flushPanel(){
   panelDirty=false;
   if(!d) return;
   saveBook(b.id, d).then(res=>{
-    if(res && !res.ok && res.reason==='not-logged-in') showAuthHint();
+    if(res && !res.ok){
+      if(res.reason==='not-logged-in') showAuthHint();
+      else if(res.reason==='rls-blocked') console.error('[flushPanel] RLS 차단 — 정책 조건(WITH CHECK)을 확인하세요');
+    }
   });
 }
 window.flushPanel=flushPanel;
@@ -2935,10 +2990,12 @@ function setUser(u){
   currentUser=u;
   const status=document.getElementById('auth-status');
   const login=document.getElementById('auth-login');
+  const otp=document.getElementById('auth-otp');
   const msg=document.getElementById('auth-msg');
   if(u){
     status.textContent=(u.email||'기록 가능');
     status.style.display='block'; login.style.display='none';
+    if(otp) otp.classList.remove('show');
     if(msg) msg.textContent='';
   } else {
     status.style.display='none'; login.style.display='flex';
@@ -2956,14 +3013,33 @@ async function initAuth(){
 async function sendMagicLink(){
   const email=document.getElementById('auth-email').value.trim();
   const msg=document.getElementById('auth-msg');
+  const otp=document.getElementById('auth-otp');
   if(!email){ msg.textContent='이메일을 입력하세요'; return; }
   if(!window.sb){ msg.textContent='연결되지 않았어요'; return; }
-  msg.textContent='메일 보내는 중…';
+  msg.textContent='코드 보내는 중…';
   try{
     const { error } = await window.sb.auth.signInWithOtp({
       email, options:{ emailRedirectTo: location.origin+location.pathname }
     });
-    msg.textContent = error ? ('오류: '+error.message) : '메일함에서 링크를 눌러주세요 ✉️';
+    if(error){ msg.textContent='오류: '+error.message; return; }
+    msg.textContent='메일함의 6자리 코드를 입력해주세요 ✉️';
+    otp.classList.add('show');
+    document.getElementById('auth-code').focus();
+  }catch(e){ msg.textContent='오류가 났어요'; }
+}
+async function verifyCode(){
+  const email=document.getElementById('auth-email').value.trim();
+  const code=document.getElementById('auth-code').value.trim();
+  const msg=document.getElementById('auth-msg');
+  if(!code){ msg.textContent='코드를 입력하세요'; return; }
+  if(!window.sb){ msg.textContent='연결되지 않았어요'; return; }
+  msg.textContent='확인 중…';
+  try{
+    const { data, error } = await window.sb.auth.verifyOtp({ email, token: code, type:'email' });
+    if(error){ msg.textContent='오류: '+error.message; return; }
+    document.getElementById('auth-otp').classList.remove('show');
+    document.getElementById('auth-code').value='';
+    setUser(data.user);
   }catch(e){ msg.textContent='오류가 났어요'; }
 }
 function showAuthHint(){
@@ -2975,10 +3051,17 @@ function showAuthHint(){
 (function bindAuth(){
   const send=document.getElementById('auth-send');
   const email=document.getElementById('auth-email');
+  const verify=document.getElementById('auth-verify');
+  const code=document.getElementById('auth-code');
   if(send) send.addEventListener('click', sendMagicLink);
   if(email) email.addEventListener('keydown', e=>{
     e.stopPropagation();
     if(e.key==='Enter') sendMagicLink();
+  });
+  if(verify) verify.addEventListener('click', verifyCode);
+  if(code) code.addEventListener('keydown', e=>{
+    e.stopPropagation();
+    if(e.key==='Enter') verifyCode();
   });
 })();
 whenSB(initAuth);
