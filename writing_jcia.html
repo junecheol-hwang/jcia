@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>쓰는 jcia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Song+Myung&family=Cardo:ital@0;1&family=Noto+Serif+KR:wght@400;600;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --white:#FFFFFF; --paper:#F6F5F1; --ink:#141414; --gray:#9B9B96;
+    --seal:#D97757;                 /* 낙관 — 유일한 액센트 */
+    --celadon:#54796B; --celadon-bg:#E9EDE6; --celadon-dark:#3E4A46;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body {
+    height:100%; background:var(--white); color:var(--ink);
+    font-family:'Gowun Batang', serif;
+    overflow:hidden; -webkit-font-smoothing:antialiased;
+  }
+  button { font-family:inherit; }
+  .hanja { font-family:'Noto Serif KR', serif; }   /* 한자 전용 — 낙점 */
+
+  /* ═══════ 관람 예절 (폰 세로) ═══════ */
+  #rotateNotice {
+    display:none; position:fixed; inset:0; z-index:300; background:var(--white);
+    flex-direction:column; align-items:center; justify-content:center;
+    gap:2.2rem; text-align:center; padding:2rem;
+  }
+  .rotate-glyph { width:44px; height:72px; border:2px solid var(--ink); border-radius:8px;
+    animation:turnPhone 2.6s ease-in-out infinite; }
+  @keyframes turnPhone { 0%,25%{transform:rotate(0);} 55%,80%{transform:rotate(-90deg);} 100%{transform:rotate(-90deg);} }
+  .rotate-title { font-family:'Song Myung','Noto Serif KR',serif; font-size:0.95rem; letter-spacing:0.4em; text-indent:0.4em; }
+  .rotate-text { font-size:0.85rem; color:var(--gray); line-height:2; word-break:keep-all; }
+  @media (orientation:portrait) and (pointer:coarse) {
+    #rotateNotice{display:flex;} #gate,#hall{display:none !important;}
+  }
+
+  /* ═══════ 대문: 눈을 뜨다 — 읽는 jcia의 눈, 낮 버전 ═══════ */
+  body.gated #hall { filter:blur(10px) brightness(1.01); }
+  body.gated.eye-open #hall { animation:gateFocus 3s cubic-bezier(.4,0,.4,1) forwards; } /* 초점 사냥 */
+  @keyframes gateFocus{
+    0%  {filter:blur(10px)  brightness(1.01);}
+    28% {filter:blur(2.5px) brightness(1);}
+    44% {filter:blur(6px)   brightness(1.005);}
+    62% {filter:blur(1.2px) brightness(1);}
+    76% {filter:blur(3px)   brightness(1);}
+    100%{filter:blur(0)     brightness(1);}
+  }
+  #gate { position:fixed; inset:0; z-index:200; cursor:pointer; }
+  .gate-lid { position:absolute; left:0; right:0; height:58%; will-change:transform;
+    background:linear-gradient(180deg,#FFFFFF,#F4F2EC); }
+  .gate-lid.top { top:0;
+    background:linear-gradient(180deg,#FFFFFF 60%,#F1EFE8);
+    -webkit-mask-image:radial-gradient(72% 15% at 50% 100%, transparent 98%, #000 100%);
+            mask-image:radial-gradient(72% 15% at 50% 100%, transparent 98%, #000 100%);
+    filter:drop-shadow(0 3px 10px rgba(20,20,20,0.05)); }
+  .gate-lid.bot { bottom:0;
+    background:linear-gradient(0deg,#FFFFFF 60%,#F1EFE8);
+    -webkit-mask-image:radial-gradient(72% 15% at 50% 0%, transparent 98%, #000 100%);
+            mask-image:radial-gradient(72% 15% at 50% 0%, transparent 98%, #000 100%);
+    filter:drop-shadow(0 -3px 10px rgba(20,20,20,0.05)); }
+  /* 실눈 사이의 빛 — 낙관의 오렌지 */
+  #gate-lash { position:absolute; left:8%; right:8%; top:50%; height:1px; transform:translateY(-50%);
+    background:linear-gradient(90deg,transparent,rgba(217,119,87,0.85) 25%,rgba(217,119,87,0.85) 75%,transparent);
+    filter:drop-shadow(0 0 7px rgba(217,119,87,0.8));
+    animation:gateBreath 3s ease-in-out infinite; }
+  @keyframes gateBreath { 0%,100%{opacity:0.3;} 50%{opacity:0.85;} }
+
+  #gate-plate { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    display:flex; flex-direction:column; align-items:center; gap:1.1rem; transition:opacity 0.8s; }
+  #gate-lockup { display:flex; align-items:center; gap:13px; }
+  #gate-seal { width:38px; height:38px; flex:none; }
+  .gate-word { font-family:'Cardo','Song Myung','Noto Serif KR',serif;
+    font-size:1.05rem; letter-spacing:0.34em; color:var(--ink); }
+  /* 눈동자 — 문패 */
+  #gate-pupil { font-family:'Noto Serif KR',serif; font-weight:900;
+    font-size:clamp(6rem,22vmin,10.5rem); line-height:1.05; color:var(--ink);
+    user-select:none; transition:opacity .65s ease, filter .65s ease; }
+  #gate-pupil.swapping { opacity:0; filter:blur(10px); }
+  .gate-enter { font-family:'Song Myung','Noto Serif KR',serif;
+    font-size:0.66rem; letter-spacing:0.46em; margin-left:0.46em;
+    color:var(--gray); animation:gateBreath 3s ease-in-out infinite; }
+
+  body.eye-open .gate-lid.top{ animation:gateLidTop 2.7s cubic-bezier(.55,.02,.3,1) forwards; }
+  body.eye-open .gate-lid.bot{ animation:gateLidBot 2.7s cubic-bezier(.55,.02,.3,1) forwards; }
+  @keyframes gateLidTop{ 0%{transform:translateY(0);} 30%{transform:translateY(-34%);}
+    46%{transform:translateY(-26%);}   /* 실눈 — 초점이 흔들리는 순간 */
+    100%{transform:translateY(-106%);} }
+  @keyframes gateLidBot{ 0%{transform:translateY(0);} 30%{transform:translateY(34%);}
+    46%{transform:translateY(26%);} 100%{transform:translateY(106%);} }
+  body.eye-open #gate-lash{ opacity:0; transition:opacity .4s; animation:none; }
+  body.eye-open #gate-plate{ opacity:0; }
+  #gate.gone{ display:none; }
+
+  /* 문지방 아래 — 지나간 문들 */
+  #gate-history { position:absolute; bottom:2.4vh; left:50%; transform:translateX(-50%);
+    display:flex; gap:8px; opacity:0; animation:fadeIn 1.6s ease forwards 3.4s; }
+  body.eye-open #gate-history{ animation:none; opacity:0; transition:opacity .4s; }
+  .past-gate { width:2.2rem; height:2.2rem; border:1px solid rgba(20,20,20,0.12); border-radius:9px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Noto Serif KR',serif; font-weight:900; font-size:1.05rem;
+    color:rgba(20,20,20,0.4); background:var(--white); cursor:pointer; user-select:none;
+    transition:color .3s, border-color .3s; }
+  .past-gate:hover{ color:var(--ink); border-color:rgba(20,20,20,0.35); }
+  .past-gate.current{ border-color:var(--seal); color:var(--ink); }
+  @keyframes fadeIn{ to{opacity:1;} }
+
+  /* ═══════ 전시실 ═══════ */
+  #hall { position:fixed; inset:0; display:flex; flex-direction:column; }
+
+  /* 우상단 — 인장 + 쓰는 jcia + 로그인 + 혜성 (읽는 jcia와 동일 배치) */
+  #brand { position:absolute; right:1.6rem; top:1.2rem; z-index:20;
+    display:flex; align-items:center; gap:9px; cursor:pointer; }
+  #brand-mark { width:26px; height:26px; }
+  #brand-name { font-family:'Song Myung','Noto Serif KR',serif; font-size:0.92rem; letter-spacing:0.06em; }
+  #auth-box { position:absolute; right:1.6rem; top:3.6rem; z-index:20;
+    display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+  #auth-email { width:172px; background:transparent;
+    border:0.5px solid rgba(20,20,20,0.22); border-radius:3px; padding:4px 8px;
+    font-family:'Gowun Batang',serif; font-size:0.7rem; color:var(--ink); outline:none; }
+  #auth-email::placeholder{ color:rgba(20,20,20,0.35); }
+  #auth-email:focus{ border-color:rgba(217,119,87,0.6); }
+  .comet { font-family:'Gowun Batang',serif; font-size:0.66rem; color:var(--gray); letter-spacing:0.08em; }
+  .comet b { color:var(--ink); font-weight:700; }
+
+  .hall-body { flex:1; display:flex; min-height:0; padding-top:2.4rem; }
+
+  /* 독 — 좌측, 피시아이 */
+  #dock { width:13rem; flex:none; display:flex; flex-direction:column; justify-content:center;
+    gap:0.35rem; padding-left:2.2rem; overflow-y:auto; }
+  .dock-item { font-family:'Noto Serif KR',serif; font-weight:600; font-size:0.92rem;
+    letter-spacing:0.15em; color:var(--gray); cursor:pointer; user-select:none;
+    padding:0.28rem 0; transform-origin:left center;
+    transition:transform .18s ease-out, color .25s ease; white-space:nowrap; }
+  .dock-item .dock-bar{ opacity:0.35; font-weight:300; }
+  .dock-item .dock-eum{ font-family:'Gowun Batang',serif; font-weight:400; font-size:0.8em; opacity:0.8; letter-spacing:0.1em; }
+  .dock-item:hover{ color:var(--ink); }
+  .dock-item.active{ color:var(--ink); }
+  .dock-item.active::before{ content:'●'; color:var(--seal); font-size:0.45rem; margin-right:0.55rem; vertical-align:middle; }
+
+  /* 무대 — 아주 옅은 집중 조명 */
+  .hall-stage { flex:1; display:flex; align-items:center; justify-content:center;
+    padding:1rem 2rem; min-width:0;
+    background:radial-gradient(closest-side at 50% 46%, #FFFFFF 55%, #FAF9F6 100%); }
+  .work { display:flex; flex-direction:column; align-items:center; gap:1.5rem;
+    max-width:34rem; }
+  .work-appear { animation:inkSoak 1.4s ease forwards; }
+  @keyframes inkSoak {
+    0%{opacity:0; filter:blur(14px);} 60%{opacity:0.9; filter:blur(2px);} 100%{opacity:1; filter:blur(0);}
+  }
+  .work.fading { opacity:0; filter:blur(10px); transition:opacity .55s ease, filter .55s ease; }
+
+  /* 화폭 — 세로 족자 / 가로 횡권, 사진 비율 따라 */
+  .scroll-frame { position:relative; display:flex; align-items:center; justify-content:center;
+    border:1px solid rgba(20,20,20,0.09); background:var(--white); }
+  .scroll-frame.portrait  { width:clamp(160px,32vmin,250px); aspect-ratio:5/7; }
+  .scroll-frame.landscape { width:clamp(260px,52vmin,420px); aspect-ratio:7/4; }
+  .work-char { font-family:'Noto Serif KR',serif; font-weight:900; color:var(--ink); user-select:none; }
+  .portrait  .work-char{ font-size:clamp(5rem,19vmin,8.5rem); }
+  .landscape .work-char{ font-size:clamp(4rem,15vmin,6.5rem); letter-spacing:0.1em; }
+  .seal { position:absolute; right:6.5%; bottom:8%; width:1.5rem; height:1.5rem; background:var(--seal);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Noto Serif KR',serif; font-weight:600; font-size:0.66rem; color:var(--white); line-height:1; }
+  .landscape .seal{ right:4%; bottom:10%; }
+
+  .caption { text-align:center; display:flex; flex-direction:column; gap:0.65rem; }
+  .caption .title { font-family:'Noto Serif KR',serif; font-weight:600; font-size:0.92rem; letter-spacing:0.4em; text-indent:0.4em; }
+  .caption .thought { font-size:0.87rem; line-height:1.95; color:#4c4c48; word-break:keep-all; max-width:27rem; }
+
+  .work-acts { display:flex; align-items:center; gap:1.3rem; }
+  .heart-btn { background:none; border:none; cursor:pointer; font-size:1.05rem; color:var(--gray);
+    line-height:1; padding:0.3rem; transition:color .25s, transform .25s; }
+  .heart-btn.liked{ color:var(--seal); transform:scale(1.15); }
+  .heart-count { font-family:'Noto Serif KR',serif; font-weight:400; font-size:0.8rem; color:var(--gray); }
+  .share-btn { background:none; border:0.5px solid rgba(20,20,20,0.2); border-radius:9px;
+    padding:0.32rem 0.9rem; cursor:pointer; font-size:0.72rem; letter-spacing:0.2em; text-indent:0.2em;
+    color:var(--ink); transition:border-color .3s, color .3s; }
+  .share-btn:hover{ border-color:var(--seal); color:var(--seal); }
+
+  .hall-bottom { display:flex; justify-content:center; align-items:baseline; gap:2.6rem; padding:0 0 1.7rem; }
+  .nav-btn { background:none; border:none; cursor:pointer; font-size:0.82rem;
+    letter-spacing:0.3em; text-indent:0.3em; color:var(--gray); padding:0.4rem 0.8rem; transition:color .3s; }
+  .nav-btn:hover{ color:var(--ink); }
+  #counter { font-family:'Noto Serif KR',serif; font-weight:400; font-size:0.82rem; letter-spacing:0.25em; color:var(--gray); }
+
+  /* ═══════ 芳名錄 ═══════ */
+  #guestbook { flex:1; display:none; flex-direction:column; max-width:34rem; margin:0 auto;
+    width:100%; padding:1.2rem 2rem 2rem; min-height:0; }
+  #guestbook.visible{ display:flex; }
+  .gb-titlerow { display:flex; justify-content:center; align-items:baseline; gap:0.9rem; margin-bottom:1.4rem; }
+  .gb-title { font-family:'Noto Serif KR',serif; font-weight:600; font-size:1.05rem; letter-spacing:0.45em; text-indent:0.45em; }
+  #owner-toggle { background:none; border:0.5px solid rgba(20,20,20,0.15); border-radius:6px;
+    font-size:0.62rem; color:var(--gray); padding:2px 8px; cursor:pointer; letter-spacing:0.1em; }
+  #owner-toggle.on { border-color:var(--seal); color:var(--seal); }
+  .gb-form { display:flex; flex-direction:column; gap:0.6rem; margin-bottom:1.6rem; }
+  .gb-row { display:flex; gap:0.6rem; }
+  .gb-input, .gb-textarea { font-family:'Gowun Batang',serif; font-size:0.86rem;
+    border:none; border-bottom:1px solid rgba(20,20,20,0.15); padding:0.45rem 0.1rem;
+    background:transparent; color:var(--ink); outline:none; transition:border-color .3s; }
+  .gb-input:focus,.gb-textarea:focus{ border-color:var(--seal); }
+  .gb-input.name{ flex:1; } .gb-input.pw{ width:7.5rem; }
+  .gb-textarea{ resize:none; line-height:1.8; }
+  .gb-submit { align-self:flex-end; background:none; border:1px solid rgba(20,20,20,0.2);
+    border-radius:9px; padding:0.42rem 1.3rem; cursor:pointer; font-size:0.78rem;
+    letter-spacing:0.25em; text-indent:0.25em; color:var(--ink); transition:border-color .3s, color .3s; }
+  .gb-submit:hover{ border-color:var(--seal); color:var(--seal); }
+  .gb-list { flex:1; overflow-y:auto; }
+  .gb-entry { padding:1rem 0.1rem; border-bottom:1px solid rgba(20,20,20,0.06); }
+  .gb-meta { display:flex; gap:0.75rem; align-items:baseline; margin-bottom:0.4rem; }
+  .gb-name { font-size:0.84rem; font-weight:700; }
+  .gb-date { font-size:0.7rem; color:var(--gray); }
+  .gb-tools { margin-left:auto; display:flex; gap:0.5rem; }
+  .gb-tools button { background:none; border:none; cursor:pointer; font-size:0.66rem;
+    color:var(--gray); padding:2px; transition:color .2s; }
+  .gb-tools button:hover{ color:var(--ink); }
+  .gb-body { font-size:0.85rem; line-height:1.9; color:#4c4c48; word-break:keep-all; }
+  .gb-reply { margin-top:0.7rem; padding:0.6rem 0.85rem; border-left:2px solid var(--seal);
+    background:rgba(217,119,87,0.045); font-size:0.82rem; line-height:1.85; color:#4c4c48; }
+  .gb-reply .who { font-size:0.68rem; color:var(--seal); letter-spacing:0.1em; margin-bottom:0.25rem; }
+  .gb-empty { text-align:center; color:var(--gray); font-size:0.85rem; padding:2rem 0; }
+
+  @media (prefers-reduced-motion:reduce) {
+    .gate-lid,.gate-enter,#gate-lash{ animation:none !important; }
+    body.gated #hall{ filter:none; }
+    .work-appear{ animation:none; }
+    .rotate-glyph{ animation:none; transform:rotate(-90deg); }
+  }
+</style>
+</head>
+<body class="gated">
+
+<!-- ═══════ 관람 예절 ═══════ -->
+<div id="rotateNotice">
+  <div class="rotate-glyph"></div>
+  <div class="rotate-title">관람 예절</div>
+  <div class="rotate-text">이 전시는 가로로 걸려 있습니다.<br>기기를 돌려 들어와 주세요.</div>
+</div>
+
+<!-- ═══════ 대문: 눈을 뜨다 ═══════ -->
+<div id="gate">
+  <div class="gate-lid top"></div>
+  <div class="gate-lid bot"></div>
+  <div id="gate-lash"></div>
+  <div id="gate-plate">
+    <div id="gate-lockup">
+      <!-- 순청자 인장 (studio_jcia_logo_final.svg · 소형 광학 보정 stroke 5) -->
+      <svg id="gate-seal" viewBox="0 0 240 240" aria-hidden="true">
+        <rect x="14" y="14" width="212" height="212" rx="34" fill="#E9EDE6" stroke="rgba(62,74,70,0.15)" stroke-width="1"/>
+        <circle cx="120" cy="120" r="68" fill="none" stroke="rgba(130,168,148,0.5)" stroke-width="5"/>
+        <circle cx="120" cy="120" r="30" fill="none" stroke="rgba(130,168,148,0.5)" stroke-width="5"/>
+        <circle cx="120" cy="120" r="9.5" fill="#3E4A46"/>
+        <circle cx="120" cy="90" r="5.2" fill="#54796B"/><circle cx="120" cy="150" r="5.2" fill="#54796B"/>
+        <circle cx="188" cy="120" r="5.2" fill="#54796B"/><circle cx="168.1" cy="168.1" r="5.2" fill="#54796B"/>
+        <circle cx="120" cy="188" r="5.2" fill="#54796B"/><circle cx="71.9" cy="168.1" r="5.2" fill="#54796B"/>
+        <circle cx="52" cy="120" r="5.2" fill="#54796B"/><circle cx="71.9" cy="71.9" r="5.2" fill="#54796B"/>
+        <circle cx="120" cy="52" r="5.2" fill="#54796B"/><circle cx="168.1" cy="71.9" r="5.2" fill="#54796B"/>
+      </svg>
+      <span class="gate-word">쓰는 jcia</span>
+    </div>
+    <div id="gate-pupil">易</div>
+    <div class="gate-enter">눈 을 뜨 다</div>
+  </div>
+  <div id="gate-history" aria-label="지나간 문들"></div>
+</div>
+
+<!-- ═══════ 전시실 ═══════ -->
+<div id="hall">
+  <div id="brand">
+    <svg id="brand-mark" viewBox="0 0 240 240" aria-hidden="true">
+      <rect x="14" y="14" width="212" height="212" rx="34" fill="#E9EDE6" stroke="rgba(62,74,70,0.15)" stroke-width="1"/>
+      <circle cx="120" cy="120" r="68" fill="none" stroke="rgba(130,168,148,0.55)" stroke-width="6"/>
+      <circle cx="120" cy="120" r="30" fill="none" stroke="rgba(130,168,148,0.55)" stroke-width="6"/>
+      <circle cx="120" cy="120" r="9.5" fill="#3E4A46"/>
+      <circle cx="120" cy="90" r="5.2" fill="#54796B"/><circle cx="120" cy="150" r="5.2" fill="#54796B"/>
+      <circle cx="188" cy="120" r="5.2" fill="#54796B"/><circle cx="168.1" cy="168.1" r="5.2" fill="#54796B"/>
+      <circle cx="120" cy="188" r="5.2" fill="#54796B"/><circle cx="71.9" cy="168.1" r="5.2" fill="#54796B"/>
+      <circle cx="52" cy="120" r="5.2" fill="#54796B"/><circle cx="71.9" cy="71.9" r="5.2" fill="#54796B"/>
+      <circle cx="120" cy="52" r="5.2" fill="#54796B"/><circle cx="168.1" cy="71.9" r="5.2" fill="#54796B"/>
+    </svg>
+    <span id="brand-name">쓰는 jcia</span>
+  </div>
+  <div id="auth-box">
+    <input id="auth-email" type="email" placeholder="이메일로 로그인" autocomplete="email" spellcheck="false">
+    <div class="comet">혜성&nbsp;<b id="comet-n">61</b></div>
+  </div>
+
+  <div class="hall-body">
+    <nav id="dock" aria-label="분류"></nav>
+
+    <div class="hall-stage" id="stage">
+      <div class="work" id="work">
+        <div class="scroll-frame portrait" id="frame">
+          <div class="work-char" id="workChar"></div>
+          <div class="seal" id="workSeal"></div>
+        </div>
+        <div class="caption">
+          <div class="title" id="workTitle"></div>
+          <div class="thought" id="workThought"></div>
+        </div>
+        <div class="work-acts">
+          <button class="heart-btn" id="heartBtn" aria-label="마음 남기기">♡</button>
+          <span class="heart-count" id="heartCount"></span>
+          <button class="share-btn" id="shareBtn">퍼가기</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="guestbook">
+      <div class="gb-titlerow">
+        <div class="gb-title hanja">芳名錄</div>
+        <button id="owner-toggle" title="목업 전용 — 실제로는 매직링크 로그인">主</button>
+      </div>
+      <div class="gb-form">
+        <div class="gb-row">
+          <input class="gb-input name" id="gbName" maxlength="20" placeholder="필명">
+          <input class="gb-input pw" id="gbPw" maxlength="4" type="password" inputmode="numeric" placeholder="비밀번호 4자리">
+        </div>
+        <textarea class="gb-textarea" id="gbBody" rows="3" maxlength="300" placeholder="다녀간 흔적을 남겨 주세요 (300자)"></textarea>
+        <button class="gb-submit" id="gbSubmit">남기다</button>
+      </div>
+      <div class="gb-list" id="gbList"></div>
+    </div>
+  </div>
+
+  <div class="hall-bottom" id="hallBottom">
+    <button class="nav-btn" id="prevBtn">이전</button>
+    <span id="counter"></span>
+    <button class="nav-btn" id="nextBtn">다음</button>
+  </div>
+</div>
+
+<script>
+/* ─────────────────────────────────────────────
+   Supabase 대체 지점 (실제 버전):
+   gate_history · gallery_categories · gallery_works(+Storage)
+   gallery_likes(RPC 카운터+localStorage 표식)
+   gallery_comments(작성자 비밀번호는 해시로 저장, RPC로 대조)
+   답글/삭제 권한 = 매직링크 로그인된 주인 이메일 (RLS)
+   혜성 카운터 = 읽는 jcia와 동일 메커니즘
+   ───────────────────────────────────────────── */
+
+const GATE_HISTORY = ['易','觀','遊','靜','思'];
+const CATEGORIES = [
+  {h:'易',e:'역'},{h:'中庸',e:'중용'},{h:'論語',e:'논어'},{h:'孟子',e:'맹자'},
+  {h:'般若心經',e:'반야심경'},{h:'金剛經',e:'금강경'},{h:'石濤畵論',e:'석도화론'},
+  {h:'詩經',e:'시경'},{h:'餘白',e:'여백'}
+];
+/* orient: 사진 비율에 따라 portrait(족자)/landscape(횡권) — 실제 버전은 업로드 시 자동 판정 */
+const WORKS = {
+  '易':[{char:'易',title:'바꿀 역',orient:'portrait',likes:3,
+    thought:'生生之謂易. 낳고 낳는 것을 일컬어 역이라 한다. 이 전시장의 문패이자 첫 작품.'}],
+  '中庸':[{char:'誠',title:'정성 성',orient:'portrait',likes:1,
+    thought:'誠者 天之道也. 정성은 하늘의 길이고, 정성되려는 것은 사람의 길이다.'}],
+  '論語':[{char:'仁',title:'어질 인',orient:'portrait',likes:2,
+    thought:'공자는 인을 한 번도 같은 말로 정의하지 않았다. 묻는 사람마다 다른 답을 주었다. 그것이 이미 인이다.'},
+   {char:'恕',title:'용서 서',orient:'portrait',likes:0,
+    thought:'평생 지닐 한 글자를 묻자 공자는 서(恕)라 답했다.'}],
+  '孟子':[{char:'浩',title:'넓을 호',orient:'portrait',likes:1,
+    thought:'호연지기(浩然之氣). 곧음으로 기르면 하늘과 땅 사이에 가득 찬다.'}],
+  '般若心經':[{char:'空',title:'빌 공',orient:'portrait',likes:4,
+    thought:'色卽是空 空卽是色. 비어 있음은 없음이 아니다. 모든 것이 드나들 수 있는 자리다.'}],
+  '金剛經':[{char:'如',title:'같을 여',orient:'portrait',likes:2,
+    thought:'如如. 오는 것도 없고 가는 것도 없어 여래(如來)라 한다.'}],
+  '石濤畵論':[{char:'一畫',title:'일획론',orient:'landscape',likes:5,
+    thought:'석도는 말했다 — 모든 그림은 한 획에서 시작된다. 만 획이 이 한 획의 자손이다. (가로 작품은 이렇게 횡권으로 걸립니다)'}],
+  '詩經':[{char:'思',title:'생각 사',orient:'portrait',likes:1,
+    thought:'詩三百 一言以蔽之 曰思無邪.'}],
+  '餘白':[{char:'遊',title:'놀 유',orient:'portrait',likes:2,
+    thought:'어느 고전에도 속하지 않을 자유. 여백은 언제나 필요하다.'},
+   {char:'靜',title:'고요할 정',orient:'portrait',likes:0,
+    thought:'흰 벽에 홀로 걸린 글자 하나가 고요를 대신 말한다.'}]
+};
+
+let guestbookEntries = [
+  { name:'지나가던 별', date:'2026.07.01', body:'흰 벽에 글자 하나. 오래 서 있다 갑니다.', pw:'0000',
+    reply:'먼 길에 들러 주셔서 고맙습니다. 다음 문패도 보러 오세요.' }
+];
+
+const hanjaNum=['一','二','三','四','五','六','七','八','九','十'];
+const toHanja=n=>n<=10?hanjaNum[n-1]:String(n);
+
+let currentGate=GATE_HISTORY[0], currentCat='易', workIdx=0, swapping=false, ownerMode=false;
+const likedSet=new Set();
+
+const $=id=>document.getElementById(id);
+const gate=$('gate'), pupil=$('gate-pupil'), historyEl=$('gate-history');
+const dockEl=$('dock'), stageEl=$('stage'), gbEl=$('guestbook');
+const workEl=$('work'), frameEl=$('frame'), charEl=$('workChar'), sealEl=$('workSeal');
+const titleEl=$('workTitle'), thoughtEl=$('workThought'), counterEl=$('counter');
+const heartBtn=$('heartBtn'), heartCount=$('heartCount');
+
+/* ── 대문: 눈을 뜨다 ── */
+function openEye(){
+  if(document.body.classList.contains('eye-open')) return;
+  document.body.classList.add('eye-open');
+  /* 실제 버전: 이 첫 탭이 BGM 재생 제스처 */
+  setTimeout(()=>{
+    document.body.classList.remove('gated','eye-open');
+    gate.classList.add('gone');
+  }, 3050);
+}
+gate.addEventListener('click', e=>{
+  if(e.target.closest('.past-gate')) return;
+  openEye();
+});
+
+function swapGate(ch){
+  if(swapping||ch===currentGate) return;
+  swapping=true;
+  pupil.classList.add('swapping');
+  setTimeout(()=>{
+    currentGate=ch; pupil.textContent=ch;
+    pupil.classList.remove('swapping');
+    renderGateHistory();
+    setTimeout(()=>{swapping=false;},650);
+  },650);
+}
+function renderGateHistory(){
+  historyEl.innerHTML='';
+  GATE_HISTORY.forEach(ch=>{
+    const sq=document.createElement('div');
+    sq.className='past-gate'+(ch===currentGate?' current':'');
+    sq.textContent=ch; sq.title=ch+' — 문패 바꿔 달기';
+    sq.addEventListener('click',e=>{e.stopPropagation(); swapGate(ch);});
+    historyEl.appendChild(sq);
+  });
+}
+renderGateHistory();
+
+/* ── 독 + 피시아이 ── */
+const DOCK_ITEMS=[...CATEGORIES,{h:'芳名錄',e:'방명록'}];
+const isCoarse=window.matchMedia('(pointer:coarse)').matches;
+const prefersReduced=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+function renderDock(){
+  dockEl.innerHTML='';
+  DOCK_ITEMS.forEach(item=>{
+    const it=document.createElement('div');
+    it.className='dock-item'+(item.h===currentCat?' active':'');
+    const hj=document.createElement('span'); hj.textContent=item.h;
+    const bar=document.createElement('span'); bar.className='dock-bar'; bar.textContent=' | ';
+    const eum=document.createElement('span'); eum.className='dock-eum'; eum.textContent=item.e;
+    it.append(hj,bar,eum);
+    it.addEventListener('click',()=>selectCategory(item.h));
+    dockEl.appendChild(it);
+  });
+}
+if(!isCoarse&&!prefersReduced){
+  const MAX=0.38, RANGE=110;
+  dockEl.addEventListener('mousemove',e=>{
+    dockEl.querySelectorAll('.dock-item').forEach(it=>{
+      const r=it.getBoundingClientRect();
+      const d=Math.abs(e.clientY-(r.top+r.height/2));
+      it.style.transform=`scale(${(1+MAX*Math.max(0,1-d/RANGE)).toFixed(3)})`;
+    });
+  });
+  dockEl.addEventListener('mouseleave',()=>{
+    dockEl.querySelectorAll('.dock-item').forEach(it=>it.style.transform='scale(1)');
+  });
+}
+
+function selectCategory(name){
+  currentCat=name; renderDock();
+  if(name==='芳名錄'){
+    stageEl.style.display='none'; $('hallBottom').style.visibility='hidden';
+    gbEl.classList.add('visible'); counterEl.textContent=''; renderGuestbook();
+  } else {
+    gbEl.classList.remove('visible'); stageEl.style.display='flex';
+    $('hallBottom').style.visibility='visible';
+    workIdx=0; renderWork(true);
+  }
+}
+
+/* ── 작품 — 스밈으로 등장 ── */
+function renderWork(appear){
+  const list=WORKS[currentCat]||[]; if(!list.length) return;
+  const w=list[workIdx];
+  frameEl.className='scroll-frame '+(w.orient||'portrait');
+  charEl.textContent=w.char;
+  sealEl.textContent=w.char.length>1?w.char[0]:w.char;
+  titleEl.textContent=w.title; thoughtEl.textContent=w.thought;
+  counterEl.textContent=toHanja(workIdx+1)+' / '+toHanja(list.length);
+  const key=currentCat+workIdx;
+  heartBtn.textContent=likedSet.has(key)?'♥':'♡';
+  heartBtn.classList.toggle('liked',likedSet.has(key));
+  heartCount.textContent=w.likes>0?w.likes:'';
+  if(appear){ workEl.classList.remove('work-appear'); void workEl.offsetWidth; workEl.classList.add('work-appear'); }
+}
+function go(dir){
+  const list=WORKS[currentCat]||[]; if(list.length<2) return;
+  workEl.classList.add('fading');
+  setTimeout(()=>{
+    workIdx=(workIdx+dir+list.length)%list.length;
+    workEl.classList.remove('fading');
+    renderWork(true);
+  },550);
+}
+$('prevBtn').addEventListener('click',()=>go(-1));
+$('nextBtn').addEventListener('click',()=>go(1));
+document.addEventListener('keydown',e=>{
+  if(document.body.classList.contains('gated')||gbEl.classList.contains('visible')) return;
+  if(e.key==='ArrowLeft') go(-1);
+  if(e.key==='ArrowRight') go(1);
+});
+
+/* ── 마음 ── */
+heartBtn.addEventListener('click',()=>{
+  const w=WORKS[currentCat][workIdx], key=currentCat+workIdx;
+  if(likedSet.has(key)){likedSet.delete(key); w.likes=Math.max(0,w.likes-1);}
+  else {likedSet.add(key); w.likes+=1;}
+  renderWork(false);
+});
+
+/* ── 퍼가기 — 공유 카드(작품+낙관+쓰는 jcia)를 즉석에서 구워 폰 공유시트로.
+      데스크톱 폴백: PNG 저장 + 링크 복사 ── */
+$('shareBtn').addEventListener('click', async ()=>{
+  const w=WORKS[currentCat][workIdx];
+  await document.fonts.ready;
+  const c=document.createElement('canvas'); c.width=1080; c.height=1080;
+  const x=c.getContext('2d');
+  x.fillStyle='#FFFFFF'; x.fillRect(0,0,1080,1080);
+  x.fillStyle='#141414'; x.textAlign='center'; x.textBaseline='middle';
+  x.font='900 '+(w.char.length>1?'340':'520')+'px "Noto Serif KR", serif';
+  x.fillText(w.char,540,505);
+  /* 낙관 */
+  x.fillStyle='#D97757'; x.fillRect(880,880,84,84);
+  x.fillStyle='#FFFFFF'; x.font='600 44px "Noto Serif KR", serif';
+  x.fillText(w.char[0],922,926);
+  /* 서명 */
+  x.fillStyle='#9B9B96'; x.font='400 34px "Gowun Batang", serif';
+  x.fillText('쓰는 jcia',540,1006);
+  const blob=await new Promise(r=>c.toBlob(r,'image/png'));
+  const file=new File([blob],'jcia_'+w.title.replace(/\s/g,'')+'.png',{type:'image/png'});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file], title:'쓰는 jcia', text:w.title+' — 쓰는 jcia'}); }catch(e){}
+  } else {
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=file.name; a.click();
+    URL.revokeObjectURL(a.href);
+    if(navigator.clipboard) navigator.clipboard.writeText(location.href).catch(()=>{});
+    alert('공유 시트가 없는 환경이라 카드 이미지를 저장했습니다. 링크는 복사해 두었어요.');
+  }
+});
+
+/* ── 芳名錄 — 작성자 수정·삭제(비밀번호) + 주인 답글·삭제 ── */
+$('owner-toggle').addEventListener('click',()=>{
+  ownerMode=!ownerMode;
+  $('owner-toggle').classList.toggle('on',ownerMode);
+  renderGuestbook();
+});
+
+function renderGuestbook(){
+  const list=$('gbList'); list.innerHTML='';
+  if(!guestbookEntries.length){
+    list.innerHTML='<div class="gb-empty">아직 아무도 다녀가지 않았습니다</div>'; return;
+  }
+  guestbookEntries.forEach((en,i)=>{
+    const div=document.createElement('div'); div.className='gb-entry';
+    const meta=document.createElement('div'); meta.className='gb-meta';
+    const nm=document.createElement('span'); nm.className='gb-name'; nm.textContent=en.name;
+    const dt=document.createElement('span'); dt.className='gb-date'; dt.textContent=en.date;
+    const tools=document.createElement('div'); tools.className='gb-tools';
+
+    const editB=document.createElement('button'); editB.textContent='수정';
+    editB.onclick=()=>{
+      const pw=prompt('비밀번호 4자리'); if(pw!==en.pw){ if(pw!==null) alert('비밀번호가 다릅니다'); return; }
+      const nb=prompt('내용 수정', en.body); if(nb&&nb.trim()){ en.body=nb.trim(); renderGuestbook(); }
+    };
+    const delB=document.createElement('button'); delB.textContent='삭제';
+    delB.onclick=()=>{
+      if(ownerMode){ if(confirm('주인 권한으로 삭제할까요?')){ guestbookEntries.splice(i,1); renderGuestbook(); } return; }
+      const pw=prompt('비밀번호 4자리'); if(pw!==en.pw){ if(pw!==null) alert('비밀번호가 다릅니다'); return; }
+      guestbookEntries.splice(i,1); renderGuestbook();
+    };
+    tools.append(editB,delB);
+    if(ownerMode){
+      const repB=document.createElement('button'); repB.textContent='답글';
+      repB.onclick=()=>{
+        const r=prompt('답글', en.reply||''); if(r!==null){ en.reply=r.trim(); renderGuestbook(); }
+      };
+      tools.append(repB);
+    }
+    meta.append(nm,dt,tools);
+    const body=document.createElement('div'); body.className='gb-body'; body.textContent=en.body;
+    div.append(meta,body);
+    if(en.reply){
+      const rep=document.createElement('div'); rep.className='gb-reply';
+      rep.innerHTML='<div class="who">主 · jcia</div>';
+      const rb=document.createElement('div'); rb.textContent=en.reply; rep.appendChild(rb);
+      div.appendChild(rep);
+    }
+    list.appendChild(div);
+  });
+}
+
+$('gbSubmit').addEventListener('click',()=>{
+  const name=$('gbName').value.trim(), pw=$('gbPw').value.trim(), body=$('gbBody').value.trim();
+  if(!name||!body) return;
+  if(!/^\d{4}$/.test(pw)){ alert('비밀번호는 숫자 4자리로 정해 주세요 — 수정·삭제할 때 쓰입니다.'); return; }
+  const d=new Date();
+  const date=d.getFullYear()+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+String(d.getDate()).padStart(2,'0');
+  guestbookEntries.unshift({name,body,date,pw,reply:null});
+  $('gbName').value=''; $('gbPw').value=''; $('gbBody').value='';
+  renderGuestbook();
+});
+
+/* ── 시작 ── */
+renderDock();
+renderWork(false);
+</script>
+</body>
+</html>
