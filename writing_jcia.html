@@ -307,6 +307,15 @@
     color:var(--seal); cursor:pointer; white-space:nowrap; flex:none; }
   #auth-box button:hover{ background:rgba(217,119,87,0.16); }
   #auth-msg{ font-size:0.68rem; color:var(--gray); margin-top:6px; line-height:1.5; min-height:0.9rem; }
+
+  /* ── 편집판 입력란 (제목/읽기/괘/단상) ── */
+  .ed-field{ margin:12px 0; }
+  .ed-field label{ display:block; font-size:0.76rem; color:#4a4a4a; margin-bottom:5px; }
+  .ed-field input, .ed-field textarea{ width:100%; box-sizing:border-box; background:transparent;
+    border:0.5px solid rgba(20,20,20,0.18); border-radius:7px; padding:7px 10px;
+    font-family:'Gowun Batang',serif; font-size:0.82rem; color:var(--ink); resize:vertical; }
+  .ed-field input:focus, .ed-field textarea:focus{ border-color:rgba(217,119,87,0.6); outline:none; }
+  .ed-reg-msg{ font-size:0.72rem; margin-top:9px; min-height:1rem; color:var(--seal); line-height:1.5; }
 </style>
 </head>
 <body class="gated">
@@ -435,11 +444,18 @@
 
     <div class="ed-toggle"><span>탁본반전</span><div class="ed-tg" id="edInvert"></div></div>
 
+    <div class="ed-field"><label>제목</label><input id="edTitle" type="text" placeholder="예: 蒙" maxlength="40"></div>
+    <div class="ed-field"><label>읽기</label><input id="edReading" type="text" placeholder="예: 어릴 몽 (선택)" maxlength="40"></div>
+    <div class="ed-field"><label>괘 번호</label><input id="edGua" type="number" placeholder="주역 작품만 · 蒙=4 (선택)" min="1" max="64"></div>
+    <div class="ed-field"><label>단상</label><textarea id="edThought" rows="3" placeholder="준철씨가 채우는 자리 (선택)" maxlength="500"></textarea></div>
+
     <div class="ed-acts">
-      <button class="primary" id="edHang">이 자리에 걸기</button>
-      <button id="edSave">PNG 저장</button>
+      <button class="primary" id="edRegister">작품으로 등록</button>
+      <button id="edHang">미리 걸기</button>
+      <button id="edSave">PNG</button>
     </div>
-    <div class="ed-note" id="edNote">지금은 현재 분류 화면에 즉석으로 걸어 보는 자리입니다. 작품으로 영구 등록(Supabase)은 gallery_works 스키마가 확정되면 잇습니다.</div>
+    <div class="ed-reg-msg" id="edRegMsg"></div>
+    <div class="ed-note" id="edNote">‘작품으로 등록’은 로그인한 뒤 gallery 버킷에 올리고 gallery_works에 새깁니다. ‘미리 걸기’는 저장 없이 이 화면에서만 확인하는 자리입니다.</div>
   </div>
 </div>
 
@@ -626,6 +642,7 @@ $('prevBtn').addEventListener('click',()=>go(-1));
 $('nextBtn').addEventListener('click',()=>go(1));
 document.addEventListener('keydown',e=>{
   if(document.body.classList.contains('gated')||gbEl.classList.contains('visible')) return;
+  if($('editor').classList.contains('open')) return;
   if(e.key==='ArrowLeft') go(-1);
   if(e.key==='ArrowRight') go(1);
 });
@@ -838,7 +855,41 @@ edBindRange('edSat','sat'); edBindRange('edLit','lit'); edBindRange('edGain','ga
 $('edInvert').addEventListener('click',function(){ed.invert=!ed.invert;this.classList.toggle('on',ed.invert);edRedraw();});
 $('edFile').addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; if(ed.objurl)URL.revokeObjectURL(ed.objurl); const u=URL.createObjectURL(f),im=new Image(); im.onload=()=>{ed.img=im;ed.objurl=u;edRedraw();}; im.onerror=()=>{URL.revokeObjectURL(u);alert('이미지를 읽지 못했습니다.');}; im.src=u; });
 
-/* 이 자리에 걸기 — 현재 분류·현재 작품 무대에 얹기 (세션 한정 미리보기) */
+/* 카테고리 한자 → gallery 버킷 라틴 폴더 (준철씨 확정: 버킷+폴더 10개) */
+const CAT_FOLDER={ '易':'bookofchange','中庸':'mean','論語':'confucius','孟子':'mencius','般若心經':'heartsutra','金剛經':'diamondsutra','道德經':'taoteching','石濤畵論':'painting','詩經':'bookofsongs','餘白':'yeobaek' };
+const GALLERY_OWNER='junecheol.hwang@gmail.com';
+function edReg(msg,ok){ const m=$('edRegMsg'); if(!m)return; m.textContent=msg; m.style.color=(ok===false)?'#b3402f':'var(--seal)'; }
+
+/* 작품으로 등록 — gallery 버킷 업로드 + gallery_works insert (로그인 필요) */
+async function galleryRegister(){
+  if(!ed.canvas){ edReg('먼저 사진을 올려 먹을 뽑아 주세요',false); return; }
+  if(!currentUser){ edReg('등록하려면 먼저 로그인하세요',false); showAuthHint(); return; }
+  if(currentUser.email!==GALLERY_OWNER){ edReg('등록 권한은 주인에게만 있어요',false); return; }
+  const title=$('edTitle').value.trim();
+  if(!title){ edReg('제목을 넣어 주세요',false); return; }
+  const btn=$('edRegister'); btn.disabled=true; edReg('올리는 중…');
+  try{
+    const folder=CAT_FOLDER[currentCat]||'yeobaek';
+    const blob=await new Promise(r=>ed.canvas.toBlob(r,'image/png'));
+    const path=folder+'/'+Date.now()+'.png';
+    const up=await window.sb.storage.from('gallery').upload(path,blob,{upsert:true,contentType:'image/png'});
+    if(up.error){ edReg('업로드 오류: '+up.error.message,false); btn.disabled=false; return; }
+    const pub=window.sb.storage.from('gallery').getPublicUrl(path).data.publicUrl;
+    const edit_meta={palette:ed.pal,color:ed.color,paper:ed.paper,ink:ed.ink,gamma:ed.gamma,sat:ed.sat,lit:ed.lit,gain:ed.gain,size:ed.size,invert:ed.invert};
+    const list=WORKS[currentCat]||(WORKS[currentCat]=[]);
+    const row={ category:currentCat, title, reading:($('edReading').value.trim()||null), thought:($('edThought').value.trim()||null),
+      image_url:pub, orient:(ed.img.naturalWidth>ed.img.naturalHeight?'landscape':'portrait'),
+      edit_meta, gua_no:(parseInt($('edGua').value,10)||null), sort:list.length };
+    const ins=await window.sb.from('gallery_works').insert(row).select().single();
+    if(ins.error){ edReg('등록 오류: '+ins.error.message,false); btn.disabled=false; return; }
+    const w={ char:title, title:($('edReading').value.trim()||''), thought:(row.thought||''), orient:row.orient,
+      likes:0, img:pub, size:ed.size, invert:ed.invert, dbId:ins.data.id };
+    list.push(w); workIdx=list.length-1; renderWork(true);
+    edReg('하늘에 새겼습니다 ✔'); btn.disabled=false;
+  }catch(e){ edReg('오류가 났어요: '+(e.message||e),false); btn.disabled=false; }
+}
+
+/* 미리 걸기 — 현재 분류·현재 작품 무대에 얹기 (세션 한정 미리보기) */
 $('edHang').addEventListener('click',()=>{
   if(!ed.canvas)return;
   const list=WORKS[currentCat]; if(!list||!list.length)return;
@@ -848,6 +899,8 @@ $('edHang').addEventListener('click',()=>{
 });
 /* PNG 저장 (투명) */
 $('edSave').addEventListener('click',async()=>{ if(!ed.canvas)return; const blob=await new Promise(r=>ed.canvas.toBlob(r,'image/png')); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='jcia_'+ed.pal+(ed.invert?'_탁본':'')+'.png'; a.click(); URL.revokeObjectURL(a.href); });
+
+$('edRegister').addEventListener('click', galleryRegister);
 
 /* 좌측 기둥 인장(brand) 클릭 → 편집판 열고/닫기 */
 $('brand').addEventListener('click',()=>{ $('editor').classList.toggle('open'); });
