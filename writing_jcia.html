@@ -290,6 +290,23 @@
   .ed-acts button:hover{ border-color:var(--seal); }
   .ed-acts button:disabled{ opacity:0.4; cursor:not-allowed; }
   .ed-note{ font-size:0.68rem; color:var(--gray); margin-top:12px; line-height:1.7; }
+
+  /* ── 로그인 (매직링크) ── */
+  #auth-box.flash{ animation:authFlash 1.6s ease; }
+  @keyframes authFlash{ 0%,100%{background:none;} 30%{background:rgba(217,119,87,0.12);} }
+  #auth-status{ display:none; font-size:0.72rem; color:var(--seal); margin-bottom:7px; word-break:break-all; line-height:1.4; }
+  #auth-login{ display:flex; gap:5px; align-items:center; }
+  #auth-login #auth-email{ width:auto; flex:1; min-width:0; }
+  #auth-otp{ display:none; gap:5px; align-items:center; margin-top:6px; }
+  #auth-otp.show{ display:flex; }
+  #auth-code{ flex:1; min-width:0; background:transparent; border:0.5px solid rgba(20,20,20,0.18);
+    border-radius:6px; padding:6px 9px; font-family:'Gowun Batang',serif; font-size:0.8rem; color:var(--ink); }
+  #auth-code:focus{ border-color:rgba(217,119,87,0.6); outline:none; }
+  #auth-box button{ font-family:'Noto Serif KR',serif; font-size:0.72rem; padding:6px 11px;
+    border:0.5px solid var(--seal); border-radius:6px; background:rgba(217,119,87,0.08);
+    color:var(--seal); cursor:pointer; white-space:nowrap; flex:none; }
+  #auth-box button:hover{ background:rgba(217,119,87,0.16); }
+  #auth-msg{ font-size:0.68rem; color:var(--gray); margin-top:6px; line-height:1.5; min-height:0.9rem; }
 </style>
 </head>
 <body class="gated">
@@ -337,7 +354,16 @@
   </div>
   <nav id="dock" aria-label="분류"></nav>
   <div id="auth-box">
-    <input id="auth-email" type="email" placeholder="이메일로 로그인" autocomplete="email" spellcheck="false">
+    <div id="auth-status"></div>
+    <div id="auth-login">
+      <input id="auth-email" type="email" placeholder="이메일로 로그인" autocomplete="email" spellcheck="false">
+      <button id="auth-send">코드</button>
+    </div>
+    <div id="auth-otp">
+      <input id="auth-code" type="text" inputmode="numeric" placeholder="6자리 코드" maxlength="6" autocomplete="one-time-code">
+      <button id="auth-verify">확인</button>
+    </div>
+    <div id="auth-msg"></div>
     <div class="comet">혜성&nbsp;<b id="comet-n">61</b></div>
   </div>
   </div><!-- /#side -->
@@ -416,6 +442,32 @@
     <div class="ed-note" id="edNote">지금은 현재 분류 화면에 즉석으로 걸어 보는 자리입니다. 작품으로 영구 등록(Supabase)은 gallery_works 스키마가 확정되면 잇습니다.</div>
   </div>
 </div>
+
+<!-- SUPABASE 초기화 (읽는 jcia와 같은 프로젝트 공유) -->
+<script type="module">
+const SUPABASE_URL = 'https://ebxaaxvpilouizujjwgt.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_g3UpSee8YCFDJWaVWmLpQg_HFvOG2-B';
+const _SB_CDNS = [
+  'https://esm.sh/@supabase/supabase-js@2',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+];
+let createClient = null, _sbLoadErr = null;
+for (const _u of _SB_CDNS) {
+  try { const m = await import(_u); createClient = m.createClient; if (createClient) break; }
+  catch (e) { _sbLoadErr = e; console.warn('[Supabase] CDN 로드 실패:', _u, e); }
+}
+try {
+  if (!createClient) throw _sbLoadErr || new Error('createClient 로드 실패');
+  window.sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+  });
+} catch(e) {
+  console.error('Supabase init 실패:', e);
+  window.sb = null;
+  window._sbError = (e && e.message) ? e.message : String(e);
+}
+window.dispatchEvent(new Event('sb-ready'));
+</script>
 
 <script>
 /* ─────────────────────────────────────────────
@@ -678,6 +730,62 @@ $('gbSubmit').addEventListener('click',()=>{
   $('gbName').value=''; $('gbPw').value=''; $('gbBody').value='';
   renderGuestbook();
 });
+
+/* ══ 매직링크 로그인 (timeline_3d.html 이식) ══════════════
+   이메일 → 6자리 코드 → 로그인. 등록·수정 권한은 owner(junecheol.hwang@gmail.com) 세션만 ── */
+let currentUser=null;
+function whenSB(cb){ if(typeof window.sb!=='undefined') cb(); else window.addEventListener('sb-ready', cb, {once:true}); }
+function setUser(u){
+  currentUser=u;
+  const status=$('auth-status'), login=$('auth-login'), otp=$('auth-otp'), msg=$('auth-msg');
+  if(u){
+    status.textContent=(u.email||'기록 가능')+' · 접속됨';
+    status.style.display='block'; login.style.display='none';
+    if(otp) otp.classList.remove('show'); if(msg) msg.textContent='';
+  } else {
+    status.style.display='none'; login.style.display='flex';
+  }
+}
+async function initAuth(){
+  if(!window.sb){ const b=$('auth-box'); if(b) b.style.opacity='0.5'; return; }
+  try{
+    const { data:{ session } } = await window.sb.auth.getSession();
+    setUser(session ? session.user : null);
+    window.sb.auth.onAuthStateChange((_e, sess)=> setUser(sess ? sess.user : null));
+  }catch(e){ console.warn('initAuth', e); }
+}
+async function sendMagicLink(){
+  const email=$('auth-email').value.trim(), msg=$('auth-msg'), otp=$('auth-otp');
+  if(!email){ msg.textContent='이메일을 넣어 주세요'; return; }
+  if(!window.sb){ msg.textContent='아직 연결되지 않았어요'; return; }
+  msg.textContent='코드 보내는 중…';
+  try{
+    const { error } = await window.sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.origin+location.pathname } });
+    if(error){ msg.textContent='오류: '+error.message; return; }
+    msg.textContent='메일함의 6자리 코드를 넣어 주세요 ✉️';
+    otp.classList.add('show'); $('auth-code').focus();
+  }catch(e){ msg.textContent='오류가 났어요'; }
+}
+async function verifyCode(){
+  const email=$('auth-email').value.trim(), code=$('auth-code').value.trim(), msg=$('auth-msg');
+  if(!code){ msg.textContent='코드를 넣어 주세요'; return; }
+  if(!window.sb){ msg.textContent='아직 연결되지 않았어요'; return; }
+  msg.textContent='확인 중…';
+  try{
+    const { data, error } = await window.sb.auth.verifyOtp({ email, token: code, type:'email' });
+    if(error){ msg.textContent='오류: '+error.message; return; }
+    $('auth-otp').classList.remove('show'); $('auth-code').value=''; setUser(data.user);
+  }catch(e){ msg.textContent='오류가 났어요'; }
+}
+function showAuthHint(){ const box=$('auth-box'), msg=$('auth-msg'); if(msg) msg.textContent='올리려면 먼저 로그인하세요'; if(box){ box.classList.add('flash'); setTimeout(()=>box.classList.remove('flash'),1600); } }
+(function bindAuth(){
+  const send=$('auth-send'), email=$('auth-email'), verify=$('auth-verify'), code=$('auth-code');
+  if(send) send.addEventListener('click', sendMagicLink);
+  if(email) email.addEventListener('keydown', e=>{ e.stopPropagation(); if(e.key==='Enter') sendMagicLink(); });
+  if(verify) verify.addEventListener('click', verifyCode);
+  if(code) code.addEventListener('keydown', e=>{ e.stopPropagation(); if(e.key==='Enter') verifyCode(); });
+})();
+whenSB(initAuth);
 
 /* ══ 먹 새기기 편집판 (B사양 엔진) ══════════════════════════
    timeline_3d.html calliExtract(밝기→알파)를 확장:
