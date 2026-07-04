@@ -145,7 +145,9 @@
   .hall-stage { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
     gap:0.9rem; padding:2vh 2vw; min-width:0; overflow:hidden; position:relative;
     background:radial-gradient(closest-side at 50% 46%, #FFFFFF 55%, #FAF9F6 100%); }
-  .work { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:0; gap:0.9rem; }
+  .work { display:flex; align-items:center; justify-content:center; min-height:0; }
+  .work.landscape { flex-direction:column; align-items:center; gap:0.9rem; }
+  .work.portrait  { flex-direction:row; align-items:flex-start; gap:clamp(1.4rem,3vw,3rem); }
   .work-appear { animation:inkSoak 1.4s ease forwards; }
   @keyframes inkSoak {
     0%{opacity:0; filter:blur(14px);} 60%{opacity:0.9; filter:blur(2px);} 100%{opacity:1; filter:blur(0);}
@@ -159,16 +161,19 @@
   .scroll-frame.landscape { width:min(76vw,1180px); aspect-ratio:7/4; }
   /* 실제 서예 이미지가 걸리면 족자 틀을 벗고 이미지가 곧 화폭이 된다 (낙관은 이미 작품에 있음) */
   .scroll-frame.has-img { border:none; background:none; aspect-ratio:auto; width:auto; height:auto; }
-  .work.portrait  .has-img #workImg { height:min(84vh,960px); width:auto; max-width:94vw; }
+  .work.portrait  .has-img #workImg { height:min(84vh,960px); width:auto; max-width:64vw; }
   .work.landscape .has-img #workImg { width:min(76vw,1180px); height:auto; max-height:82vh; }
   .scroll-frame.has-img.rubbing { background:#141414; border-radius:6px; padding:2vh 2vw; }
   .work-char { font-family:'Noto Serif KR',serif; font-weight:900; color:var(--ink); user-select:none; }
   .portrait  .work-char{ font-size:clamp(6rem,22vmin,12rem); }
   .landscape .work-char{ font-size:clamp(4.5rem,15vmin,8rem); letter-spacing:0.1em; }
 
-  .caption { display:flex; flex-direction:column; gap:0.5rem; text-align:center; align-items:center; max-width:min(84vw,42rem); }
+  .caption { display:flex; flex-direction:column; gap:0.5rem; }
+  .work.landscape .caption { text-align:center; align-items:center; max-width:min(84vw,42rem); }
+  .work.portrait  .caption { text-align:left; align-items:flex-start; max-width:min(26vw,20rem); padding-top:3vh; }
   .caption .title { font-family:'Noto Serif KR',serif; font-weight:600; font-size:0.95rem; letter-spacing:0.4em; text-indent:0.4em; }
   .caption .reading { font-family:'Gowun Batang',serif; font-size:0.8rem; color:var(--gray); letter-spacing:0.14em; }
+  .caption .chapter { font-family:'Noto Serif KR',serif; font-size:0.76rem; color:var(--gray); letter-spacing:0.1em; }
   .caption .thought { font-size:0.87rem; line-height:1.9; color:#4c4c48; word-break:keep-all; }
 
   .work-acts { display:flex; align-items:center; justify-content:center; gap:1.2rem; margin-top:0.2rem; }
@@ -188,6 +193,11 @@
     font-family:'Noto Serif KR',serif; font-size:0.8rem; letter-spacing:0.25em; color:var(--gray); }
 
   /* 좁은 화면 */
+  @media (max-width:900px){
+    .work.portrait { flex-direction:column; align-items:center; }
+    .work.portrait .caption { text-align:center; align-items:center; max-width:88vw; padding-top:0; }
+    .work.portrait .has-img #workImg { max-width:88vw; }
+  }
   @media (max-width:820px){
     .work.portrait .has-img #workImg { max-height:74vh; max-width:88vw; }
     .work.landscape .has-img #workImg { width:88vw; max-height:64vh; }
@@ -419,6 +429,7 @@
         <div class="caption">
           <div class="title" id="workTitle"></div>
           <div class="reading" id="workReading"></div>
+          <div class="chapter" id="workChapter"></div>
           <div class="thought" id="workThought"></div>
           <div class="work-acts">
             <button class="heart-btn" id="heartBtn" aria-label="마음 남기기">♡</button>
@@ -491,7 +502,7 @@
 
     <div class="ed-field"><label>제목</label><input id="edTitle" type="text" placeholder="예: 蒙" maxlength="40"></div>
     <div class="ed-field"><label>읽기</label><input id="edReading" type="text" placeholder="예: 어릴 몽 (선택)" maxlength="40"></div>
-    <div class="ed-field"><label>괘 번호</label><input id="edGua" type="number" placeholder="주역 작품만 · 蒙=4 (선택)" min="1" max="64"></div>
+    <div class="ed-field"><label>출전 出典</label><input id="edChapter" type="text" placeholder="예: 里仁篇 · 第七分 · 第二十章 (선택)" maxlength="40"></div>
     <div class="ed-field"><label>단상</label><textarea id="edThought" rows="3" placeholder="준철씨가 채우는 자리 (선택)" maxlength="500"></textarea></div>
 
     <div class="ed-acts">
@@ -590,7 +601,7 @@ const $=id=>document.getElementById(id);
 const gate=$('gate');
 const dockEl=$('dock'), stageEl=$('stage'), gbEl=$('guestbook');
 const workEl=$('work'), frameEl=$('frame'), charEl=$('workChar'), imgEl=$('workImg');
-const titleEl=$('workTitle'), readingEl=$('workReading'), thoughtEl=$('workThought'), counterEl=$('counter');
+const titleEl=$('workTitle'), readingEl=$('workReading'), chapterEl=$('workChapter'), thoughtEl=$('workThought'), counterEl=$('counter');
 const heartBtn=$('heartBtn'), heartCount=$('heartCount');
 
 /* ── 대문: 눈을 뜨다 — 읽는 jcia와 동일. 첫 탭/키가 곧 첫 손짓 ── */
@@ -672,6 +683,7 @@ function renderWork(appear){
   }
   titleEl.textContent=w.title||'';
   readingEl.textContent=w.reading||'';
+  chapterEl.textContent=w.chapter||'';
   thoughtEl.textContent=w.thought||'';
   counterEl.textContent=toHanja(workIdx+1)+' / '+toHanja(list.length);
   const key=currentCat+workIdx;
@@ -908,11 +920,11 @@ async function galleryRegister(){
     const list=WORKS[currentCat]||(WORKS[currentCat]=[]);
     const row={ category:currentCat, title, reading:($('edReading').value.trim()||null), thought:($('edThought').value.trim()||null),
       image_url, origin_url, orient:(ed.img.naturalWidth>ed.img.naturalHeight?'landscape':'portrait'),
-      edit_meta, gua_no:(parseInt($('edGua').value,10)||null), sort:list.length };
+      edit_meta, chapter:($('edChapter').value.trim()||null), sort:list.length };
     const ins=await window.sb.from('gallery_works').insert(row).select().single();
     if(ins.error){ edReg('등록 오류: '+ins.error.message,false); btn.disabled=false; return; }
     const w={ char:title, title:title, reading:(row.reading||''), thought:(row.thought||''), orient:row.orient,
-      likes:0, img:image_url, originUrl:origin_url, size:ed.size, invert:ed.invert, editMeta:edit_meta, dbId:ins.data.id };
+      likes:0, img:image_url, originUrl:origin_url, size:ed.size, invert:ed.invert, editMeta:edit_meta, chapter:(row.chapter||''), dbId:ins.data.id };
     list.push(w); workIdx=list.length-1; renderWork(true);
     edReg('하늘에 새겼습니다 ✔'); btn.disabled=false;
   }catch(e){ edReg('오류가 났어요: '+(e.message||e),false); btn.disabled=false; }
@@ -939,7 +951,7 @@ function edSetMode(mode){
   $('edUpdate').style.display=isEdit?'':'none';
   $('edDelete').style.display=isEdit?'':'none';
 }
-function clearEdInputs(){ $('edTitle').value=''; $('edReading').value=''; $('edGua').value=''; $('edThought').value=''; edReg(''); }
+function clearEdInputs(){ $('edTitle').value=''; $('edReading').value=''; $('edChapter').value=''; $('edThought').value=''; edReg(''); }
 function syncEdControls(){
   $('edPaper').value=ed.paper; $('edPaperV').textContent=ed.paper;
   $('edInk').value=ed.ink; $('edInkV').textContent=ed.ink;
@@ -960,7 +972,7 @@ function editLoadWork(w){
   ed.paper=(m.paper!=null?m.paper:175); ed.ink=(m.ink!=null?m.ink:70); ed.gamma=(m.gamma!=null?m.gamma:2.2);
   ed.sat=(m.sat!=null?m.sat:0); ed.lit=(m.lit!=null?m.lit:0); ed.gain=(m.gain!=null?m.gain:1);
   ed.size=(m.size!=null?m.size:70); ed.invert=!!m.invert;
-  $('edTitle').value=w.title||''; $('edReading').value=w.reading||''; $('edThought').value=w.thought||''; $('edGua').value=w.gua||'';
+  $('edTitle').value=w.title||''; $('edReading').value=w.reading||''; $('edThought').value=w.thought||''; $('edChapter').value=w.chapter||'';
   syncEdControls();
   edSetMode('edit'); edReg('');
   $('edPrev').className='ed-prev '+(ed.invert?'rubbing':'paper');
@@ -1006,13 +1018,13 @@ async function galleryUpdate(){
       image_url=window.sb.storage.from('gallery').getPublicUrl(iPath).data.publicUrl+'?t='+Date.now();
     }
     const edit_meta={palette:ed.pal,color:ed.color,paper:ed.paper,ink:ed.ink,gamma:ed.gamma,sat:ed.sat,lit:ed.lit,gain:ed.gain,size:ed.size,invert:ed.invert};
-    const patch={ title, reading:($('edReading').value.trim()||null), thought:($('edThought').value.trim()||null), image_url, edit_meta, gua_no:(parseInt($('edGua').value,10)||null) };
+    const patch={ title, reading:($('edReading').value.trim()||null), thought:($('edThought').value.trim()||null), image_url, edit_meta, chapter:($('edChapter').value.trim()||null) };
     if(origin_url!==undefined) patch.origin_url=origin_url;
     if(newOrient) patch.orient=newOrient;
     const upd=await window.sb.from('gallery_works').update(patch).eq('id',ed.dbId).select().single();
     if(upd.error){ edReg('수정 오류: '+upd.error.message,false); btn.disabled=false; return; }
     const list=WORKS[currentCat]||[]; const w=list.find(x=>x.dbId===ed.dbId);
-    if(w){ w.title=title; w.char=title; w.reading=patch.reading||''; w.thought=patch.thought||''; w.img=image_url;
+    if(w){ w.title=title; w.char=title; w.reading=patch.reading||''; w.chapter=patch.chapter||''; w.thought=patch.thought||''; w.img=image_url;
       if(origin_url!==undefined) w.originUrl=origin_url; if(newOrient) w.orient=newOrient; w.editMeta=edit_meta; w.invert=ed.invert; renderWork(true); }
     edReg('고쳐 새겼습니다 ✔'); btn.disabled=false;
   }catch(e){ edReg('오류: '+(e.message||e),false); btn.disabled=false; }
@@ -1081,7 +1093,7 @@ async function loadWorks(){
     data.forEach(r=>{ (byCat[r.category]=byCat[r.category]||[]).push({
       char:(r.title||''), title:(r.title||''), reading:(r.reading||''), thought:(r.thought||''),
       orient:(r.orient||'portrait'), img:r.image_url, originUrl:r.origin_url, invert:!!(r.edit_meta&&r.edit_meta.invert),
-      size:((r.edit_meta&&r.edit_meta.size)||70), likes:0, dbId:r.id, gua:r.gua_no, editMeta:(r.edit_meta||{})
+      size:((r.edit_meta&&r.edit_meta.size)||70), likes:0, dbId:r.id, chapter:(r.chapter||''), editMeta:(r.edit_meta||{})
     }); });
     Object.keys(byCat).forEach(c=>{ WORKS[c]=byCat[c]; });
     if(WORKS[currentCat] && !gbEl.classList.contains('visible')){ workIdx=0; renderWork(false); }
