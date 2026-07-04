@@ -3,8 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<!-- 앱 옷 — 홈 화면에 추가하면 전체화면 앱으로 열림 -->
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#060912">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="도반의 여정">
 <title>Timeline — 도반의 여정</title>
-<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Cormorant:ital,wght@0,400;0,600;1,400&family=EB+Garamond:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Song+Myung&family=Cardo:ital@0;1&family=Noto+Serif+KR:wght@400;500&family=Cormorant:ital,wght@0,400;0,600;1,400&family=EB+Garamond:wght@400;500&display=swap" rel="stylesheet">
 <script type="importmap">
   { "imports": {
       "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
@@ -36,11 +43,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   pointer-events:none;
 }
 #header-subtitle{
-  font-family:'Gowun Batang',serif;font-weight:700;
+  font-family:'Song Myung','Noto Serif KR',serif;font-weight:400;
   font-size:0.84rem;color:var(--orange-faded);letter-spacing:0.18em;
 }
 #header-title{
-  font-family:'Gowun Batang',serif;font-weight:400;
+  font-family:'Song Myung','Noto Serif KR',serif;font-weight:400;
   font-size:1.02rem;color:var(--gray-light);letter-spacing:0.1em;
   line-height:1.5;margin-top:2px;
 }
@@ -58,7 +65,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   font-size:0.7rem;color:var(--orange-worn);letter-spacing:0.08em;opacity:0.9;}
 #bp-titlebox{flex:1;min-width:0;text-align:right;}
 #bp-title{
-  font-family:'Gowun Batang',serif;font-weight:700;
+  font-family:'Song Myung','Noto Serif KR',serif;font-weight:400;
   font-size:0.98rem;color:var(--orange-pale);letter-spacing:0.04em;line-height:1.45;
 }
 #bp-author{font-size:0.7rem;color:var(--gray-mid);letter-spacing:0.06em;margin-top:0.3rem;}
@@ -78,7 +85,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 }
 #drawer-icons button{
   background:none;border:none;cursor:pointer;padding:5px 7px;
-  font-family:'Gowun Batang',serif;font-size:1.02rem;letter-spacing:0.02em;
+  font-family:'Song Myung','Noto Serif KR',serif;font-size:1.02rem;letter-spacing:0.02em;
   color:var(--orange-faded);opacity:0.72;
   transition:opacity 0.3s,color 0.3s;-webkit-tap-highlight-color:transparent;
 }
@@ -104,7 +111,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 #bp-body::-webkit-scrollbar-thumb{background:rgba(110,108,102,0.3);border-radius:3px;}
 .bp-section{margin-bottom:1.1rem;}
 .bp-section:last-child{margin-bottom:0;}
-.bp-label{font-size:0.73rem;color:var(--orange-pale);letter-spacing:0.05em;margin-bottom:0.55rem;text-shadow:0 0 6px rgba(217,169,110,0.28);}
+.bp-label{font-family:'Song Myung','Noto Serif KR',serif;font-size:0.73rem;color:var(--orange-pale);letter-spacing:0.05em;margin-bottom:0.55rem;text-shadow:0 0 6px rgba(217,169,110,0.28);}
 .bp-add{display:flex;gap:6px;}
 .bp-input{
   flex:1;background:rgba(255,255,255,0.03);
@@ -281,7 +288,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 }
 #auth-box.flash{animation:authflash 1.6s;}
 @keyframes authflash{0%,100%{opacity:1}30%{opacity:0.3}}
-#auth-status{display:none;font-family:'EB Garamond','Gowun Batang',serif;
+#auth-status{display:none;font-family:'Cardo','Gowun Batang',serif;
   font-size:0.62rem;color:var(--gray-mid);letter-spacing:0.07em;text-decoration:none;border-bottom:none;}
 #auth-status::before{content:'';display:inline-block;width:4px;height:4px;border-radius:50%;
   background:var(--orange-faded);margin-right:6px;vertical-align:1.5px;}   /* 로그인됨 — 호박 점 */
@@ -344,7 +351,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   color:var(--orange-faded);font-size:1.15rem;}
 #jb-art img{width:100%;height:100%;object-fit:cover;display:block;}
 #jb-meta{flex:1;min-width:0;}
-#jb-title{font-size:0.92rem;font-weight:600;color:var(--gray-light);
+#jb-title{font-family:'Cardo','Song Myung','Noto Serif KR',serif;font-size:0.95rem;font-weight:400;color:var(--gray-light);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 #jb-artist{font-size:0.72rem;color:var(--gray-mid);margin-top:2px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -405,8 +412,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   filter:drop-shadow(0 0 5px rgba(217,185,122,0.55));
 }
 #brand-name{
-  font-family:'EB Garamond','Gowun Batang',serif;font-weight:500;
-  font-size:0.82rem;letter-spacing:0.24em;color:var(--orange-pale);opacity:0.9;
+  font-family:'Cardo','Song Myung',serif;font-weight:400;
+  font-size:0.86rem;letter-spacing:0.24em;color:var(--orange-pale);opacity:0.9;
   text-transform:lowercase;
 }
 @keyframes brandIn{to{opacity:1;}}
@@ -488,7 +495,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   font-family:'Gowun Batang',serif;
   opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .35s,transform .35s;}
 #gb-compose.open{opacity:1;transform:translateY(0);pointer-events:auto;}
-#gb-compose .gb-title{font-size:0.8rem;color:var(--orange-pale);letter-spacing:0.06em;margin-bottom:0.6rem;}
+#gb-compose .gb-title{font-family:'Song Myung','Noto Serif KR',serif;font-size:0.8rem;color:var(--orange-pale);letter-spacing:0.06em;margin-bottom:0.6rem;}
 #gb-body{width:100%;height:88px;resize:none;background:rgba(2,5,10,0.55);
   border:0.5px solid rgba(110,108,102,0.4);border-radius:8px;outline:none;
   color:var(--gray-light);font-family:'Gowun Batang',serif;font-size:0.8rem;line-height:1.7;
@@ -516,7 +523,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 #gb-track{display:inline-flex;align-items:center;white-space:nowrap;will-change:transform;}
 .gbt-seg{display:inline-flex;align-items:center;}
 .gbt-item{display:inline-flex;align-items:center;gap:0.45rem;margin:0 1.1rem;
-  font-family:'Gowun Batang',serif;font-size:0.76rem;letter-spacing:0.04em;
+  font-family:'Song Myung','Cardo','Noto Serif KR',serif;font-size:0.76rem;letter-spacing:0.04em;
   color:#ffe0b3;text-shadow:0 0 9px rgba(217,169,110,0.85),0 0 22px rgba(217,169,110,0.4);}
 .gbt-item b{font-weight:600;color:var(--orange-pale);}
 .gbt-item i{font-style:normal;opacity:0.5;}
@@ -758,6 +765,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   <div id="essay-tools">
     <select id="essay-font" title="글꼴">
       <option value="'Gowun Batang',serif">명조</option>
+      <option value="'Song Myung','Noto Serif KR',serif">송명</option>
+      <option value="'Cardo','Song Myung',serif">칼도</option>
       <option value="'EB Garamond',serif">개러몬드</option>
       <option value="'Cormorant',serif">코모란트</option>
       <option value="sans-serif">고딕</option>
@@ -1778,7 +1787,7 @@ function loop(){
       ctx.save();
       ctx.textAlign='center';
       ctx.shadowColor='rgba(0,0,0,0.85)'; ctx.shadowBlur=9;
-      ctx.font=(window._MOBILE?'500 21px':'500 15px')+' "Noto Serif KR", serif';
+      ctx.font=(window._MOBILE?'400 21px':'400 15px')+' "Song Myung","Noto Serif KR", serif';
       ctx.fillStyle='rgba(242,238,230,0.97)';
       ctx.fillText(f.title, s.x, s.y-(window._MOBILE?26:20));
       if(f.author){
