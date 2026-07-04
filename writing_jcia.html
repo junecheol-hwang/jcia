@@ -6,7 +6,7 @@
 <title>쓰는 jcia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Song+Myung&family=Cardo:ital@0;1&family=Noto+Serif+KR:wght@400;600;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Song+Myung&family=Cardo:ital@0;1&family=Noto+Serif+KR:wght@400;600;900&family=Unbounded:wght@400&display=swap" rel="stylesheet">
 <style>
   :root {
     --white:#FFFFFF; --paper:#F6F5F1; --ink:#141414; --gray:#9B9B96;
@@ -61,24 +61,31 @@
     -webkit-mask-image:radial-gradient(72% 15% at 50% 0%, transparent 98%, #000 100%);
             mask-image:radial-gradient(72% 15% at 50% 0%, transparent 98%, #000 100%);
     filter:drop-shadow(0 -3px 10px rgba(20,20,20,0.05)); }
-  /* 실눈 사이의 빛 — 낙관의 오렌지 */
+  /* 실눈 사이의 빛 — 프리즘 코어: 중심은 클로드 오렌지(#D97757), 양 끝으로만 스펙트럼이 옅게 번짐 */
   #gate-lash { position:absolute; left:8%; right:8%; top:50%; height:1px; transform:translateY(-50%);
-    background:linear-gradient(90deg,transparent,rgba(217,119,87,0.85) 25%,rgba(217,119,87,0.85) 75%,transparent);
-    filter:drop-shadow(0 0 7px rgba(217,119,87,0.8));
+    background:linear-gradient(90deg,
+      transparent 0%,
+      rgba(140,110,200,0.30) 16%,
+      rgba(120,160,210,0.42) 30%,
+      rgba(217,119,87,0.88) 50%,
+      rgba(224,150,90,0.5) 70%,
+      rgba(200,120,150,0.32) 84%,
+      transparent 100%);
+    filter:drop-shadow(0 0 8px rgba(217,140,110,0.65));
     animation:gateBreath 3s ease-in-out infinite; }
   @keyframes gateBreath { 0%,100%{opacity:0.3;} 50%{opacity:0.85;} }
 
-  #gate-plate { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-    display:flex; flex-direction:column; align-items:center; gap:1.1rem; transition:opacity 0.8s; }
-  #gate-lockup { display:flex; align-items:center; gap:13px; }
-  #gate-seal { width:38px; height:38px; flex:none; }
-  .gate-word { font-family:'Cardo','Song Myung','Noto Serif KR',serif;
-    font-size:1.05rem; letter-spacing:0.34em; color:var(--ink); }
-  /* 눈동자 — 문패 */
-  #gate-pupil { font-family:'Noto Serif KR',serif; font-weight:900;
-    font-size:clamp(6rem,22vmin,10.5rem); line-height:1.05; color:var(--ink);
-    user-select:none; transition:opacity .65s ease, filter .65s ease; }
-  #gate-pupil.swapping { opacity:0; filter:blur(10px); }
+  /* 로크업 — 읽는 jcia와 동일 구조 (상단 38%, 인장+워드마크 베이스라인 정렬) */
+  #gate-plate { position:absolute; left:50%; top:38%; transform:translate(-50%,-50%);
+    display:flex; flex-direction:column; align-items:center; gap:14px; transition:opacity 0.8s; }
+  #gate-lockup { display:inline-flex; align-items:flex-end; gap:9px; }
+  #gate-seal { width:44px; height:44px; flex:none; display:block;
+    filter:drop-shadow(0 0 12px rgba(194,94,63,0.35)); }
+  /* 워드마크: studio jcia — 라틴 전용이라 Unbounded 온전 렌더 (읽는 jcia와 동일) */
+  #gate-plate .gate-word{ font-family:'Unbounded',sans-serif; font-weight:400;
+    font-size:1.34rem; line-height:1; white-space:nowrap;
+    transform:scaleX(0.85); transform-origin:left bottom; display:inline-block;
+    margin-bottom:2px; color:var(--ink); }
   .gate-enter { font-family:'Song Myung','Noto Serif KR',serif;
     font-size:0.66rem; letter-spacing:0.46em; margin-left:0.46em;
     color:var(--gray); animation:gateBreath 3s ease-in-out infinite; }
@@ -93,30 +100,21 @@
   body.eye-open #gate-lash{ opacity:0; transition:opacity .4s; animation:none; }
   body.eye-open #gate-plate{ opacity:0; }
   #gate.gone{ display:none; }
-
-  /* 문지방 아래 — 지나간 문들 */
-  #gate-history { position:absolute; bottom:2.4vh; left:50%; transform:translateX(-50%);
-    display:flex; gap:8px; opacity:0; animation:fadeIn 1.6s ease forwards 3.4s; }
-  body.eye-open #gate-history{ animation:none; opacity:0; transition:opacity .4s; }
-  .past-gate { width:2.2rem; height:2.2rem; border:1px solid rgba(20,20,20,0.12); border-radius:9px;
-    display:flex; align-items:center; justify-content:center;
-    font-family:'Noto Serif KR',serif; font-weight:900; font-size:1.05rem;
-    color:rgba(20,20,20,0.4); background:var(--white); cursor:pointer; user-select:none;
-    transition:color .3s, border-color .3s; }
-  .past-gate:hover{ color:var(--ink); border-color:rgba(20,20,20,0.35); }
-  .past-gate.current{ border-color:var(--seal); color:var(--ink); }
   @keyframes fadeIn{ to{opacity:1;} }
 
   /* ═══════ 전시실 ═══════ */
   #hall { position:fixed; inset:0; display:flex; flex-direction:column; }
 
   /* 우상단 — 인장 + 쓰는 jcia + 로그인 + 혜성 (읽는 jcia와 동일 배치) */
-  #brand { position:absolute; right:1.6rem; top:1.2rem; z-index:20;
-    display:flex; align-items:center; gap:9px; cursor:pointer; }
+  /* 좌측 기둥 — 위: 인장+이름 / 가운데: 독 / 아래: 로그인+혜성 */
+  #side { width:15rem; flex:none; display:flex; flex-direction:column;
+    padding:1.5rem 0 1.4rem 2.2rem; min-height:0; }
+  #brand { display:flex; align-items:center; gap:9px; cursor:pointer;
+    flex:none; margin-bottom:2rem; }
   #brand-mark { width:26px; height:26px; }
   #brand-name { font-family:'Song Myung','Noto Serif KR',serif; font-size:0.92rem; letter-spacing:0.06em; }
-  #auth-box { position:absolute; right:1.6rem; top:3.6rem; z-index:20;
-    display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+  #auth-box { margin-top:auto; flex:none; display:flex; flex-direction:column;
+    align-items:flex-start; gap:5px; padding-top:1.2rem; }
   #auth-email { width:172px; background:transparent;
     border:0.5px solid rgba(20,20,20,0.22); border-radius:3px; padding:4px 8px;
     font-family:'Gowun Batang',serif; font-size:0.7rem; color:var(--ink); outline:none; }
@@ -125,14 +123,15 @@
   .comet { font-family:'Gowun Batang',serif; font-size:0.66rem; color:var(--gray); letter-spacing:0.08em; }
   .comet b { color:var(--ink); font-weight:700; }
 
-  .hall-body { flex:1; display:flex; min-height:0; padding-top:2.4rem; }
+  .hall-body { flex:1; display:flex; min-height:0; }
 
   /* 독 — 좌측, 피시아이 */
-  #dock { width:13rem; flex:none; display:flex; flex-direction:column; justify-content:center;
-    gap:0.35rem; padding-left:2.2rem; overflow-y:auto; }
+  #dock { flex:1; min-height:0; display:flex; flex-direction:column; justify-content:flex-start;
+    gap:0.35rem; overflow-y:auto; overflow-x:hidden; padding-right:0.5rem; }
   .dock-item { font-family:'Noto Serif KR',serif; font-weight:600; font-size:0.92rem;
     letter-spacing:0.15em; color:var(--gray); cursor:pointer; user-select:none;
     padding:0.28rem 0; transform-origin:left center;
+    width:max-content; max-width:100%;
     transition:transform .18s ease-out, color .25s ease; white-space:nowrap; }
   .dock-item .dock-bar{ opacity:0.35; font-weight:300; }
   .dock-item .dock-eum{ font-family:'Gowun Batang',serif; font-weight:400; font-size:0.8em; opacity:0.8; letter-spacing:0.1em; }
@@ -244,55 +243,46 @@
   <div class="gate-lid bot"></div>
   <div id="gate-lash"></div>
   <div id="gate-plate">
+    <!-- studio jcia 공식 로고 CL3 (2026.07 확정) — 짙은 클로드 주황 #C25E3F 바탕 + 흰 내부
+         구조: 궤도 1 · 상하 전자 2(r14, 양의) · 핵(태극 음각) · 천원지방 -->
     <div id="gate-lockup">
-      <!-- 순청자 인장 (studio_jcia_logo_final.svg · 소형 광학 보정 stroke 5) -->
       <svg id="gate-seal" viewBox="0 0 240 240" aria-hidden="true">
-        <rect x="14" y="14" width="212" height="212" rx="34" fill="#E9EDE6" stroke="rgba(62,74,70,0.15)" stroke-width="1"/>
-        <circle cx="120" cy="120" r="68" fill="none" stroke="rgba(130,168,148,0.5)" stroke-width="5"/>
-        <circle cx="120" cy="120" r="30" fill="none" stroke="rgba(130,168,148,0.5)" stroke-width="5"/>
-        <circle cx="120" cy="120" r="9.5" fill="#3E4A46"/>
-        <circle cx="120" cy="90" r="5.2" fill="#54796B"/><circle cx="120" cy="150" r="5.2" fill="#54796B"/>
-        <circle cx="188" cy="120" r="5.2" fill="#54796B"/><circle cx="168.1" cy="168.1" r="5.2" fill="#54796B"/>
-        <circle cx="120" cy="188" r="5.2" fill="#54796B"/><circle cx="71.9" cy="168.1" r="5.2" fill="#54796B"/>
-        <circle cx="52" cy="120" r="5.2" fill="#54796B"/><circle cx="71.9" cy="71.9" r="5.2" fill="#54796B"/>
-        <circle cx="120" cy="52" r="5.2" fill="#54796B"/><circle cx="168.1" cy="71.9" r="5.2" fill="#54796B"/>
+        <rect x="14" y="14" width="212" height="212" rx="40" fill="#C25E3F"/>
+        <circle cx="120" cy="120" r="60" fill="none" stroke="#FFFFFF" stroke-width="5" opacity="0.95"/>
+        <circle cx="120" cy="60" r="14" fill="#FFFFFF"/><circle cx="120" cy="180" r="14" fill="#FFFFFF"/>
+        <circle cx="120" cy="120" r="18" fill="#FFFFFF"/><circle cx="120" cy="120" r="8" fill="#C25E3F"/>
       </svg>
-      <span class="gate-word">쓰는 jcia</span>
+      <span class="gate-word">studio jcia</span>
     </div>
-    <div id="gate-pupil">易</div>
     <div class="gate-enter">눈 을 뜨 다</div>
   </div>
-  <div id="gate-history" aria-label="지나간 문들"></div>
 </div>
 
 <!-- ═══════ 전시실 ═══════ -->
 <div id="hall">
+  <div class="hall-body">
+  <div id="side">
   <div id="brand">
     <svg id="brand-mark" viewBox="0 0 240 240" aria-hidden="true">
-      <rect x="14" y="14" width="212" height="212" rx="34" fill="#E9EDE6" stroke="rgba(62,74,70,0.15)" stroke-width="1"/>
-      <circle cx="120" cy="120" r="68" fill="none" stroke="rgba(130,168,148,0.55)" stroke-width="6"/>
-      <circle cx="120" cy="120" r="30" fill="none" stroke="rgba(130,168,148,0.55)" stroke-width="6"/>
-      <circle cx="120" cy="120" r="9.5" fill="#3E4A46"/>
-      <circle cx="120" cy="90" r="5.2" fill="#54796B"/><circle cx="120" cy="150" r="5.2" fill="#54796B"/>
-      <circle cx="188" cy="120" r="5.2" fill="#54796B"/><circle cx="168.1" cy="168.1" r="5.2" fill="#54796B"/>
-      <circle cx="120" cy="188" r="5.2" fill="#54796B"/><circle cx="71.9" cy="168.1" r="5.2" fill="#54796B"/>
-      <circle cx="52" cy="120" r="5.2" fill="#54796B"/><circle cx="71.9" cy="71.9" r="5.2" fill="#54796B"/>
-      <circle cx="120" cy="52" r="5.2" fill="#54796B"/><circle cx="168.1" cy="71.9" r="5.2" fill="#54796B"/>
+      <rect x="14" y="14" width="212" height="212" rx="40" fill="#C25E3F"/>
+      <circle cx="120" cy="120" r="60" fill="none" stroke="#FFFFFF" stroke-width="6" opacity="0.95"/>
+      <circle cx="120" cy="60" r="14" fill="#FFFFFF"/><circle cx="120" cy="180" r="14" fill="#FFFFFF"/>
+      <circle cx="120" cy="120" r="18" fill="#FFFFFF"/><circle cx="120" cy="120" r="8" fill="#C25E3F"/>
     </svg>
     <span id="brand-name">쓰는 jcia</span>
   </div>
+  <nav id="dock" aria-label="분류"></nav>
   <div id="auth-box">
     <input id="auth-email" type="email" placeholder="이메일로 로그인" autocomplete="email" spellcheck="false">
     <div class="comet">혜성&nbsp;<b id="comet-n">61</b></div>
   </div>
-
-  <div class="hall-body">
-    <nav id="dock" aria-label="분류"></nav>
+  </div><!-- /#side -->
 
     <div class="hall-stage" id="stage">
       <div class="work" id="work">
         <div class="scroll-frame portrait" id="frame">
           <div class="work-char" id="workChar"></div>
+          <img id="workImg" alt="" style="display:none">
           <div class="seal" id="workSeal"></div>
         </div>
         <div class="caption">
@@ -341,7 +331,6 @@
    혜성 카운터 = 읽는 jcia와 동일 메커니즘
    ───────────────────────────────────────────── */
 
-const GATE_HISTORY = ['易','觀','遊','靜','思'];
 const CATEGORIES = [
   {h:'易',e:'역'},{h:'中庸',e:'중용'},{h:'論語',e:'논어'},{h:'孟子',e:'맹자'},
   {h:'般若心經',e:'반야심경'},{h:'金剛經',e:'금강경'},{h:'石濤畵論',e:'석도화론'},
@@ -381,53 +370,28 @@ let guestbookEntries = [
 const hanjaNum=['一','二','三','四','五','六','七','八','九','十'];
 const toHanja=n=>n<=10?hanjaNum[n-1]:String(n);
 
-let currentGate=GATE_HISTORY[0], currentCat='易', workIdx=0, swapping=false, ownerMode=false;
+let currentCat='易', workIdx=0, ownerMode=false;
 const likedSet=new Set();
 
 const $=id=>document.getElementById(id);
-const gate=$('gate'), pupil=$('gate-pupil'), historyEl=$('gate-history');
+const gate=$('gate');
 const dockEl=$('dock'), stageEl=$('stage'), gbEl=$('guestbook');
 const workEl=$('work'), frameEl=$('frame'), charEl=$('workChar'), sealEl=$('workSeal');
 const titleEl=$('workTitle'), thoughtEl=$('workThought'), counterEl=$('counter');
 const heartBtn=$('heartBtn'), heartCount=$('heartCount');
 
-/* ── 대문: 눈을 뜨다 ── */
+/* ── 대문: 눈을 뜨다 — 읽는 jcia와 동일. 첫 탭/키가 곧 첫 손짓 ── */
 function openEye(){
-  if(document.body.classList.contains('eye-open')) return;
+  if(gate.classList.contains('gone') || document.body.classList.contains('eye-open')) return;
   document.body.classList.add('eye-open');
-  /* 실제 버전: 이 첫 탭이 BGM 재생 제스처 */
+  /* 실제 버전: 이 첫 손짓이 BGM 재생 제스처 */
   setTimeout(()=>{
-    document.body.classList.remove('gated','eye-open');
     gate.classList.add('gone');
+    document.body.classList.remove('gated','eye-open');   // 필터 완전 해제
   }, 3050);
 }
-gate.addEventListener('click', e=>{
-  if(e.target.closest('.past-gate')) return;
-  openEye();
-});
-
-function swapGate(ch){
-  if(swapping||ch===currentGate) return;
-  swapping=true;
-  pupil.classList.add('swapping');
-  setTimeout(()=>{
-    currentGate=ch; pupil.textContent=ch;
-    pupil.classList.remove('swapping');
-    renderGateHistory();
-    setTimeout(()=>{swapping=false;},650);
-  },650);
-}
-function renderGateHistory(){
-  historyEl.innerHTML='';
-  GATE_HISTORY.forEach(ch=>{
-    const sq=document.createElement('div');
-    sq.className='past-gate'+(ch===currentGate?' current':'');
-    sq.textContent=ch; sq.title=ch+' — 문패 바꿔 달기';
-    sq.addEventListener('click',e=>{e.stopPropagation(); swapGate(ch);});
-    historyEl.appendChild(sq);
-  });
-}
-renderGateHistory();
+gate.addEventListener('click', openEye);
+window.addEventListener('keydown', openEye);
 
 /* ── 독 + 피시아이 ── */
 const DOCK_ITEMS=[...CATEGORIES,{h:'芳名錄',e:'방명록'}];
@@ -450,10 +414,15 @@ function renderDock(){
 if(!isCoarse&&!prefersReduced){
   const MAX=0.38, RANGE=110;
   dockEl.addEventListener('mousemove',e=>{
+    const limit=dockEl.clientWidth-4;   /* 프레임 안쪽 한계 */
     dockEl.querySelectorAll('.dock-item').forEach(it=>{
       const r=it.getBoundingClientRect();
       const d=Math.abs(e.clientY-(r.top+r.height/2));
-      it.style.transform=`scale(${(1+MAX*Math.max(0,1-d/RANGE)).toFixed(3)})`;
+      let s=1+MAX*Math.max(0,1-d/RANGE);
+      /* 항목별 상한 — 자기 폭이 프레임을 넘기 직전까지만 부푼다 */
+      const allowed=limit/it.offsetWidth;
+      if(allowed>1) s=Math.min(s,allowed); else s=1;
+      it.style.transform=`scale(${s.toFixed(3)})`;
     });
   });
   dockEl.addEventListener('mouseleave',()=>{
