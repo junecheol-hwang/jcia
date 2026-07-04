@@ -407,9 +407,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   opacity:0;animation:brandIn 2.4s ease 0.4s forwards;
 }
 #brand-mark{
-  width:28px;height:28px;flex:none;
+  width:26px;height:26px;flex:none;
   animation:brandFloat 6.5s ease-in-out infinite;
-  filter:drop-shadow(0 0 5px rgba(217,185,122,0.55));
+  filter:drop-shadow(0 0 6px rgba(233,237,230,0.3));
 }
 #brand-name{
   font-family:'Cardo','Song Myung',serif;font-weight:400;
@@ -561,9 +561,11 @@ body.gated.eye-open #three-container, body.gated.eye-open #tl-canvas{
 @keyframes gateBreath{0%,100%{opacity:0.3;}50%{opacity:0.85;}}
 #gate-plate{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
   display:flex;flex-direction:column;align-items:center;gap:14px;transition:opacity 0.8s;}
-#gate-plate svg{width:36px;height:36px;filter:drop-shadow(0 0 10px rgba(217,169,110,0.35));}
+#gate-lockup{display:flex;align-items:center;gap:15px;}
+#gate-seal{width:42px;height:42px;flex:none;
+  filter:drop-shadow(0 0 12px rgba(233,237,230,0.22));}
 #gate-plate .gate-word{font-family:'Cardo','Song Myung','Noto Serif KR',serif;
-  font-size:1.15rem;letter-spacing:0.5em;margin-left:0.5em;
+  font-size:1.15rem;letter-spacing:0.34em;
   color:#eec48b;text-shadow:0 0 14px rgba(217,169,110,0.4);}
 #gate-plate .gate-enter{font-family:'Song Myung','Noto Serif KR',serif;
   font-size:0.66rem;letter-spacing:0.46em;margin-left:0.46em;
@@ -645,8 +647,22 @@ body.eye-open #gate-plate{opacity:0;}
   <div class="gate-lid bot"></div>
   <div id="gate-lash"></div>
   <div id="gate-plate">
-    <svg viewBox="0 0 44 44" fill="none"><circle cx="22" cy="22" r="2.5" fill="#d9b97a"/><circle cx="22" cy="22" r="5.6" stroke="#d9b97a" stroke-width="1" opacity="0.85"/><g fill="#d9b97a"><circle cx="22" cy="6.5" r="1.6"/><circle cx="32.95" cy="11.05" r="1.6"/><circle cx="37.5" cy="22" r="1.6"/><circle cx="32.95" cy="32.95" r="1.6"/><circle cx="22" cy="37.5" r="1.6"/><circle cx="11.05" cy="32.95" r="1.6"/><circle cx="6.5" cy="22" r="1.6"/><circle cx="11.05" cy="11.05" r="1.6"/></g></svg>
-    <div class="gate-word">읽는 jcia</div>
+    <!-- studio jcia 공식 로고 '순청자' (2026.07 낙점) — 핵1 태극 · 안2 양의 · 밖8 팔괘 · 천원지방
+         원본: studio_jcia_logo_final.svg (궤도 stroke-width만 소형 표시용으로 1.2→5 광학 보정) -->
+    <div id="gate-lockup">
+      <svg id="gate-seal" viewBox="0 0 240 240" aria-hidden="true">
+        <rect x="14" y="14" width="212" height="212" rx="34" fill="#E9EDE6" stroke="rgba(62,74,70,0.15)" stroke-width="1"/>
+        <circle cx="120" cy="120" r="68" fill="none" stroke="rgba(130,168,148,0.5)" stroke-width="5"/>
+        <circle cx="120" cy="120" r="30" fill="none" stroke="rgba(130,168,148,0.5)" stroke-width="5"/>
+        <circle cx="120" cy="120" r="9.5" fill="#3E4A46"/>
+        <circle cx="120" cy="90" r="5.2" fill="#54796B"/><circle cx="120" cy="150" r="5.2" fill="#54796B"/>
+        <circle cx="188" cy="120" r="5.2" fill="#54796B"/><circle cx="168.1" cy="168.1" r="5.2" fill="#54796B"/>
+        <circle cx="120" cy="188" r="5.2" fill="#54796B"/><circle cx="71.9" cy="168.1" r="5.2" fill="#54796B"/>
+        <circle cx="52" cy="120" r="5.2" fill="#54796B"/><circle cx="71.9" cy="71.9" r="5.2" fill="#54796B"/>
+        <circle cx="120" cy="52" r="5.2" fill="#54796B"/><circle cx="168.1" cy="71.9" r="5.2" fill="#54796B"/>
+      </svg>
+      <span class="gate-word">studio jcia</span>
+    </div>
     <div class="gate-enter">눈 을 뜨 다</div>
   </div>
 </div>
@@ -702,19 +718,17 @@ body.eye-open #gate-plate{opacity:0;}
 <!-- 상단 우측 로고 -->
 <div id="brand">
   <div id="brand-door"></div>
-  <svg id="brand-mark" viewBox="0 0 44 44" fill="none" aria-hidden="true">
-    <circle cx="22" cy="22" r="2.5" fill="#d9b97a"/>
-    <circle cx="22" cy="22" r="5.6" stroke="#d9b97a" stroke-width="1" opacity="0.85"/>
-    <g fill="#d9b97a">
-      <circle cx="22" cy="6.5" r="1.6"/>
-      <circle cx="32.95" cy="11.05" r="1.6"/>
-      <circle cx="37.5" cy="22" r="1.6"/>
-      <circle cx="32.95" cy="32.95" r="1.6"/>
-      <circle cx="22" cy="37.5" r="1.6"/>
-      <circle cx="11.05" cy="32.95" r="1.6"/>
-      <circle cx="6.5" cy="22" r="1.6"/>
-      <circle cx="11.05" cy="11.05" r="1.6"/>
-    </g>
+  <!-- 순청자 인장 (studio_jcia_logo_final.svg · 궤도 stroke 1.2→6 소형 광학 보정) -->
+  <svg id="brand-mark" viewBox="0 0 240 240" aria-hidden="true">
+    <rect x="14" y="14" width="212" height="212" rx="34" fill="#E9EDE6" stroke="rgba(62,74,70,0.15)" stroke-width="1"/>
+    <circle cx="120" cy="120" r="68" fill="none" stroke="rgba(130,168,148,0.55)" stroke-width="6"/>
+    <circle cx="120" cy="120" r="30" fill="none" stroke="rgba(130,168,148,0.55)" stroke-width="6"/>
+    <circle cx="120" cy="120" r="9.5" fill="#3E4A46"/>
+    <circle cx="120" cy="90" r="5.2" fill="#54796B"/><circle cx="120" cy="150" r="5.2" fill="#54796B"/>
+    <circle cx="188" cy="120" r="5.2" fill="#54796B"/><circle cx="168.1" cy="168.1" r="5.2" fill="#54796B"/>
+    <circle cx="120" cy="188" r="5.2" fill="#54796B"/><circle cx="71.9" cy="168.1" r="5.2" fill="#54796B"/>
+    <circle cx="52" cy="120" r="5.2" fill="#54796B"/><circle cx="71.9" cy="71.9" r="5.2" fill="#54796B"/>
+    <circle cx="120" cy="52" r="5.2" fill="#54796B"/><circle cx="168.1" cy="71.9" r="5.2" fill="#54796B"/>
   </svg>
   <span id="brand-name">읽는 jcia</span>
 </div>
