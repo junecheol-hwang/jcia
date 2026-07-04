@@ -228,6 +228,68 @@
     .work-appear{ animation:none; }
     .rotate-glyph{ animation:none; transform:rotate(-90deg); }
   }
+  /* ── 작품 이미지 (편집기 산출 PNG) ── */
+  #workImg{ max-height:100%; object-fit:contain; }
+  .scroll-frame.rubbing{ background:#141414; border-radius:6px; }
+
+  /* ── 편집판 — 좌측 기둥 인장 클릭으로 열림 ── */
+  #editor{ position:fixed; top:0; right:0; height:100%; width:min(380px,92vw);
+    background:var(--white); border-left:0.5px solid rgba(0,0,0,0.1);
+    transform:translateX(102%); transition:transform .4s cubic-bezier(.4,0,.2,1);
+    z-index:120; display:flex; flex-direction:column; }
+  #editor.open{ transform:translateX(0); box-shadow:-8px 0 40px rgba(0,0,0,0.06); }
+  .ed-head{ display:flex; align-items:center; justify-content:space-between;
+    padding:16px 18px 12px; border-bottom:0.5px solid rgba(0,0,0,0.08); }
+  .ed-head h2{ font-family:'Noto Serif KR',serif; font-weight:500; font-size:0.92rem; margin:0; }
+  .ed-close{ background:none; border:none; font-size:1rem; color:var(--gray); cursor:pointer; line-height:1; }
+  .ed-body{ flex:1; overflow-y:auto; padding:14px 18px 26px; }
+
+  .ed-up{ display:flex; align-items:center; justify-content:center; gap:7px;
+    border:1px dashed rgba(217,119,87,0.5); border-radius:9px; padding:13px; cursor:pointer;
+    color:var(--seal); font-size:0.82rem; font-family:'Noto Serif KR',serif; }
+  .ed-up:hover{ border-color:var(--seal); background:rgba(217,119,87,0.05); }
+  .ed-up input{ display:none; }
+
+  .ed-prev{ margin:14px 0; border-radius:10px; min-height:150px;
+    display:flex; align-items:center; justify-content:center; padding:20px; transition:background .3s; }
+  .ed-prev.paper{ background:var(--paper); }
+  .ed-prev.rubbing{ background:#141414; }
+  .ed-prev canvas{ max-width:70%; max-height:180px; object-fit:contain; }
+  .ed-prev .ph{ color:var(--gray); font-size:0.78rem; text-align:center; line-height:1.6; }
+
+  .ed-pal{ display:flex; gap:5px; margin:10px 0 8px; }
+  .ed-pal-tab{ flex:1; font-family:'Noto Serif KR',serif; font-size:0.74rem; padding:6px 0; text-align:center;
+    border:0.5px solid rgba(0,0,0,0.12); border-radius:7px; cursor:pointer; color:var(--gray); background:none; }
+  .ed-pal-tab.on{ border-color:var(--seal); color:var(--seal); background:rgba(217,119,87,0.06); }
+  .ed-sws{ display:flex; gap:8px; margin-bottom:12px; }
+  .ed-sw{ width:30px; height:30px; border-radius:7px; border:0.5px solid rgba(0,0,0,0.15); cursor:pointer; padding:0; }
+  .ed-sw.on{ outline:2px solid var(--seal); outline-offset:2px; }
+
+  /* 소박한 게이지 — 온도계 아닌 실 한 오라기 */
+  .ed-g{ margin:11px 0; }
+  .ed-g .lab{ display:flex; justify-content:space-between; font-size:0.76rem; color:#4a4a4a; margin-bottom:6px; }
+  .ed-g .lab .v{ color:var(--gray); }
+  .ed-g input[type=range]{ -webkit-appearance:none; appearance:none; width:100%; height:2px;
+    background:rgba(0,0,0,0.13); border-radius:2px; outline:none; margin:0; padding:0; }
+  .ed-g input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none;
+    width:12px; height:12px; border-radius:50%; background:var(--seal); cursor:pointer; border:none; }
+  .ed-g input[type=range]::-moz-range-thumb{ width:12px; height:12px; border-radius:50%;
+    background:var(--seal); cursor:pointer; border:none; }
+
+  .ed-toggle{ display:flex; align-items:center; justify-content:space-between; margin:15px 0 6px; }
+  .ed-toggle span{ font-size:0.8rem; color:#3a3a3a; }
+  .ed-tg{ position:relative; width:40px; height:22px; border-radius:11px; background:#dcdad3; cursor:pointer; transition:background .2s; flex:none; }
+  .ed-tg::after{ content:''; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:#fff; transition:transform .2s; }
+  .ed-tg.on{ background:var(--seal); }
+  .ed-tg.on::after{ transform:translateX(18px); }
+
+  .ed-acts{ display:flex; gap:8px; margin-top:18px; }
+  .ed-acts button{ flex:1; font-family:'Noto Serif KR',serif; font-size:0.8rem; padding:9px 0;
+    border-radius:8px; cursor:pointer; border:0.5px solid rgba(0,0,0,0.15); background:none; color:#3a3a3a; }
+  .ed-acts button.primary{ border-color:var(--seal); background:rgba(217,119,87,0.1); color:var(--seal); }
+  .ed-acts button:hover{ border-color:var(--seal); }
+  .ed-acts button:disabled{ opacity:0.4; cursor:not-allowed; }
+  .ed-note{ font-size:0.68rem; color:var(--gray); margin-top:12px; line-height:1.7; }
 </style>
 </head>
 <body class="gated">
@@ -323,6 +385,38 @@
   </div>
 </div>
 
+<!-- ── 편집판 — 좌측 기둥 인장 클릭으로 열림 ── -->
+<div id="editor">
+  <div class="ed-head">
+    <h2>먹 새기기</h2>
+    <button class="ed-close" id="edClose" aria-label="닫기">✕</button>
+  </div>
+  <div class="ed-body">
+    <label class="ed-up" id="edUp">＋ 원본 사진 올리기<input type="file" id="edFile" accept="image/*"></label>
+
+    <div class="ed-prev paper" id="edPrev"><span class="ph" id="edPh">사진을 올리면 여기서 먹이 떠오릅니다</span><canvas id="edCv" style="display:none"></canvas></div>
+
+    <div class="ed-pal" id="edPal"></div>
+    <div class="ed-sws" id="edSws"></div>
+
+    <div class="ed-g"><div class="lab"><span>종이</span><span class="v" id="edPaperV">175</span></div><input type="range" id="edPaper" min="80" max="255" value="175"></div>
+    <div class="ed-g"><div class="lab"><span>먹</span><span class="v" id="edInkV">70</span></div><input type="range" id="edInk" min="0" max="200" value="70"></div>
+    <div class="ed-g"><div class="lab"><span>또렷함</span><span class="v" id="edGammaV">2.2</span></div><input type="range" id="edGamma" min="0.4" max="4" value="2.2" step="0.05"></div>
+    <div class="ed-g"><div class="lab"><span>채도</span><span class="v" id="edSatV">0</span></div><input type="range" id="edSat" min="-100" max="100" value="0"></div>
+    <div class="ed-g"><div class="lab"><span>명도</span><span class="v" id="edLitV">0</span></div><input type="range" id="edLit" min="-100" max="100" value="0"></div>
+    <div class="ed-g"><div class="lab"><span>먹농도</span><span class="v" id="edGainV">1.00</span></div><input type="range" id="edGain" min="0.4" max="2" value="1" step="0.02"></div>
+    <div class="ed-g"><div class="lab"><span>크기</span><span class="v" id="edSizeV">70%</span></div><input type="range" id="edSize" min="30" max="100" value="70"></div>
+
+    <div class="ed-toggle"><span>탁본반전</span><div class="ed-tg" id="edInvert"></div></div>
+
+    <div class="ed-acts">
+      <button class="primary" id="edHang">이 자리에 걸기</button>
+      <button id="edSave">PNG 저장</button>
+    </div>
+    <div class="ed-note" id="edNote">지금은 현재 분류 화면에 즉석으로 걸어 보는 자리입니다. 작품으로 영구 등록(Supabase)은 gallery_works 스키마가 확정되면 잇습니다.</div>
+  </div>
+</div>
+
 <script>
 /* ─────────────────────────────────────────────
    Supabase 대체 지점 (실제 버전):
@@ -335,7 +429,7 @@
 
 const CATEGORIES = [
   {h:'易',e:'역'},{h:'中庸',e:'중용'},{h:'論語',e:'논어'},{h:'孟子',e:'맹자'},
-  {h:'般若心經',e:'반야심경'},{h:'金剛經',e:'금강경'},{h:'石濤畵論',e:'석도화론'},
+  {h:'般若心經',e:'반야심경'},{h:'金剛經',e:'금강경'},{h:'道德經',e:'도덕경'},{h:'石濤畵論',e:'석도화론'},
   {h:'詩經',e:'시경'},{h:'餘白',e:'여백'}
 ];
 /* orient: 사진 비율에 따라 portrait(족자)/landscape(횡권) — 실제 버전은 업로드 시 자동 판정 */
@@ -354,6 +448,8 @@ const WORKS = {
     thought:'色卽是空 空卽是色. 비어 있음은 없음이 아니다. 모든 것이 드나들 수 있는 자리다.'}],
   '金剛經':[{char:'如',title:'같을 여',orient:'portrait',likes:2,
     thought:'如如. 오는 것도 없고 가는 것도 없어 여래(如來)라 한다.'}],
+  '道德經':[{char:'道',title:'길 도',orient:'portrait',likes:0,
+    thought:''}],
   '石濤畵論':[{char:'一畫',title:'일획론',orient:'landscape',likes:5,
     thought:'석도는 말했다 — 모든 그림은 한 획에서 시작된다. 만 획이 이 한 획의 자손이다. (가로 작품은 이렇게 횡권으로 걸립니다)'}],
   '詩經':[{char:'思',title:'생각 사',orient:'portrait',likes:1,
@@ -378,7 +474,7 @@ const likedSet=new Set();
 const $=id=>document.getElementById(id);
 const gate=$('gate');
 const dockEl=$('dock'), stageEl=$('stage'), gbEl=$('guestbook');
-const workEl=$('work'), frameEl=$('frame'), charEl=$('workChar'), sealEl=$('workSeal');
+const workEl=$('work'), frameEl=$('frame'), charEl=$('workChar'), sealEl=$('workSeal'), imgEl=$('workImg');
 const titleEl=$('workTitle'), thoughtEl=$('workThought'), counterEl=$('counter');
 const heartBtn=$('heartBtn'), heartCount=$('heartCount');
 
@@ -448,8 +544,14 @@ function selectCategory(name){
 function renderWork(appear){
   const list=WORKS[currentCat]||[]; if(!list.length) return;
   const w=list[workIdx];
-  frameEl.className='scroll-frame '+(w.orient||'portrait');
-  charEl.textContent=w.char;
+  frameEl.className='scroll-frame '+(w.orient||'portrait')+(w.invert?' rubbing':'');
+  if(w.img){
+    imgEl.src=w.img; imgEl.style.display='block'; imgEl.style.maxWidth=(w.size||70)+'%';
+    charEl.style.display='none';
+  } else {
+    imgEl.style.display='none'; charEl.style.display='';
+    charEl.textContent=w.char;
+  }
   sealEl.textContent=w.char.length>1?w.char[0]:w.char;
   titleEl.textContent=w.title; thoughtEl.textContent=w.thought;
   counterEl.textContent=toHanja(workIdx+1)+' / '+toHanja(list.length);
@@ -576,6 +678,79 @@ $('gbSubmit').addEventListener('click',()=>{
   $('gbName').value=''; $('gbPw').value=''; $('gbBody').value='';
   renderGuestbook();
 });
+
+/* ══ 먹 새기기 편집판 (B사양 엔진) ══════════════════════════
+   timeline_3d.html calliExtract(밝기→알파)를 확장:
+   이중 임계값(paper/ink) · 감마 · 팔레트 색 출력 · 탁본반전 ── */
+const PALETTES = {
+  '수묵':[{c:'#1a1815',n:'진묵'},{c:'#3a352e',n:'농묵'},{c:'#5e564b',n:'중묵'},{c:'#857c6f',n:'담묵'},{c:'#b0a693',n:'담담'}],
+  '오방':[{c:'#2e5f6e',n:'청'},{c:'#9e3b34',n:'적'},{c:'#a07d1e',n:'황'},{c:'#1c1a17',n:'흑'},{c:'#8a8578',n:'회백'}],
+  '청자백자':[{c:'#4d6b5c',n:'진비색'},{c:'#6e8f7e',n:'비색'},{c:'#7d908a',n:'회청'},{c:'#93a89f',n:'담청'},{c:'#a8a89c',n:'백자태'}],
+  '단청':[{c:'#b3402f',n:'주'},{c:'#7d3a2c',n:'석간주'},{c:'#c0602f',n:'장단'},{c:'#3d6349',n:'뇌록'},{c:'#2c3f66',n:'군청'}]
+};
+const PAL_NAMES=Object.keys(PALETTES);
+const ed={ img:null,objurl:null,pal:'수묵',color:'#1a1815',paper:175,ink:70,gamma:2.2,sat:0,lit:0,gain:1,size:70,invert:false,canvas:null };
+
+function hexToRgb(h){h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+function rgbToHsl(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b);let h,s,l=(mx+mn)/2;if(mx===mn){h=s=0;}else{const d=mx-mn;s=l>0.5?d/(2-mx-mn):d/(mx+mn);switch(mx){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;default:h=(r-g)/d+4;}h/=6;}return[h,s,l];}
+function hslToRgb(h,s,l){let r,g,b;if(s===0){r=g=b=l;}else{const f=(p,q,t)=>{if(t<0)t+=1;if(t>1)t-=1;if(t<1/6)return p+(q-p)*6*t;if(t<1/2)return q;if(t<2/3)return p+(q-p)*(2/3-t)*6;return p;};const q=l<0.5?l*(1+s):l+s-l*s,p=2*l-q;r=f(p,q,h+1/3);g=f(p,q,h);b=f(p,q,h-1/3);}return[Math.round(r*255),Math.round(g*255),Math.round(b*255)];}
+function finalColor(hex,sd,ld){let[h,s,l]=rgbToHsl(...hexToRgb(hex));s=Math.max(0,Math.min(1,s+sd/100));l=Math.max(0,Math.min(1,l+ld/100));return hslToRgb(h,s,l);}
+
+function extractInk(img,p){
+  const iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height; if(!iw||!ih)return null;
+  const sc=Math.min(1,820/Math.max(iw,ih)); const W=Math.max(1,Math.round(iw*sc)),H=Math.max(1,Math.round(ih*sc));
+  const src=document.createElement('canvas');src.width=W;src.height=H;
+  src.getContext('2d').drawImage(img,0,0,W,H);
+  let sd;try{sd=src.getContext('2d').getImageData(0,0,W,H);}catch(e){console.warn('getImageData',e);return null;}
+  const out=document.createElement('canvas');out.width=W;out.height=H;
+  const octx=out.getContext('2d'),od=octx.createImageData(W,H),s=sd.data,o=od.data;
+  const paper=p.paper,ink=p.ink,span=Math.max(1,paper-ink),gamma=p.gamma,gain=p.gain;
+  const[R,G,B]=p.invert?[255,255,255]:finalColor(p.color,p.sat,p.lit);
+  for(let i=0;i<s.length;i+=4){
+    const lum=0.299*s[i]+0.587*s[i+1]+0.114*s[i+2]; let t;
+    if(lum>=paper)t=0; else if(lum<=ink)t=1; else t=(paper-lum)/span;
+    if(t>0)t=Math.pow(t,gamma); t=t*gain; if(t>1)t=1; if(t<0)t=0;
+    o[i]=R;o[i+1]=G;o[i+2]=B;o[i+3]=Math.round(t*255);
+  }
+  octx.putImageData(od,0,0); return out;
+}
+
+function edBuildPal(){ const t=$('edPal'); t.innerHTML=''; PAL_NAMES.forEach(nm=>{ const b=document.createElement('button'); b.className='ed-pal-tab'+(nm===ed.pal?' on':''); b.textContent=nm; b.onclick=()=>{ed.pal=nm;ed.color=PALETTES[nm][0].c;edBuildPal();edBuildSws();edRedraw();}; t.appendChild(b); }); }
+function edBuildSws(){ const w=$('edSws'); w.innerHTML=''; PALETTES[ed.pal].forEach(o=>{ const b=document.createElement('button'); b.className='ed-sw'+(o.c===ed.color?' on':''); b.style.background=o.c; b.title=o.n; b.onclick=()=>{ed.color=o.c;edBuildSws();edRedraw();}; w.appendChild(b); }); }
+function edRedraw(){
+  if(!ed.img)return; const cv=extractInk(ed.img,ed); if(!cv)return; ed.canvas=cv;
+  const disp=$('edCv'); disp.width=cv.width; disp.height=cv.height; disp.getContext('2d').drawImage(cv,0,0);
+  disp.style.display='block'; disp.style.maxWidth=ed.size+'%'; $('edPh').style.display='none';
+  $('edPrev').className='ed-prev '+(ed.invert?'rubbing':'paper');
+  $('edHang').disabled=false; $('edSave').disabled=false;
+}
+function edBindRange(id,key,fmt){ const el=$(id),out=$(id+'V'); el.addEventListener('input',()=>{ed[key]=+el.value;out.textContent=fmt?fmt(+el.value):el.value;edRedraw();}); }
+edBindRange('edPaper','paper'); edBindRange('edInk','ink'); edBindRange('edGamma','gamma',v=>v.toFixed(2));
+edBindRange('edSat','sat'); edBindRange('edLit','lit'); edBindRange('edGain','gain',v=>v.toFixed(2)); edBindRange('edSize','size',v=>v+'%');
+$('edInvert').addEventListener('click',function(){ed.invert=!ed.invert;this.classList.toggle('on',ed.invert);edRedraw();});
+$('edFile').addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; if(ed.objurl)URL.revokeObjectURL(ed.objurl); const u=URL.createObjectURL(f),im=new Image(); im.onload=()=>{ed.img=im;ed.objurl=u;edRedraw();}; im.onerror=()=>{URL.revokeObjectURL(u);alert('이미지를 읽지 못했습니다.');}; im.src=u; });
+
+/* 이 자리에 걸기 — 현재 분류·현재 작품 무대에 얹기 (세션 한정 미리보기) */
+$('edHang').addEventListener('click',()=>{
+  if(!ed.canvas)return;
+  const list=WORKS[currentCat]; if(!list||!list.length)return;
+  const w=list[workIdx];
+  w.img=ed.canvas.toDataURL('image/png'); w.size=ed.size; w.invert=ed.invert; w.palette=ed.pal; w.color=ed.color;
+  renderWork(true);
+});
+/* PNG 저장 (투명) */
+$('edSave').addEventListener('click',async()=>{ if(!ed.canvas)return; const blob=await new Promise(r=>ed.canvas.toBlob(r,'image/png')); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='jcia_'+ed.pal+(ed.invert?'_탁본':'')+'.png'; a.click(); URL.revokeObjectURL(a.href); });
+
+/* 좌측 기둥 인장(brand) 클릭 → 편집판 열고/닫기 */
+$('brand').addEventListener('click',()=>{ $('editor').classList.toggle('open'); });
+$('edClose').addEventListener('click',()=>{ $('editor').classList.remove('open'); });
+
+edBuildPal(); edBuildSws();
+
+/* ── (다음 단계) Supabase 영구 등록 — gallery_works 스키마 확정 후 연결.
+   1) gallery 버킷에 투명 PNG 업로드: {폴더}/{id}.png (upsert)
+   2) gallery_works insert: category·char·title·thought·img_url·palette·color·invert·orient·sort
+   3) 매직링크(signInWithOtp→verifyOtp) 로그인 세션에서만 등록 허용 (owner=junecheol.hwang@gmail.com) ── */
 
 /* ── 시작 ── */
 renderDock();
