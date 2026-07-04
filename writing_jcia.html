@@ -331,6 +331,12 @@
     font-family:'Gowun Batang',serif; font-size:0.82rem; color:var(--ink); resize:vertical; }
   .ed-field input:focus, .ed-field textarea:focus{ border-color:rgba(217,119,87,0.6); outline:none; }
   .ed-reg-msg{ font-size:0.72rem; margin-top:9px; min-height:1rem; color:var(--seal); line-height:1.5; }
+  .ed-acts button.danger{ border-color:#b3402f; color:#b3402f; background:rgba(179,64,47,0.06); }
+  .ed-acts button.danger:hover{ background:rgba(179,64,47,0.13); border-color:#b3402f; }
+  .edit-work-btn{ background:none; border:0.5px solid rgba(217,119,87,0.5); border-radius:9px;
+    padding:0.32rem 0.9rem; cursor:pointer; font-size:0.72rem; letter-spacing:0.2em; text-indent:0.2em;
+    color:var(--seal); transition:background .3s, border-color .3s; }
+  .edit-work-btn:hover{ background:rgba(217,119,87,0.1); }
 </style>
 </head>
 <body class="gated">
@@ -406,6 +412,7 @@
             <button class="heart-btn" id="heartBtn" aria-label="마음 남기기">♡</button>
             <span class="heart-count" id="heartCount"></span>
             <button class="share-btn" id="shareBtn">퍼가기</button>
+            <button class="edit-work-btn" id="editWorkBtn" style="display:none">고치기</button>
           </div>
         </div>
       </div>
@@ -465,7 +472,9 @@
 
     <div class="ed-acts">
       <button class="primary" id="edRegister">작품으로 등록</button>
+      <button class="primary" id="edUpdate" style="display:none">수정 저장</button>
       <button id="edHang">미리 걸기</button>
+      <button id="edDelete" class="danger" style="display:none">삭제</button>
       <button id="edSave">PNG</button>
     </div>
     <div class="ed-reg-msg" id="edRegMsg"></div>
@@ -643,6 +652,7 @@ function renderWork(appear){
   heartBtn.textContent=likedSet.has(key)?'♥':'♡';
   heartBtn.classList.toggle('liked',likedSet.has(key));
   heartCount.textContent=w.likes>0?w.likes:'';
+  const eb=$('editWorkBtn'); if(eb) eb.style.display=(currentUser&&currentUser.email===GALLERY_OWNER&&w.dbId)?'':'none';
   if(appear){ workEl.classList.remove('work-appear'); void workEl.offsetWidth; workEl.classList.add('work-appear'); }
 }
 function go(dir){
@@ -830,7 +840,7 @@ const PALETTES = {
   '단청':[{c:'#b3402f',n:'주'},{c:'#7d3a2c',n:'석간주'},{c:'#c0602f',n:'장단'},{c:'#3d6349',n:'뇌록'},{c:'#2c3f66',n:'군청'}]
 };
 const PAL_NAMES=Object.keys(PALETTES);
-const ed={ img:null,objurl:null,pal:'수묵',color:'#1a1815',paper:175,ink:70,gamma:2.2,sat:0,lit:0,gain:1,size:70,invert:false,canvas:null };
+const ed={ img:null,objurl:null,file:null,pal:'수묵',color:'#1a1815',paper:175,ink:70,gamma:2.2,sat:0,lit:0,gain:1,size:70,invert:false,canvas:null, mode:'new',dbId:null,curImageUrl:null,curOriginUrl:null,dirtyOrigin:false };
 
 function hexToRgb(h){h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
 function rgbToHsl(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b);let h,s,l=(mx+mn)/2;if(mx===mn){h=s=0;}else{const d=mx-mn;s=l>0.5?d/(2-mx-mn):d/(mx+mn);switch(mx){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;default:h=(r-g)/d+4;}h/=6;}return[h,s,l];}
@@ -869,7 +879,7 @@ function edBindRange(id,key,fmt){ const el=$(id),out=$(id+'V'); el.addEventListe
 edBindRange('edPaper','paper'); edBindRange('edInk','ink'); edBindRange('edGamma','gamma',v=>v.toFixed(2));
 edBindRange('edSat','sat'); edBindRange('edLit','lit'); edBindRange('edGain','gain',v=>v.toFixed(2)); edBindRange('edSize','size',v=>v+'%');
 $('edInvert').addEventListener('click',function(){ed.invert=!ed.invert;this.classList.toggle('on',ed.invert);edRedraw();});
-$('edFile').addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; if(ed.objurl)URL.revokeObjectURL(ed.objurl); const u=URL.createObjectURL(f),im=new Image(); im.onload=()=>{ed.img=im;ed.objurl=u;edRedraw();}; im.onerror=()=>{URL.revokeObjectURL(u);alert('이미지를 읽지 못했습니다.');}; im.src=u; });
+$('edFile').addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; ed.file=f; ed.dirtyOrigin=true; if(ed.objurl)URL.revokeObjectURL(ed.objurl); const u=URL.createObjectURL(f),im=new Image(); im.onload=()=>{ed.img=im;ed.objurl=u;edRedraw();}; im.onerror=()=>{URL.revokeObjectURL(u);alert('이미지를 읽지 못했습니다.');}; im.src=u; });
 
 /* 카테고리 한자 → gallery 버킷 라틴 폴더 (준철씨 확정: 버킷+폴더 10개) */
 const CAT_FOLDER={ '易':'bookofchange','中庸':'mean','論語':'confucius','孟子':'mencius','般若心經':'heartsutra','金剛經':'diamondsutra','道德經':'taoteching','石濤畵論':'painting','詩經':'bookofsongs','餘白':'yeobaek' };
@@ -879,27 +889,35 @@ function edReg(msg,ok){ const m=$('edRegMsg'); if(!m)return; m.textContent=msg; 
 /* 작품으로 등록 — gallery 버킷 업로드 + gallery_works insert (로그인 필요) */
 async function galleryRegister(){
   if(!ed.canvas){ edReg('먼저 사진을 올려 먹을 뽑아 주세요',false); return; }
+  if(!ed.file){ edReg('원본 사진이 필요해요',false); return; }
   if(!currentUser){ edReg('등록하려면 먼저 로그인하세요',false); showAuthHint(); return; }
   if(currentUser.email!==GALLERY_OWNER){ edReg('등록 권한은 주인에게만 있어요',false); return; }
   const title=$('edTitle').value.trim();
   if(!title){ edReg('제목을 넣어 주세요',false); return; }
   const btn=$('edRegister'); btn.disabled=true; edReg('올리는 중…');
   try{
-    const folder=CAT_FOLDER[currentCat]||'yeobaek';
+    const folder=CAT_FOLDER[currentCat]||'yeobaek'; const ts=Date.now();
+    /* 원본 — {ts}.{원본확장자} */
+    const ext=((ed.file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,''))||'jpg';
+    const oPath=folder+'/'+ts+'.'+ext;
+    const oUp=await window.sb.storage.from('gallery').upload(oPath, ed.file, {upsert:true, contentType:ed.file.type||'image/jpeg'});
+    if(oUp.error){ edReg('원본 업로드 오류: '+oUp.error.message,false); btn.disabled=false; return; }
+    const origin_url=window.sb.storage.from('gallery').getPublicUrl(oPath).data.publicUrl;
+    /* 추출본(작품) — {ts}_ink.png */
     const blob=await new Promise(r=>ed.canvas.toBlob(r,'image/png'));
-    const path=folder+'/'+Date.now()+'.png';
-    const up=await window.sb.storage.from('gallery').upload(path,blob,{upsert:true,contentType:'image/png'});
-    if(up.error){ edReg('업로드 오류: '+up.error.message,false); btn.disabled=false; return; }
-    const pub=window.sb.storage.from('gallery').getPublicUrl(path).data.publicUrl;
+    const iPath=folder+'/'+ts+'_ink.png';
+    const iUp=await window.sb.storage.from('gallery').upload(iPath, blob, {upsert:true, contentType:'image/png'});
+    if(iUp.error){ edReg('업로드 오류: '+iUp.error.message,false); btn.disabled=false; return; }
+    const image_url=window.sb.storage.from('gallery').getPublicUrl(iPath).data.publicUrl;
     const edit_meta={palette:ed.pal,color:ed.color,paper:ed.paper,ink:ed.ink,gamma:ed.gamma,sat:ed.sat,lit:ed.lit,gain:ed.gain,size:ed.size,invert:ed.invert};
     const list=WORKS[currentCat]||(WORKS[currentCat]=[]);
     const row={ category:currentCat, title, reading:($('edReading').value.trim()||null), thought:($('edThought').value.trim()||null),
-      image_url:pub, orient:(ed.img.naturalWidth>ed.img.naturalHeight?'landscape':'portrait'),
+      image_url, origin_url, orient:(ed.img.naturalWidth>ed.img.naturalHeight?'landscape':'portrait'),
       edit_meta, gua_no:(parseInt($('edGua').value,10)||null), sort:list.length };
     const ins=await window.sb.from('gallery_works').insert(row).select().single();
     if(ins.error){ edReg('등록 오류: '+ins.error.message,false); btn.disabled=false; return; }
-    const w={ char:title, title:title, reading:($('edReading').value.trim()||''), thought:(row.thought||''), orient:row.orient,
-      likes:0, img:pub, size:ed.size, invert:ed.invert, dbId:ins.data.id };
+    const w={ char:title, title:title, reading:(row.reading||''), thought:(row.thought||''), orient:row.orient,
+      likes:0, img:image_url, originUrl:origin_url, size:ed.size, invert:ed.invert, editMeta:edit_meta, dbId:ins.data.id };
     list.push(w); workIdx=list.length-1; renderWork(true);
     edReg('하늘에 새겼습니다 ✔'); btn.disabled=false;
   }catch(e){ edReg('오류가 났어요: '+(e.message||e),false); btn.disabled=false; }
@@ -918,8 +936,127 @@ $('edSave').addEventListener('click',async()=>{ if(!ed.canvas)return; const blob
 
 $('edRegister').addEventListener('click', galleryRegister);
 
-/* 좌측 기둥 인장(brand) 클릭 → 편집판 열고/닫기 */
-$('brand').addEventListener('click',()=>{ $('editor').classList.toggle('open'); });
+/* ── 수정·삭제 ─────────────────────────────────────────── */
+function edSetMode(mode){
+  ed.mode=mode; const isEdit=(mode==='edit');
+  $('edRegister').style.display=isEdit?'none':'';
+  $('edHang').style.display=isEdit?'none':'';
+  $('edUpdate').style.display=isEdit?'':'none';
+  $('edDelete').style.display=isEdit?'':'none';
+}
+function clearEdInputs(){ $('edTitle').value=''; $('edReading').value=''; $('edGua').value=''; $('edThought').value=''; edReg(''); }
+function syncEdControls(){
+  $('edPaper').value=ed.paper; $('edPaperV').textContent=ed.paper;
+  $('edInk').value=ed.ink; $('edInkV').textContent=ed.ink;
+  $('edGamma').value=ed.gamma; $('edGammaV').textContent=(+ed.gamma).toFixed(2);
+  $('edSat').value=ed.sat; $('edSatV').textContent=ed.sat;
+  $('edLit').value=ed.lit; $('edLitV').textContent=ed.lit;
+  $('edGain').value=ed.gain; $('edGainV').textContent=(+ed.gain).toFixed(2);
+  $('edSize').value=ed.size; $('edSizeV').textContent=ed.size+'%';
+  $('edInvert').classList.toggle('on',ed.invert);
+  edBuildPal(); edBuildSws();
+}
+/* 무대의 '고치기' → 편집판을 그 작품으로 채워 연다 */
+function editLoadWork(w){
+  ed.mode='edit'; ed.dbId=w.dbId; ed.curImageUrl=w.img; ed.curOriginUrl=w.originUrl||null;
+  ed.file=null; ed.dirtyOrigin=false; ed.img=null; ed.canvas=null;
+  const m=w.editMeta||{};
+  ed.pal=m.palette||'수묵'; ed.color=m.color||PALETTES[ed.pal][0].c;
+  ed.paper=(m.paper!=null?m.paper:175); ed.ink=(m.ink!=null?m.ink:70); ed.gamma=(m.gamma!=null?m.gamma:2.2);
+  ed.sat=(m.sat!=null?m.sat:0); ed.lit=(m.lit!=null?m.lit:0); ed.gain=(m.gain!=null?m.gain:1);
+  ed.size=(m.size!=null?m.size:70); ed.invert=!!m.invert;
+  $('edTitle').value=w.title||''; $('edReading').value=w.reading||''; $('edThought').value=w.thought||''; $('edGua').value=w.gua||'';
+  syncEdControls();
+  edSetMode('edit'); edReg('');
+  $('edPrev').className='ed-prev '+(ed.invert?'rubbing':'paper');
+  if(w.originUrl){
+    $('edCv').style.display='none'; $('edPh').style.display='block'; $('edPh').textContent='원본 불러오는 중…';
+    const im=new Image(); im.crossOrigin='anonymous';
+    im.onload=()=>{ ed.img=im; edRedraw(); };
+    im.onerror=()=>{ $('edPh').textContent='원본을 못 불러왔어요 · 새로 올리면 다시 새깁니다'; $('edCv').style.display='none'; };
+    im.src=w.originUrl+(w.originUrl.indexOf('?')>=0?'':'?t='+Date.now());
+  } else {
+    $('edCv').style.display='none'; $('edPh').style.display='block';
+    $('edPh').textContent='원본이 없는 작품 · 원본을 새로 올리면 다시 새깁니다';
+  }
+  $('editor').classList.add('open');
+}
+function extractGalleryPath(url){ if(!url) return null; const i=url.indexOf('/gallery/'); return i>=0 ? url.slice(i+'/gallery/'.length).split('?')[0] : null; }
+
+/* 수정 저장 — 새 원본을 올렸으면 이미지도 교체, 아니면 글만 고친다 */
+async function galleryUpdate(){
+  if(!currentUser||currentUser.email!==GALLERY_OWNER){ edReg('권한은 주인에게만 있어요',false); return; }
+  if(!ed.dbId){ edReg('고칠 작품이 없어요',false); return; }
+  const title=$('edTitle').value.trim(); if(!title){ edReg('제목을 넣어 주세요',false); return; }
+  const btn=$('edUpdate'); btn.disabled=true; edReg('고치는 중…');
+  try{
+    const folder=CAT_FOLDER[currentCat]||'yeobaek'; const ts=Date.now();
+    let image_url=ed.curImageUrl, origin_url=undefined, newOrient=null;
+    /* 새 원본을 올렸으면 원본 갱신 */
+    if(ed.dirtyOrigin && ed.file){
+      const ext=((ed.file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,''))||'jpg';
+      const oPath=folder+'/'+ts+'.'+ext;
+      const oUp=await window.sb.storage.from('gallery').upload(oPath, ed.file, {upsert:true, contentType:ed.file.type||'image/jpeg'});
+      if(oUp.error){ edReg('원본 업로드 오류: '+oUp.error.message,false); btn.disabled=false; return; }
+      origin_url=window.sb.storage.from('gallery').getPublicUrl(oPath).data.publicUrl;
+      newOrient=(ed.img.naturalWidth>ed.img.naturalHeight?'landscape':'portrait');
+    }
+    /* 추출본은 게이지가 반영되도록 다시 굽는다 (원본을 되살렸으면 canvas 있음) */
+    if(ed.canvas){
+      const blob=await new Promise(r=>ed.canvas.toBlob(r,'image/png'));
+      const iPath=folder+'/'+ts+'_ink.png';
+      const iUp=await window.sb.storage.from('gallery').upload(iPath, blob, {upsert:true, contentType:'image/png'});
+      if(iUp.error){ edReg('업로드 오류: '+iUp.error.message,false); btn.disabled=false; return; }
+      image_url=window.sb.storage.from('gallery').getPublicUrl(iPath).data.publicUrl;
+    }
+    const edit_meta={palette:ed.pal,color:ed.color,paper:ed.paper,ink:ed.ink,gamma:ed.gamma,sat:ed.sat,lit:ed.lit,gain:ed.gain,size:ed.size,invert:ed.invert};
+    const patch={ title, reading:($('edReading').value.trim()||null), thought:($('edThought').value.trim()||null), image_url, edit_meta, gua_no:(parseInt($('edGua').value,10)||null) };
+    if(origin_url!==undefined) patch.origin_url=origin_url;
+    if(newOrient) patch.orient=newOrient;
+    const upd=await window.sb.from('gallery_works').update(patch).eq('id',ed.dbId).select().single();
+    if(upd.error){ edReg('수정 오류: '+upd.error.message,false); btn.disabled=false; return; }
+    const list=WORKS[currentCat]||[]; const w=list.find(x=>x.dbId===ed.dbId);
+    if(w){ w.title=title; w.char=title; w.reading=patch.reading||''; w.thought=patch.thought||''; w.img=image_url;
+      if(origin_url!==undefined) w.originUrl=origin_url; if(newOrient) w.orient=newOrient; w.editMeta=edit_meta; w.invert=ed.invert; renderWork(true); }
+    edReg('고쳐 새겼습니다 ✔'); btn.disabled=false;
+  }catch(e){ edReg('오류: '+(e.message||e),false); btn.disabled=false; }
+}
+
+/* 삭제 — 테이블 줄과 버킷 이미지를 함께 지운다 (되돌릴 수 없음) */
+async function galleryDelete(){
+  if(!currentUser||currentUser.email!==GALLERY_OWNER){ edReg('권한은 주인에게만 있어요',false); return; }
+  if(!ed.dbId) return;
+  if(!confirm('이 작품을 정말 지울까요? 되돌릴 수 없습니다.')) return;
+  const btn=$('edDelete'); btn.disabled=true; edReg('지우는 중…');
+  try{
+    const paths=[];
+    const p1=extractGalleryPath(ed.curImageUrl); if(p1) paths.push(p1);
+    const p2=extractGalleryPath(ed.curOriginUrl); if(p2) paths.push(p2);
+    if(paths.length){ try{ await window.sb.storage.from('gallery').remove(paths); }catch(e){ console.warn('img remove',e); } }
+    const del=await window.sb.from('gallery_works').delete().eq('id',ed.dbId);
+    if(del.error){ edReg('삭제 오류: '+del.error.message,false); btn.disabled=false; return; }
+    const list=WORKS[currentCat]||[]; const i=list.findIndex(x=>x.dbId===ed.dbId);
+    if(i>=0) list.splice(i,1);
+    $('editor').classList.remove('open'); btn.disabled=false; edReg('');
+    if(list.length){ workIdx=Math.max(0,Math.min(workIdx,list.length-1)); renderWork(true); }
+    else { imgEl.style.display='none'; charEl.style.display=''; charEl.textContent='';
+      titleEl.textContent=''; readingEl.textContent=''; thoughtEl.textContent=''; counterEl.textContent=''; }
+  }catch(e){ edReg('오류: '+(e.message||e),false); btn.disabled=false; }
+}
+$('edUpdate').addEventListener('click', galleryUpdate);
+$('edDelete').addEventListener('click', galleryDelete);
+$('editWorkBtn').addEventListener('click',()=>{ const list=WORKS[currentCat]||[]; const w=list[workIdx]; if(w && w.dbId) editLoadWork(w); });
+
+/* 좌측 기둥 인장(brand) 클릭 → 새 작품 편집판 열고/닫기 */
+$('brand').addEventListener('click',()=>{
+  const opened=$('editor').classList.contains('open');
+  if(opened){ $('editor').classList.remove('open'); return; }
+  ed.mode='new'; ed.dbId=null; ed.curImageUrl=null; ed.curOriginUrl=null;
+  ed.file=null; ed.dirtyOrigin=false; ed.img=null; ed.canvas=null;
+  $('edCv').style.display='none'; $('edPh').style.display='block'; $('edPh').textContent='사진을 올리면 여기서 먹이 떠오릅니다';
+  $('edHang').disabled=true; $('edSave').disabled=true;
+  edSetMode('new'); clearEdInputs(); $('editor').classList.add('open');
+});
 $('edClose').addEventListener('click',()=>{ $('editor').classList.remove('open'); });
 
 edBuildPal(); edBuildSws();
@@ -938,8 +1075,8 @@ async function loadWorks(){
     const byCat={};
     data.forEach(r=>{ (byCat[r.category]=byCat[r.category]||[]).push({
       char:(r.title||''), title:(r.title||''), reading:(r.reading||''), thought:(r.thought||''),
-      orient:(r.orient||'portrait'), img:r.image_url, invert:!!(r.edit_meta&&r.edit_meta.invert),
-      size:((r.edit_meta&&r.edit_meta.size)||70), likes:0, dbId:r.id, gua:r.gua_no
+      orient:(r.orient||'portrait'), img:r.image_url, originUrl:r.origin_url, invert:!!(r.edit_meta&&r.edit_meta.invert),
+      size:((r.edit_meta&&r.edit_meta.size)||70), likes:0, dbId:r.id, gua:r.gua_no, editMeta:(r.edit_meta||{})
     }); });
     Object.keys(byCat).forEach(c=>{ WORKS[c]=byCat[c]; });
     if(WORKS[currentCat] && !gbEl.classList.contains('visible')){ workIdx=0; renderWork(false); }
