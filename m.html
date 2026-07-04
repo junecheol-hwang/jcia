@@ -8,13 +8,13 @@
 <meta name="theme-color" content="#060912">
 <link rel="apple-touch-icon" href="/icon-180.png">
 <!-- 브라우저 탭 파비콘 — 순청자 인장 (인라인 data URI, 별도 파일 불필요) -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20240%20240%22%3E%3Crect%20x%3D%2214%22%20y%3D%2214%22%20width%3D%22212%22%20height%3D%22212%22%20rx%3D%2240%22%20fill%3D%22%23C25E3F%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%22120%22%20r%3D%2260%22%20fill%3D%22none%22%20stroke%3D%22%23FFFFFF%22%20stroke-width%3D%229%22%20opacity%3D%220.95%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%2260%22%20r%3D%2215%22%20fill%3D%22%23FFFFFF%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%22180%22%20r%3D%2215%22%20fill%3D%22%23FFFFFF%22/%3E%3Ccircle%20cx%3D%2260%22%20cy%3D%22120%22%20r%3D%2215%22%20fill%3D%22%23FFFFFF%22/%3E%3Ccircle%20cx%3D%22180%22%20cy%3D%22120%22%20r%3D%2215%22%20fill%3D%22%23FFFFFF%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%22120%22%20r%3D%2219%22%20fill%3D%22%23FFFFFF%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%22120%22%20r%3D%228%22%20fill%3D%22%23C25E3F%22/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20240%20240%22%3E%3Crect%20x%3D%2214%22%20y%3D%2214%22%20width%3D%22212%22%20height%3D%22212%22%20rx%3D%2240%22%20fill%3D%22%23C25E3F%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%22120%22%20r%3D%2260%22%20fill%3D%22none%22%20stroke%3D%22%23FFFFFF%22%20stroke-width%3D%229%22%20opacity%3D%220.95%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%2260%22%20r%3D%2215%22%20fill%3D%22%23FFFFFF%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%22180%22%20r%3D%2215%22%20fill%3D%22%23FFFFFF%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%22120%22%20r%3D%2219%22%20fill%3D%22%23FFFFFF%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%22120%22%20r%3D%228%22%20fill%3D%22%23C25E3F%22/%3E%3C/svg%3E">
 <link rel="icon" type="image/png" href="/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="도반의 여정">
 <title>Timeline — 도반의 여정</title>
-<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Song+Myung&family=Cardo:ital@0;1&family=Noto+Serif+KR:wght@400;500&family=Cormorant:ital,wght@0,400;0,600;1,400&family=EB+Garamond:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Song+Myung&family=Cardo:ital@0;1&family=Noto+Serif+KR:wght@400;500&family=Cormorant:ital,wght@0,400;0,600;1,400&family=EB+Garamond:wght@400;500&family=Unbounded:wght@400&display=swap" rel="stylesheet">
 <script type="importmap">
   { "imports": {
       "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
@@ -581,13 +581,15 @@ body.gated.eye-open #three-container, body.gated.eye-open #tl-canvas{
   filter:drop-shadow(0 0 7px rgba(217,169,110,0.8));
   animation:gateBreath 3s ease-in-out infinite;}
 @keyframes gateBreath{0%,100%{opacity:0.3;}50%{opacity:0.85;}}
-#gate-plate{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+#gate-plate{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);
   display:flex;flex-direction:column;align-items:center;gap:14px;transition:opacity 0.8s;}
-#gate-lockup{display:flex;align-items:center;gap:15px;}
-#gate-seal{width:42px;height:42px;flex:none;
+#gate-lockup{display:inline-flex;align-items:flex-end;gap:2px;}
+#gate-seal{width:44px;height:44px;flex:none;display:block;
   filter:drop-shadow(0 0 12px rgba(217,119,87,0.35));}
-#gate-plate .gate-word{font-family:'Cardo','Song Myung','Noto Serif KR',serif;
-  font-size:1.15rem;letter-spacing:0.34em;
+#gate-plate .gate-word{font-family:'Unbounded',sans-serif;font-weight:400;
+  font-size:1.46rem;line-height:1;white-space:nowrap;
+  transform:scaleX(0.85);transform-origin:left bottom;display:inline-block;
+  margin-bottom:3px;                               /* studio 베이스라인 = 로고 하단 */
   color:#eec48b;text-shadow:0 0 14px rgba(217,169,110,0.4);}
 #gate-plate .gate-enter{font-family:'Song Myung','Noto Serif KR',serif;
   font-size:0.66rem;letter-spacing:0.46em;margin-left:0.46em;
@@ -665,13 +667,12 @@ body.eye-open #gate-plate{opacity:0;}
   <div id="gate-lash"></div>
   <div id="gate-plate">
     <!-- studio jcia 공식 로고 CL3 (2026.07 확정) — 짙은 클로드 주황 #C25E3F 바탕 + 흰 내부
-         구조: 궤도 1 · 사방 전자 4(r14) · 핵(태극 음각) · 천원지방 -->
+         구조: 궤도 1 · 상하 전자 2(r14, 양의) · 핵(태극 음각) · 천원지방 -->
     <div id="gate-lockup">
       <svg id="gate-seal" viewBox="0 0 240 240" aria-hidden="true">
         <rect x="14" y="14" width="212" height="212" rx="40" fill="#C25E3F"/>
         <circle cx="120" cy="120" r="60" fill="none" stroke="#FFFFFF" stroke-width="5" opacity="0.95"/>
         <circle cx="120" cy="60" r="14" fill="#FFFFFF"/><circle cx="120" cy="180" r="14" fill="#FFFFFF"/>
-        <circle cx="60" cy="120" r="14" fill="#FFFFFF"/><circle cx="180" cy="120" r="14" fill="#FFFFFF"/>
         <circle cx="120" cy="120" r="18" fill="#FFFFFF"/><circle cx="120" cy="120" r="8" fill="#C25E3F"/>
       </svg>
       <span class="gate-word">studio jcia</span>
@@ -736,7 +737,6 @@ body.eye-open #gate-plate{opacity:0;}
     <rect x="14" y="14" width="212" height="212" rx="40" fill="#C25E3F"/>
     <circle cx="120" cy="120" r="60" fill="none" stroke="#FFFFFF" stroke-width="6" opacity="0.95"/>
     <circle cx="120" cy="60" r="14" fill="#FFFFFF"/><circle cx="120" cy="180" r="14" fill="#FFFFFF"/>
-    <circle cx="60" cy="120" r="14" fill="#FFFFFF"/><circle cx="180" cy="120" r="14" fill="#FFFFFF"/>
     <circle cx="120" cy="120" r="18" fill="#FFFFFF"/><circle cx="120" cy="120" r="8" fill="#C25E3F"/>
   </svg>
   <span id="brand-name">읽는 jcia</span>
