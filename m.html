@@ -7,6 +7,9 @@
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#060912">
 <link rel="apple-touch-icon" href="/icon-180.png">
+<!-- 브라우저 탭 파비콘 — 순청자 인장 (인라인 data URI, 별도 파일 불필요) -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20240%20240%22%3E%3Crect%20x%3D%2214%22%20y%3D%2214%22%20width%3D%22212%22%20height%3D%22212%22%20rx%3D%2240%22%20fill%3D%22%23C25E3F%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%22120%22%20r%3D%2260%22%20fill%3D%22none%22%20stroke%3D%22%23FFFFFF%22%20stroke-width%3D%229%22%20opacity%3D%220.95%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%2260%22%20r%3D%2215%22%20fill%3D%22%23FFFFFF%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%22180%22%20r%3D%2215%22%20fill%3D%22%23FFFFFF%22/%3E%3Ccircle%20cx%3D%2260%22%20cy%3D%22120%22%20r%3D%2215%22%20fill%3D%22%23FFFFFF%22/%3E%3Ccircle%20cx%3D%22180%22%20cy%3D%22120%22%20r%3D%2215%22%20fill%3D%22%23FFFFFF%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%22120%22%20r%3D%2219%22%20fill%3D%22%23FFFFFF%22/%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%22120%22%20r%3D%228%22%20fill%3D%22%23C25E3F%22/%3E%3C/svg%3E">
+<link rel="icon" type="image/png" href="/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="도반의 여정">
@@ -39,7 +42,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 
 /* 타임라인 헤더 */
 #header{
-  position:fixed;left:3rem;bottom:8.8rem;z-index:30;
+  position:fixed;left:3rem;bottom:11rem;z-index:30;
   pointer-events:none;
 }
 #header-subtitle{
@@ -275,14 +278,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 .bp-line-cancel{color:rgba(110,108,102,0.8);}
 #bp-line-count{text-align:center;font-size:0.6rem;color:var(--gray-dark);letter-spacing:0.1em;margin-top:0.5rem;}
 
-/* 로그인(magic link) — 좌측 하단 */
+/* 로그인(magic link) — 좌측 하단, 책 검색창 바로 위 · 클로드 주황 */
 #auth-box{
-  position:fixed;right:3rem;top:3.05rem;z-index:45;text-align:right;
-  display:flex;flex-direction:column;gap:4px;align-items:flex-end;
+  position:fixed;left:3rem;bottom:5.2rem;z-index:45;text-align:left;
+  display:flex;flex-direction:column;gap:4px;align-items:flex-start;
 }
 #auth-box::before{content:'';width:190px;height:1px;margin-bottom:3px;
-  background:linear-gradient(90deg,transparent,rgba(217,169,110,0.55));}   /* 낙관의 금선 */
-#auth-line{display:flex;align-items:baseline;justify-content:flex-end;gap:11px;
+  background:linear-gradient(90deg,rgba(217,119,87,0.55),transparent);}   /* 낙관의 주황선 */
+#auth-line{display:flex;align-items:baseline;justify-content:flex-start;gap:11px;
   flex-wrap:wrap;
   font-family:'Gowun Batang',sans-serif;pointer-events:auto;
 }
@@ -291,23 +294,41 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 #auth-status{display:none;font-family:'Cardo','Gowun Batang',serif;
   font-size:0.62rem;color:var(--gray-mid);letter-spacing:0.07em;text-decoration:none;border-bottom:none;}
 #auth-status::before{content:'';display:inline-block;width:4px;height:4px;border-radius:50%;
-  background:var(--orange-faded);margin-right:6px;vertical-align:1.5px;}   /* 로그인됨 — 호박 점 */
-#auth-login{display:flex;gap:6px;align-items:center;justify-content:flex-end;}
+  background:#D97757;margin-right:6px;vertical-align:1.5px;}   /* 로그인됨 — 주황 점 */
+#auth-login{display:flex;gap:6px;align-items:center;justify-content:flex-start;}
 #auth-email{
-  background:rgba(2,5,10,0.7);border:0.5px solid rgba(110,108,102,0.4);border-radius:2px;
+  background:rgba(2,5,10,0.7);border:0.5px solid rgba(217,119,87,0.4);border-radius:2px;
   padding:0.4rem 0.6rem;width:150px;color:var(--gray-light);
   font-size:0.72rem;font-weight:300;outline:none;
   backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
 }
-#auth-email:focus{border-color:rgba(217,169,110,0.6);}
+#auth-email:focus{border-color:rgba(217,119,87,0.8);}
 #auth-email::placeholder{color:rgba(110,108,102,0.75);}
 #auth-send{
   width:28px;height:28px;flex:none;
-  background:rgba(217,169,110,0.12);border:0.5px solid rgba(217,169,110,0.4);border-radius:2px;
-  color:var(--orange-pale);cursor:pointer;font-size:0.85rem;
+  background:rgba(217,119,87,0.14);border:0.5px solid rgba(217,119,87,0.5);border-radius:2px;
+  color:#E8A38C;cursor:pointer;font-size:0.85rem;
 }
-#auth-send:hover{background:rgba(217,169,110,0.22);}
-#auth-msg{font-size:0.6rem;color:var(--gray-dark);margin-top:5px;letter-spacing:0.04em;min-height:0.8rem;max-width:200px;margin-left:auto;}
+#auth-send:hover{background:rgba(217,119,87,0.26);}
+#auth-msg{font-size:0.6rem;color:var(--gray-dark);margin-top:5px;letter-spacing:0.04em;min-height:0.8rem;max-width:200px;margin-right:auto;}
+/* 6자리 코드 입력 — PWA(홈 화면 앱)는 메일 링크가 사파리와 다른 저장공간을 쓰므로
+   링크 클릭이 아니라 코드 직접 입력으로 같은 창 안에서 로그인을 끝낸다 */
+#auth-otp{display:none;gap:6px;align-items:center;justify-content:flex-start;margin-top:6px;}
+#auth-otp.show{display:flex;}
+#auth-code{
+  background:rgba(2,5,10,0.7);border:0.5px solid rgba(110,108,102,0.4);border-radius:2px;
+  padding:0.4rem 0.6rem;width:90px;color:var(--gray-light);
+  font-size:0.85rem;font-weight:300;outline:none;letter-spacing:0.3em;text-align:center;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+}
+#auth-code:focus{border-color:rgba(217,119,87,0.8);}
+#auth-code::placeholder{color:rgba(110,108,102,0.75);letter-spacing:0.1em;}
+#auth-verify{
+  width:28px;height:28px;flex:none;
+  background:rgba(217,119,87,0.14);border:0.5px solid rgba(217,119,87,0.5);border-radius:2px;
+  color:#E8A38C;cursor:pointer;font-size:0.85rem;
+}
+#auth-verify:hover{background:rgba(217,119,87,0.26);}
 
 #tl-canvas{position:fixed;inset:0;z-index:15;pointer-events:all;}
 
@@ -328,7 +349,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 .nav-dot:hover{background:var(--orange-faded);transform:scale(1.3);}
 
 /* ── 주크박스 — 좌하단, 별밭 팔레트 재생 카드 ── */
-#jukebox{position:fixed;bottom:6.1rem;left:3rem;z-index:30;pointer-events:all;
+#jukebox{position:fixed;bottom:8.4rem;left:3rem;z-index:30;pointer-events:all;
   font-family:'Gowun Batang',serif;}
 #jb-toggle{width:30px;height:30px;border-radius:50%;
   background:transparent;border:0.5px solid rgba(110,108,102,0.45);
@@ -336,6 +357,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   display:flex;align-items:center;justify-content:center;
   transition:border-color 0.25s,color 0.25s;-webkit-tap-highlight-color:transparent;}
 #jb-toggle:hover{border-color:var(--orange-faded);color:var(--orange-pale);}
+#jb-toggle svg{width:16px;height:16px;display:block;}
 #jb-card{position:absolute;left:0;bottom:40px;width:296px;
   background:rgba(6,9,18,0.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   border:0.5px solid rgba(217,169,110,0.28);border-radius:16px;
@@ -409,7 +431,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 #brand-mark{
   width:26px;height:26px;flex:none;
   animation:brandFloat 6.5s ease-in-out infinite;
-  filter:drop-shadow(0 0 6px rgba(233,237,230,0.3));
+  filter:drop-shadow(0 0 6px rgba(217,119,87,0.4));
 }
 #brand-name{
   font-family:'Cardo','Song Myung',serif;font-weight:400;
@@ -480,7 +502,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 .bs-af-note{font-size:0.63rem;color:var(--gray-dark);line-height:1.6;}
 
 /* ── 방명록 — 낯선 이의 별 ── */
-#cm-btn{position:fixed;left:calc(3rem + 42px);bottom:6.1rem;z-index:30;
+#cm-btn{position:fixed;left:calc(3rem + 42px);bottom:8.4rem;z-index:30;
   width:30px;height:30px;border-radius:50%;
   background:transparent;border:0.5px solid rgba(110,108,102,0.45);
   color:var(--orange-worn);cursor:pointer;
@@ -488,7 +510,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   transition:border-color 0.25s,color 0.25s;-webkit-tap-highlight-color:transparent;}
 #cm-btn:hover{border-color:var(--orange-faded);color:var(--orange-pale);}
 #cm-btn svg{width:15px;height:15px;}
-#gb-compose{position:fixed;left:3rem;bottom:9.6rem;z-index:48;width:300px;
+#gb-compose{position:fixed;left:3rem;bottom:12.6rem;z-index:48;width:300px;
   background:rgba(6,9,18,0.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   border:0.5px solid rgba(217,169,110,0.28);border-radius:14px;
   padding:1rem 1.05rem 0.9rem;box-shadow:0 10px 34px rgba(0,0,0,0.45);
@@ -563,7 +585,7 @@ body.gated.eye-open #three-container, body.gated.eye-open #tl-canvas{
   display:flex;flex-direction:column;align-items:center;gap:14px;transition:opacity 0.8s;}
 #gate-lockup{display:flex;align-items:center;gap:15px;}
 #gate-seal{width:42px;height:42px;flex:none;
-  filter:drop-shadow(0 0 12px rgba(233,237,230,0.22));}
+  filter:drop-shadow(0 0 12px rgba(217,119,87,0.35));}
 #gate-plate .gate-word{font-family:'Cardo','Song Myung','Noto Serif KR',serif;
   font-size:1.15rem;letter-spacing:0.34em;
   color:#eec48b;text-shadow:0 0 14px rgba(217,169,110,0.4);}
@@ -591,18 +613,18 @@ body.eye-open #gate-plate{opacity:0;}
   #hover-panel{display:none !important;}          /* 터치엔 호버가 없음 */
   #scroll-hint{display:none;}
 
-  /* 첫 줄: 서랍 아이콘(중앙) + 원자 로고(우측, 숨은 문 그대로) */
-  #drawer-icons{top:0.55rem;gap:1.05rem;}
-  #drawer-icons button{font-size:0.95rem;padding:5px 5px;}
+  /* 첫 줄: 서랍 아이콘(좌측 고정 — 우측 문패와 겹침 방지) + 원자 로고(우측, 숨은 문 그대로) */
+  #drawer-icons{top:0.55rem;left:0.75rem;transform:none;gap:0.9rem;}
+  #drawer-icons button{font-size:0.95rem;padding:5px 4px;}
   #drawer-icons button svg{width:16px;height:16px;}
   #brand{right:1rem;top:0.9rem;}
 
-  /* 둘째 줄: 검색 — 전폭 */
-  #book-search{top:3.3rem;left:1rem;right:1rem;width:auto;}
+  /* 좌하단 스택 — 데스크탑과 동일 문법: 검색 → 로그인 → 주크박스·댓글 → 제목 */
+  #book-search{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 5.4rem);
+    left:1rem;right:auto;width:min(240px,66vw);}
   #book-search-input{font-size:16px;}             /* iOS 자동 확대 방지 */
 
-  /* 셋째 줄: 로그인/상태 */
-  #auth-box{right:1rem;top:6.6rem;}
+  #auth-box{left:1rem;right:auto;top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 8rem);}
   #auth-email{width:min(150px,40vw);font-size:16px;}
 
   /* 상단 서랍 — 전폭, 아이콘 줄만 비우고 검색은 서랍이 잠시 덮음 */
@@ -618,25 +640,20 @@ body.eye-open #gate-plate{opacity:0;}
   /* 대문천문 편집판 — 로고 아래 */
   #home-calli-edit{right:0.8rem;top:3.1rem;width:min(232px,88vw);}
 
-  /* 주크박스 — 좌하단, 홈 인디케이터 위 */
-  #jukebox{left:1rem;bottom:calc(env(safe-area-inset-bottom,0px) + 4.2rem);}
+  /* 주크박스 — 좌하단, 로그인 위 */
+  #jukebox{left:1rem;bottom:calc(env(safe-area-inset-bottom,0px) + 10.8rem);}
   #jb-card{width:min(296px,88vw);}
 
   /* 좌하단 제목 · 하단 버튼 */
-  #header{left:1rem;bottom:7.4rem;}
+  #header{left:1rem;bottom:calc(env(safe-area-inset-bottom,0px) + 13.4rem);}
   #back-btn{bottom:calc(env(safe-area-inset-bottom,0px) + 2.4rem);}
 
   /* 방명록 — 댓글 단추는 ♪ 옆, 헤드라인은 맨 아래 */
-  #cm-btn{left:calc(1rem + 40px);bottom:calc(env(safe-area-inset-bottom,0px) + 4.2rem);}
-  #gb-compose{right:0.8rem;left:0.8rem;width:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 7.4rem);}
+  #cm-btn{left:calc(1rem + 40px);bottom:calc(env(safe-area-inset-bottom,0px) + 10.8rem);}
+  #gb-compose{right:0.8rem;left:0.8rem;width:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 13.6rem);}
   #gb-body,#gb-nick{font-size:16px;}              /* iOS 자동 확대 방지 */
   #gb-ticker{height:30px;bottom:env(safe-area-inset-bottom,0px);}
   .gbt-item{font-size:0.72rem;}
-
-  /* 폰에서는 검색을 상단에 유지(키보드·엄지 동선) — 결과는 아래로 */
-  #book-search{bottom:auto;}
-  #book-search-results{bottom:auto;top:calc(100% + 7px);}
-  #jukebox{bottom:calc(env(safe-area-inset-bottom,0px) + 4.2rem);}
 }
 </style>
 </head>
@@ -647,19 +664,15 @@ body.eye-open #gate-plate{opacity:0;}
   <div class="gate-lid bot"></div>
   <div id="gate-lash"></div>
   <div id="gate-plate">
-    <!-- studio jcia 공식 로고 '순청자' (2026.07 낙점) — 핵1 태극 · 안2 양의 · 밖8 팔괘 · 천원지방
-         원본: studio_jcia_logo_final.svg (궤도 stroke-width만 소형 표시용으로 1.2→5 광학 보정) -->
+    <!-- studio jcia 공식 로고 CL3 (2026.07 확정) — 짙은 클로드 주황 #C25E3F 바탕 + 흰 내부
+         구조: 궤도 1 · 사방 전자 4(r14) · 핵(태극 음각) · 천원지방 -->
     <div id="gate-lockup">
       <svg id="gate-seal" viewBox="0 0 240 240" aria-hidden="true">
-        <rect x="14" y="14" width="212" height="212" rx="34" fill="#E9EDE6" stroke="rgba(62,74,70,0.15)" stroke-width="1"/>
-        <circle cx="120" cy="120" r="68" fill="none" stroke="rgba(130,168,148,0.5)" stroke-width="5"/>
-        <circle cx="120" cy="120" r="30" fill="none" stroke="rgba(130,168,148,0.5)" stroke-width="5"/>
-        <circle cx="120" cy="120" r="9.5" fill="#3E4A46"/>
-        <circle cx="120" cy="90" r="5.2" fill="#54796B"/><circle cx="120" cy="150" r="5.2" fill="#54796B"/>
-        <circle cx="188" cy="120" r="5.2" fill="#54796B"/><circle cx="168.1" cy="168.1" r="5.2" fill="#54796B"/>
-        <circle cx="120" cy="188" r="5.2" fill="#54796B"/><circle cx="71.9" cy="168.1" r="5.2" fill="#54796B"/>
-        <circle cx="52" cy="120" r="5.2" fill="#54796B"/><circle cx="71.9" cy="71.9" r="5.2" fill="#54796B"/>
-        <circle cx="120" cy="52" r="5.2" fill="#54796B"/><circle cx="168.1" cy="71.9" r="5.2" fill="#54796B"/>
+        <rect x="14" y="14" width="212" height="212" rx="40" fill="#C25E3F"/>
+        <circle cx="120" cy="120" r="60" fill="none" stroke="#FFFFFF" stroke-width="5" opacity="0.95"/>
+        <circle cx="120" cy="60" r="14" fill="#FFFFFF"/><circle cx="120" cy="180" r="14" fill="#FFFFFF"/>
+        <circle cx="60" cy="120" r="14" fill="#FFFFFF"/><circle cx="180" cy="120" r="14" fill="#FFFFFF"/>
+        <circle cx="120" cy="120" r="18" fill="#FFFFFF"/><circle cx="120" cy="120" r="8" fill="#C25E3F"/>
       </svg>
       <span class="gate-word">studio jcia</span>
     </div>
@@ -682,7 +695,7 @@ body.eye-open #gate-plate{opacity:0;}
 
   <!-- 주크박스 — 좌하단 재생 카드 (♪ 단추로 여닫음) -->
   <div id="jukebox">
-    <button id="jb-toggle" title="주크박스">♪</button>
+    <button id="jb-toggle" title="주크박스"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 9v6l5-3z" fill="currentColor" stroke="none"/></svg></button>
     <div id="jb-card">
       <div id="jb-top">
         <div id="jb-art"><span>♪</span></div>
@@ -720,15 +733,11 @@ body.eye-open #gate-plate{opacity:0;}
   <div id="brand-door"></div>
   <!-- 순청자 인장 (studio_jcia_logo_final.svg · 궤도 stroke 1.2→6 소형 광학 보정) -->
   <svg id="brand-mark" viewBox="0 0 240 240" aria-hidden="true">
-    <rect x="14" y="14" width="212" height="212" rx="34" fill="#E9EDE6" stroke="rgba(62,74,70,0.15)" stroke-width="1"/>
-    <circle cx="120" cy="120" r="68" fill="none" stroke="rgba(130,168,148,0.55)" stroke-width="6"/>
-    <circle cx="120" cy="120" r="30" fill="none" stroke="rgba(130,168,148,0.55)" stroke-width="6"/>
-    <circle cx="120" cy="120" r="9.5" fill="#3E4A46"/>
-    <circle cx="120" cy="90" r="5.2" fill="#54796B"/><circle cx="120" cy="150" r="5.2" fill="#54796B"/>
-    <circle cx="188" cy="120" r="5.2" fill="#54796B"/><circle cx="168.1" cy="168.1" r="5.2" fill="#54796B"/>
-    <circle cx="120" cy="188" r="5.2" fill="#54796B"/><circle cx="71.9" cy="168.1" r="5.2" fill="#54796B"/>
-    <circle cx="52" cy="120" r="5.2" fill="#54796B"/><circle cx="71.9" cy="71.9" r="5.2" fill="#54796B"/>
-    <circle cx="120" cy="52" r="5.2" fill="#54796B"/><circle cx="168.1" cy="71.9" r="5.2" fill="#54796B"/>
+    <rect x="14" y="14" width="212" height="212" rx="40" fill="#C25E3F"/>
+    <circle cx="120" cy="120" r="60" fill="none" stroke="#FFFFFF" stroke-width="6" opacity="0.95"/>
+    <circle cx="120" cy="60" r="14" fill="#FFFFFF"/><circle cx="120" cy="180" r="14" fill="#FFFFFF"/>
+    <circle cx="60" cy="120" r="14" fill="#FFFFFF"/><circle cx="180" cy="120" r="14" fill="#FFFFFF"/>
+    <circle cx="120" cy="120" r="18" fill="#FFFFFF"/><circle cx="120" cy="120" r="8" fill="#C25E3F"/>
   </svg>
   <span id="brand-name">읽는 jcia</span>
 </div>
@@ -750,11 +759,11 @@ body.eye-open #gate-plate{opacity:0;}
 
 <!-- 상단 서랍 다섯 — 선택된 별의 것 (별 미선택 시 잠김) -->
 <div id="drawer-icons" class="locked">
-  <button data-sec="music" title="같이 하면 좋을 음악">♪</button>
+  <button data-sec="music" title="같이 하면 좋을 음악"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg></button>
   <button data-sec="movie" title="같이 보면 좋을 영화"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M6.8 5v14M17.2 5v14M2.5 9.5h4.3M2.5 14.5h4.3M17.2 9.5h4.3M17.2 14.5h4.3"/></svg></button>
   <button data-sec="reading" title="더 읽을거리들"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.2C10.2 4.8 7.9 4.2 4.5 4.2v13.6c3.4 0 5.7.6 7.5 2 1.8-1.4 4.1-2 7.5-2V4.2c-3.4 0-5.7.6-7.5 2z"/><path d="M12 6.2v13.6"/></svg></button>
-  <button data-sec="lines" title="내 마음속의 문장들">❝❞</button>
-  <button data-sec="calli" title="천문">天文</button>
+  <button data-sec="lines" title="내 마음속의 문장들"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M4 6h4.4v4.8c0 2.2-1.3 3.6-3.5 4.2l-.6-1.3c1.2-.4 2-1.1 2.1-2.2H4z"/><path d="M20 18h-4.4v-4.8c0-2.2 1.3-3.6 3.5-4.2l.6 1.3c-1.2.4-2 1.1-2.1 2.2H20z"/></svg></button>
+  <button data-sec="calli" title="천문"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 4L9 12.5"/><path d="M9 12.5c-1.7.4-2.7 1.4-3.1 3.1-.2 1-.9 1.7-2.1 2.1 2.7 1.3 5 .8 6.2-1.1.7-1 .8-2.1.4-3.1z" fill="currentColor" stroke="none"/><path d="M19 8.5l.8 1.7 1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8z" fill="currentColor" stroke="none"/></svg></button>
 </div>
 <div id="bp-body">
   <div id="bp-head">
@@ -811,7 +820,8 @@ body.eye-open #gate-plate{opacity:0;}
 <!-- 방명록 — 흐르는 헤드라인: 댓글 단추(♪ 옆)로 남기고, 화면 아래를 뉴스처럼 흐름 -->
 <button id="cm-btn" title="흔적 남기기">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M21 12c0 4-4 7-9 7-1.1 0-2.2-.15-3.2-.42L4 20l1.6-3.4C4.6 15.3 3 13.8 3 12c0-4 4-7 9-7s9 3 9 7z"/>
+    <path d="M4 5h16v11H9l-5 3.5V16z"/>
+    <path d="M8 9.5h8M8 12.5h5"/>
   </svg>
 </button>
 <div id="gb-compose">
@@ -883,7 +893,11 @@ body.eye-open #gate-plate{opacity:0;}
   </div>
   <div id="auth-login">
     <input id="auth-email" type="email" autocomplete="email" spellcheck="false" placeholder="이메일로 로그인">
-    <button id="auth-send" title="로그인 링크 받기">→</button>
+    <button id="auth-send" title="로그인 코드 받기">→</button>
+  </div>
+  <div id="auth-otp">
+    <input id="auth-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="코드 6자리">
+    <button id="auth-verify" title="코드 확인">✓</button>
   </div>
   <div id="auth-msg"></div>
 </div>
@@ -2864,9 +2878,26 @@ function addItem(kind){
       const ls=document.getElementById('bp-dial').querySelectorAll('.bp-line');
       if(ls.length){ ls[ls.length-1].scrollIntoView({block:'center'}); updateDialFocus(); }
     });
+    saveNow(panelBook);   // 문장은 소중하니 입력 즉시 서버로 — 패널 닫기를 기다리지 않는다
   } else {
     d[kind].push(v); panelDirty=true; inp.value=''; renderLists(panelBook);
+    saveNow(panelBook);
   }
+}
+// 즉시 저장 — 결과를 문장 카운트 옆에 사람이 읽을 수 있게 표시
+function saveNow(book){
+  if(!book) return;
+  const d=bookData[book.id]; if(!d) return;
+  const cnt=document.getElementById('bp-line-count');
+  const base=d.lines.length?d.lines.length+' 문장':'';
+  if(cnt) cnt.textContent=base+' · 저장 중…';
+  saveBook(book.id, d).then(res=>{
+    panelDirty=false;
+    if(!cnt) return;
+    if(res && res.ok){ cnt.textContent=base+' · 새겨짐 ✓'; setTimeout(()=>{ if(cnt) cnt.textContent=base; },1600); }
+    else if(res && res.reason==='not-logged-in'){ cnt.textContent=base+' · 로그인 필요'; showAuthHint(); }
+    else { cnt.textContent=base+' · 저장 실패(콘솔 확인)'; console.error('saveNow 실패', res && res.error); }
+  });
 }
 // 패널 입력 이벤트 바인딩 — 이벤트 위임(타이밍·순서 무관하게 항상 작동)
 document.addEventListener('click',e=>{
@@ -2906,16 +2937,26 @@ async function saveBook(bookId, d){
   if(!window.sb) return {ok:false, reason:'no-client'};
   if(!currentUser) return {ok:false, reason:'not-logged-in'};
   try{
-    const { error } = await window.sb.from('books_notes').upsert({
+    const payload={
       user_id: currentUser.id, book_id: bookId,
       music:d.music, movie:d.movie||[], reading:d.reading, lines:d.lines,
       calligraphy:d.calligraphy?JSON.stringify(d.calligraphy):null,
       essay:d.essay?JSON.stringify(d.essay):null,
       updated_at: new Date().toISOString()
-    }, { onConflict:'user_id,book_id' });
-    if(error){ console.warn('saveBook', error); return {ok:false, reason:'error', error}; }
-    return {ok:true};
-  }catch(e){ console.warn('saveBook 예외', e); return {ok:false, reason:'error'}; }
+    };
+    // .select() 를 붙여야 upsert 결과(실제로 쓰인 행)가 돌아온다.
+    // RLS 가 막으면 error 없이 data 가 빈 배열로 오므로 그것까지 실패로 판정.
+    const { data, error } = await window.sb.from('books_notes')
+      .upsert(payload, { onConflict:'user_id,book_id' })
+      .select('book_id,lines');
+    if(error){ console.error('[saveBook] 에러', {code:error.code, message:error.message, details:error.details, hint:error.hint}); return {ok:false, reason:'error', error}; }
+    if(!data || data.length===0){
+      console.error('[saveBook] 행이 쓰이지 않음 — RLS(WITH CHECK) 가 조용히 막았을 가능성. user_id=', currentUser.id);
+      return {ok:false, reason:'rls-blocked'};
+    }
+    console.log('[saveBook] 저장 성공 — book_id=', bookId, '· lines=', (data[0].lines||[]).length);
+    return {ok:true, data};
+  }catch(e){ console.error('[saveBook] 예외', e); return {ok:false, reason:'error'}; }
 }
 
 // 패널 내용이 바뀐 채로 닫히거나 다른 책으로 넘어갈 때 저장
@@ -2925,7 +2966,10 @@ function flushPanel(){
   panelDirty=false;
   if(!d) return;
   saveBook(b.id, d).then(res=>{
-    if(res && !res.ok && res.reason==='not-logged-in') showAuthHint();
+    if(res && !res.ok){
+      if(res.reason==='not-logged-in') showAuthHint();
+      else if(res.reason==='rls-blocked') console.error('[flushPanel] RLS 차단 — 정책 조건(WITH CHECK)을 확인하세요');
+    }
   });
 }
 window.flushPanel=flushPanel;
@@ -2935,10 +2979,12 @@ function setUser(u){
   currentUser=u;
   const status=document.getElementById('auth-status');
   const login=document.getElementById('auth-login');
+  const otp=document.getElementById('auth-otp');
   const msg=document.getElementById('auth-msg');
   if(u){
     status.textContent=(u.email||'기록 가능');
     status.style.display='block'; login.style.display='none';
+    if(otp) otp.classList.remove('show');
     if(msg) msg.textContent='';
   } else {
     status.style.display='none'; login.style.display='flex';
@@ -2956,14 +3002,33 @@ async function initAuth(){
 async function sendMagicLink(){
   const email=document.getElementById('auth-email').value.trim();
   const msg=document.getElementById('auth-msg');
+  const otp=document.getElementById('auth-otp');
   if(!email){ msg.textContent='이메일을 입력하세요'; return; }
   if(!window.sb){ msg.textContent='연결되지 않았어요'; return; }
-  msg.textContent='메일 보내는 중…';
+  msg.textContent='코드 보내는 중…';
   try{
     const { error } = await window.sb.auth.signInWithOtp({
       email, options:{ emailRedirectTo: location.origin+location.pathname }
     });
-    msg.textContent = error ? ('오류: '+error.message) : '메일함에서 링크를 눌러주세요 ✉️';
+    if(error){ msg.textContent='오류: '+error.message; return; }
+    msg.textContent='메일함의 6자리 코드를 입력해주세요 ✉️';
+    otp.classList.add('show');
+    document.getElementById('auth-code').focus();
+  }catch(e){ msg.textContent='오류가 났어요'; }
+}
+async function verifyCode(){
+  const email=document.getElementById('auth-email').value.trim();
+  const code=document.getElementById('auth-code').value.trim();
+  const msg=document.getElementById('auth-msg');
+  if(!code){ msg.textContent='코드를 입력하세요'; return; }
+  if(!window.sb){ msg.textContent='연결되지 않았어요'; return; }
+  msg.textContent='확인 중…';
+  try{
+    const { data, error } = await window.sb.auth.verifyOtp({ email, token: code, type:'email' });
+    if(error){ msg.textContent='오류: '+error.message; return; }
+    document.getElementById('auth-otp').classList.remove('show');
+    document.getElementById('auth-code').value='';
+    setUser(data.user);
   }catch(e){ msg.textContent='오류가 났어요'; }
 }
 function showAuthHint(){
@@ -2975,10 +3040,17 @@ function showAuthHint(){
 (function bindAuth(){
   const send=document.getElementById('auth-send');
   const email=document.getElementById('auth-email');
+  const verify=document.getElementById('auth-verify');
+  const code=document.getElementById('auth-code');
   if(send) send.addEventListener('click', sendMagicLink);
   if(email) email.addEventListener('keydown', e=>{
     e.stopPropagation();
     if(e.key==='Enter') sendMagicLink();
+  });
+  if(verify) verify.addEventListener('click', verifyCode);
+  if(code) code.addEventListener('keydown', e=>{
+    e.stopPropagation();
+    if(e.key==='Enter') verifyCode();
   });
 })();
 whenSB(initAuth);
