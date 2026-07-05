@@ -9,6 +9,7 @@
 <link rel="apple-touch-icon" href="/icon-180.png">
 <!-- 브라우저 탭 파비콘 — 순청자 인장 (인라인 data URI, 별도 파일 불필요) -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240'%3E%3Crect x='14' y='14' width='212' height='212' rx='40' fill='%23C25E3F'/%3E%3Ccircle cx='120' cy='120' r='60' fill='none' stroke='%23FFFFFF' stroke-width='9' opacity='0.95'/%3E%3Ccircle cx='120' cy='60' r='15' fill='%23FFFFFF'/%3E%3Ccircle cx='120' cy='180' r='15' fill='%23FFFFFF'/%3E%3Ccircle cx='120' cy='120' r='19' fill='%23FFFFFF'/%3E%3Ccircle cx='120' cy='120' r='8' fill='%23C25E3F'/%3E%3C/svg%3E">
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" type="image/png" href="/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -42,7 +43,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 
 /* 타임라인 헤더 */
 #header{
-  position:fixed;left:3rem;bottom:11rem;z-index:30;
+  position:fixed;left:3rem;bottom:9.2rem;z-index:30;
   pointer-events:none;
 }
 #header-subtitle{
@@ -280,7 +281,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 
 /* 로그인(magic link) — 좌측 하단, 책 검색창 바로 위 · 클로드 주황 */
 #auth-box{
-  position:fixed;left:3rem;bottom:5.2rem;z-index:45;text-align:left;
+  position:fixed;left:3rem;bottom:2.4rem;z-index:45;text-align:left;   /* 검색창 아래 */
   display:flex;flex-direction:column;gap:4px;align-items:flex-start;
 }
 #auth-box::before{content:'';width:190px;height:1px;margin-bottom:3px;
@@ -349,7 +350,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 .nav-dot:hover{background:var(--orange-faded);transform:scale(1.3);}
 
 /* ── 주크박스 — 좌하단, 별밭 팔레트 재생 카드 ── */
-#jukebox{position:fixed;bottom:8.4rem;left:3rem;z-index:30;pointer-events:all;
+#jukebox{position:fixed;bottom:calc(40% - 3.6rem);left:calc(50% - 38px);   /* 마음속 문장 아래 */z-index:30;pointer-events:all;
   font-family:'Gowun Batang',serif;}
 #jb-toggle{width:30px;height:30px;border-radius:50%;
   background:transparent;border:0.5px solid rgba(110,108,102,0.45);
@@ -358,13 +359,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   transition:border-color 0.25s,color 0.25s;-webkit-tap-highlight-color:transparent;}
 #jb-toggle:hover{border-color:var(--orange-faded);color:var(--orange-pale);}
 #jb-toggle svg{width:16px;height:16px;display:block;}
-#jb-card{position:absolute;left:0;bottom:40px;width:296px;
+#jb-card{position:absolute;left:15px;bottom:40px;width:min(296px,88vw);
   background:rgba(6,9,18,0.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   border:0.5px solid rgba(217,169,110,0.28);border-radius:16px;
   padding:0.95rem 1rem 0.85rem;box-shadow:0 10px 34px rgba(0,0,0,0.45);
-  opacity:0;transform:translateY(8px);pointer-events:none;
+  opacity:0;transform:translateX(-50%) translateY(8px);pointer-events:none;
   transition:opacity 0.35s,transform 0.35s;}
-#jukebox.open #jb-card{opacity:1;transform:translateY(0);pointer-events:auto;}
+#jukebox.open #jb-card{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
 #jb-top{display:flex;align-items:center;gap:0.8rem;}
 #jb-art{width:50px;height:50px;border-radius:9px;flex:none;overflow:hidden;
   border:0.5px solid rgba(217,169,110,0.35);
@@ -441,7 +442,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 @keyframes brandIn{to{opacity:1;}}
 @keyframes brandFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
 #book-search{
-  position:fixed;bottom:2.6rem;left:3rem;z-index:45;
+  position:fixed;bottom:6.4rem;left:3rem;z-index:45;   /* 메일·혜성 위 */
   width:clamp(230px,24vw,300px);pointer-events:all;
   font-family:'Gowun Batang',sans-serif;
 }
@@ -592,7 +593,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 .bs-af-note{font-size:0.63rem;color:var(--gray-dark);line-height:1.6;}
 
 /* ── 방명록 — 낯선 이의 별 ── */
-#cm-btn{position:fixed;left:calc(3rem + 42px);bottom:8.4rem;z-index:30;
+#cm-btn{position:fixed;left:calc(50% + 8px);bottom:calc(40% - 3.6rem);   /* ♪ 옆 */z-index:30;
   width:30px;height:30px;border-radius:50%;
   background:transparent;border:0.5px solid rgba(110,108,102,0.45);
   color:var(--orange-worn);cursor:pointer;
@@ -600,7 +601,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   transition:border-color 0.25s,color 0.25s;-webkit-tap-highlight-color:transparent;}
 #cm-btn:hover{border-color:var(--orange-faded);color:var(--orange-pale);}
 #cm-btn svg{width:15px;height:15px;}
-#gb-compose{position:fixed;left:3rem;bottom:12.6rem;z-index:48;width:300px;
+#gb-compose{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(40% - 3.6rem + 44px);z-index:48;width:300px;
   background:rgba(6,9,18,0.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   border:0.5px solid rgba(217,169,110,0.28);border-radius:14px;
   padding:1rem 1.05rem 0.9rem;box-shadow:0 10px 34px rgba(0,0,0,0.45);
@@ -719,11 +720,11 @@ body.eye-open #gate-plate{opacity:0;}
   #brand{right:1rem;top:0.9rem;}
 
   /* 좌하단 스택 — 데스크탑과 동일 문법: 검색 → 로그인 → 주크박스·댓글 → 제목 */
-  #book-search{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 5.4rem);
+  #book-search{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 7rem);
     left:1rem;right:auto;width:min(240px,66vw);}
   #book-search-input{font-size:16px;}             /* iOS 자동 확대 방지 */
 
-  #auth-box{left:1rem;right:auto;top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 8rem);}
+  #auth-box{left:1rem;right:auto;top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 4.4rem);}   /* 검색창 아래 */
   #auth-email{width:min(150px,40vw);font-size:16px;}
 
   /* 상단 서랍 — 전폭, 아이콘 줄만 비우고 검색은 서랍이 잠시 덮음 */
@@ -740,16 +741,16 @@ body.eye-open #gate-plate{opacity:0;}
   #home-calli-edit{right:0.8rem;top:3.1rem;width:min(232px,88vw);}
 
   /* 주크박스 — 좌하단, 로그인 위 */
-  #jukebox{left:1rem;bottom:calc(env(safe-area-inset-bottom,0px) + 10.8rem);}
+  #jukebox{left:calc(50% - 38px);bottom:calc(40% - 3.6rem);}
   #jb-card{width:min(296px,88vw);}
 
   /* 좌하단 제목 · 하단 버튼 */
-  #header{left:1rem;bottom:calc(env(safe-area-inset-bottom,0px) + 13.4rem);}
+  #header{left:1rem;bottom:calc(env(safe-area-inset-bottom,0px) + 9.6rem);}
   #back-btn{bottom:calc(env(safe-area-inset-bottom,0px) + 2.4rem);}
 
   /* 방명록 — 댓글 단추는 ♪ 옆, 헤드라인은 맨 아래 */
-  #cm-btn{left:calc(1rem + 40px);bottom:calc(env(safe-area-inset-bottom,0px) + 10.8rem);}
-  #gb-compose{right:0.8rem;left:0.8rem;width:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 13.6rem);}
+  #cm-btn{left:calc(50% + 8px);bottom:calc(40% - 3.6rem);}
+  #gb-compose{right:0.8rem;left:0.8rem;width:auto;transform:none;bottom:calc(40% - 3.6rem + 44px);}
   #gb-body,#gb-nick{font-size:16px;}              /* iOS 자동 확대 방지 */
   #gb-ticker{height:30px;bottom:env(safe-area-inset-bottom,0px);}
   .gbt-item{font-size:0.72rem;}
