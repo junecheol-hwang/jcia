@@ -359,11 +359,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   transition:border-color 0.25s,color 0.25s;-webkit-tap-highlight-color:transparent;}
 #jb-toggle:hover{border-color:var(--orange-faded);color:var(--orange-pale);}
 #jb-toggle svg{width:16px;height:16px;display:block;}
-#jb-card{position:absolute;left:15px;bottom:40px;width:min(296px,88vw);
+#jb-card{position:absolute;left:15px;top:40px;width:min(296px,88vw);   /* 토글 아래로 — 위의 문장 목록을 덮지 않게 */
   background:rgba(6,9,18,0.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   border:0.5px solid rgba(217,169,110,0.28);border-radius:16px;
   padding:0.95rem 1rem 0.85rem;box-shadow:0 10px 34px rgba(0,0,0,0.45);
-  opacity:0;transform:translateX(-50%) translateY(8px);pointer-events:none;
+  opacity:0;transform:translateX(-50%) translateY(-8px);pointer-events:none;
   transition:opacity 0.35s,transform 0.35s;}
 #jukebox.open #jb-card{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
 #jb-top{display:flex;align-items:center;gap:0.8rem;}
@@ -601,7 +601,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   transition:border-color 0.25s,color 0.25s;-webkit-tap-highlight-color:transparent;}
 #cm-btn:hover{border-color:var(--orange-faded);color:var(--orange-pale);}
 #cm-btn svg{width:15px;height:15px;}
-#gb-compose{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(40% - 3.6rem + 44px);z-index:48;width:300px;
+#gb-compose{position:fixed;left:50%;transform:translateX(-50%);top:calc(60% + 3.6rem + 10px);bottom:auto;z-index:48;width:300px;   /* 단추 아래로 */
   background:rgba(6,9,18,0.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   border:0.5px solid rgba(217,169,110,0.28);border-radius:14px;
   padding:1rem 1.05rem 0.9rem;box-shadow:0 10px 34px rgba(0,0,0,0.45);
@@ -750,7 +750,7 @@ body.eye-open #gate-plate{opacity:0;}
 
   /* 방명록 — 댓글 단추는 ♪ 옆, 헤드라인은 맨 아래 */
   #cm-btn{left:calc(50% + 8px);bottom:calc(40% - 3.6rem);}
-  #gb-compose{right:0.8rem;left:0.8rem;width:auto;transform:none;bottom:calc(40% - 3.6rem + 44px);}
+  #gb-compose{right:0.8rem;left:0.8rem;width:auto;transform:none;top:calc(60% + 3.6rem + 10px);bottom:auto;}
   #gb-body,#gb-nick{font-size:16px;}              /* iOS 자동 확대 방지 */
   #gb-ticker{height:30px;bottom:env(safe-area-inset-bottom,0px);}
   .gbt-item{font-size:0.72rem;}
