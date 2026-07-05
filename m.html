@@ -2805,7 +2805,13 @@ function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;
 function refreshRecentVisible(){
   var box=document.getElementById('recent-lines');
   if(!box) return;
-  var atHome=(viewMode==='timeline' && !panelBook && document.body.classList.contains('eye-open'));
+  // 메인 화면(별밭 전체뷰)이면 언제나 보인다.
+  // viewMode는 timeline(첫 진입) 또는 zoom-out(별밭으로 돌아온 뒤)일 때 모두 '홈'.
+  // 성단 안(cluster/zoom-in)·패널 열림·유성 비행 중일 때만 감춘다.
+  var flying=!!(window._nav && window._nav.flying);
+  var homeMode=(viewMode==='timeline' || viewMode==='zoom-out');
+  var atHome=homeMode && !panelBook && !flying
+             && document.body.classList.contains('eye-open');
   box.classList.toggle('show', atHome && box.children.length>0);
 }
 // 문장을 새로 저장하면 목록도 곧바로 갱신되도록 saveNow에서 부를 훅
