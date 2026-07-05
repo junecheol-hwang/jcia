@@ -1511,17 +1511,56 @@ window.flyTo=function(book,onArrive){
   nav.dragging=false; nav.onArrive=onArrive||null;
 };
 
-fetch('books.json')
-  .then(r=>r.json())
-  .then(data=>{
-    booksData = data;
-    BOOKS = data.books;
-    assignStarColors();
-    buildBookStars();
-    dataReady = true;
-    if(window._refreshRecentBooks) window._refreshRecentBooks();   // 새로 달린 별 목록
-  })
-  .catch(err=>console.error('books.json 로드 실패:', err));
+// ── 별 불러오기 — 구름(Supabase) 우선, 종이(books.json) 폴백 ──
+function _isoToDMY(iso){
+  if(!iso) return '';
+  var m=String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? (m[3]+'/'+m[2]+'/'+m[1]) : String(iso);
+}
+function _rowToBook(r){
+  var ph=PHASES[(r.phase||1)-1]||PHASES[0];
+  return { id:r.id, title:r.title, author:r.author||'', publisher:r.publisher||'',
+           phase:r.phase, phase_name:ph.name, subtitle:ph.desc, added:_isoToDMY(r.added) };
+}
+function _applyBooks(list, source){
+  BOOKS=list;
+  booksData={
+    meta:{ total:BOOKS.length, source:source },
+    phases:PHASES.map(function(p){
+      return { id:p.id, name:p.name, desc:p.desc,
+               count:BOOKS.filter(function(b){return b.phase===p.id;}).length };
+    }),
+    books:BOOKS
+  };
+  assignStarColors();
+  buildBookStars();
+  dataReady = true;
+  if(window._refreshRecentBooks) window._refreshRecentBooks();   // 새로 달린 별 목록
+}
+(async function loadBooks(){
+  // 1) 구름에서
+  try{
+    if(typeof window.sb==='undefined')
+      await new Promise(function(res){ window.addEventListener('sb-ready',res,{once:true}); });
+    if(window.sb){
+      var q=await window.sb.from('books')
+        .select('id,title,author,publisher,phase,added')
+        .order('id',{ascending:true});
+      if(!q.error && q.data && q.data.length){
+        _applyBooks(q.data.map(_rowToBook),'cloud');
+        console.log('[books] 구름에서 별 '+q.data.length+'개');
+        return;
+      }
+      if(q.error) console.warn('[books] 구름 로드 실패 — books.json 폴백:', q.error);
+      else console.warn('[books] 구름이 비어 있음(이주 전?) — books.json 폴백');
+    }
+  }catch(e){ console.warn('[books] 구름 로드 예외 — books.json 폴백:', e); }
+  // 2) 종이에서 (폴백 — 구름이 닿지 않을 때의 안전망)
+  fetch('books.json')
+    .then(r=>r.json())
+    .then(function(data){ _applyBooks(data.books,'file'); })
+    .catch(err=>console.error('books.json 로드 실패:', err));
+})();
 
 // ── 상태 ──────────────────────────────────────────────
 const tlCanvas=document.getElementById('tl-canvas');
@@ -2907,25 +2946,91 @@ window._refreshRecentLines=function(){ clearTimeout(_recentTimer); _recentTimer=
 setTimeout(loadRecentLines, 1400);
 setInterval(refreshRecentVisible, 600);
 
-// ── 새 책 더하기 → books.json 내려받기 ──────────────────
-function addBook(title,author,publisher,phase){
-  if(!booksData) return null;
-  var maxId=BOOKS.reduce(function(m,b){return Math.max(m,b.id);},0);
+// ── 새 별 더하기 — 구름(Supabase)에 곧바로 저장 ──────────
+async function addBook(title,author,publisher,phase){
+  if(!booksData) return {ok:false, reason:'not-ready'};
+  if(!window.sb)  return {ok:false, reason:'no-client'};
+  if(!currentUser) return {ok:false, reason:'not-logged-in'};
   var ph=PHASES[phase-1];
   var d=new Date(), dd=String(d.getDate()).padStart(2,'0'), mm=String(d.getMonth()+1).padStart(2,'0');
-  var nb={id:maxId+1, title:title, author:author, publisher:publisher,
-          phase:phase, phase_name:ph.name, subtitle:ph.desc,
-          added:dd+'/'+mm+'/'+d.getFullYear()};   // 별이 달린 날 — dd/mm/yyyy
-  BOOKS.push(nb);
-  booksData.books=BOOKS;
-  if(booksData.meta) booksData.meta.total=BOOKS.length;
-  if(booksData.phases){
-    var pp=booksData.phases.filter(function(p){return p.id===phase;})[0];
-    if(pp) pp.count=(pp.count||0)+1;
+  var maxId=BOOKS.reduce(function(m,b){return Math.max(m,b.id);},0);
+  // 번호 충돌(동시 추가) 대비 — 세 번까지 다음 번호로 재시도
+  for(var attempt=0; attempt<3; attempt++){
+    var newId=maxId+1+attempt;
+    var row={ id:newId, user_id:currentUser.id, title:title,
+              author:author||null, publisher:publisher||null,
+              phase:phase, added:d.toISOString().slice(0,10) };
+    var q=await window.sb.from('books').insert(row).select('id');
+    if(!q.error && q.data && q.data.length){
+      var nb={id:newId, title:title, author:author, publisher:publisher,
+              phase:phase, phase_name:ph.name, subtitle:ph.desc,
+              added:dd+'/'+mm+'/'+d.getFullYear()};   // 별이 달린 날 — dd/mm/yyyy
+      BOOKS.push(nb);
+      booksData.books=BOOKS;
+      if(booksData.meta) booksData.meta.total=BOOKS.length;
+      if(booksData.phases){
+        var pp=booksData.phases.filter(function(p){return p.id===phase;})[0];
+        if(pp) pp.count=(pp.count||0)+1;
+      }
+      assignStarColors();
+      respawnBookStars();               // 새로고침 없이, 그 자리에서 별이 태어난다
+      return {ok:true, book:nb};
+    }
+    if(q.error && q.error.code==='23505') continue;   // 번호가 선점됨 — 다음 번호로
+    if(q.error){ console.error('[addBook]', q.error); return {ok:false, reason:'error', error:q.error}; }
+    // error도 data도 없음 — RLS가 조용히 막은 경우
+    return {ok:false, reason:'rls-blocked'};
   }
-  assignStarColors();
-  return nb;
+  return {ok:false, reason:'conflict'};
 }
+// ── 별의 탄생 — 하늘 전체를 다시 짓지 않고 좌표만 갈아끼운다 ──
+function respawnBookStars(){
+  var THREE=window.THREE, pts=window._bookPts;
+  if(!THREE || !pts) return;
+  var n=BOOKS.length;
+  var positions=new Float32Array(n*3), bcolors=new Float32Array(n*3), bsizes=new Float32Array(n);
+  BOOKS.forEach(function(b,i){
+    var p=b._p3||seedPos3D(b.id);
+    b._p3=p; b._starIdx=i;
+    positions[i*3]=p.x; positions[i*3+1]=p.y; positions[i*3+2]=p.z;
+    var c=b._starColor||{r:0.92,g:0.95,b:1};
+    bcolors[i*3]=c.r; bcolors[i*3+1]=c.g; bcolors[i*3+2]=c.b;
+    bsizes[i]=2.0 + seededRand(b.id*17+3)()*1.7;
+  });
+  var g=new THREE.BufferGeometry();
+  g.setAttribute('position',   new THREE.BufferAttribute(positions,3));
+  g.setAttribute('customColor',new THREE.BufferAttribute(bcolors,3));
+  g.setAttribute('size',       new THREE.BufferAttribute(bsizes,1));
+  var old=pts.geometry; pts.geometry=g;
+  if(old && old.dispose) old.dispose();
+}
+// ── 내 우주 내려받기 — 별(책)과 이 계정의 모든 기록을 하나의 JSON으로 ──
+async function exportUniverse(){
+  var clean=BOOKS.map(function(b){
+    var o={}; for(var k in b){ if(k.charAt(0)!=='_') o[k]=b[k]; } return o;
+  });
+  var out={ app:'jcia — 도반의 여정',
+            exported_at:new Date().toISOString(),
+            meta:{ total:clean.length },
+            phases:(booksData && booksData.phases)||null,
+            books:clean,
+            notes:null };
+  if(window.sb && currentUser){
+    try{
+      var q=await window.sb.from('books_notes').select('*').eq('user_id',currentUser.id);
+      if(!q.error) out.notes=q.data;
+      else console.warn('[export] 기록 불러오기 실패:', q.error);
+    }catch(e){ console.warn('[export] 예외:', e); }
+  }
+  var blob=new Blob([JSON.stringify(out,null,2)],{type:'application/json'});
+  var d=new Date();
+  var stamp=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  var u=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=u; a.download='jcia_universe_'+stamp+'.json';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); setTimeout(function(){URL.revokeObjectURL(u);},1000);
+}
+window.exportUniverse=exportUniverse;
 function downloadBooksJson(){
   if(!booksData) return;
   var blob=new Blob([JSON.stringify(booksData,null,2)],{type:'application/json'});
@@ -3318,23 +3423,36 @@ whenSB(bumpSite);
       +'<select class="bs-af-in" id="bs-af-phase">'+phOpts+'</select>'
       +'<button class="bs-af-btn" id="bs-af-add">\uff0b 별밭에 더하기</button>'
       +'<div class="bs-af-done" id="bs-af-done"></div>'
-      +'<button class="bs-af-dl" id="bs-af-dl">books.json 내려받기</button>'
-      +'<div class="bs-af-note">내려받은 books.json을 GitHub에 올리면 영구히 반영돼요. 더한 책은 새로고침 뒤 별밭에 나타납니다.</div>'
+      +'<button class="bs-af-dl" id="bs-af-dl">내 우주 내려받기</button>'
+      +'<div class="bs-af-note">별은 이제 구름에 곧바로 저장돼요 — 새로고침 없이 그 자리에서 태어납니다. 내려받기는 별과 모든 기록을 JSON 하나로 간직하는 기능입니다.</div>'
       +'</div>';
     results.classList.add('open');
     const ti=document.getElementById('bs-af-title'); ti.value=title||'';
-    document.getElementById('bs-af-add').addEventListener('click',()=>{
+    document.getElementById('bs-af-add').addEventListener('click',async ()=>{
       const t=ti.value.trim(), au=document.getElementById('bs-af-author').value.trim(),
             pu=document.getElementById('bs-af-pub').value.trim(), ph=+document.getElementById('bs-af-phase').value;
       if(!t){ ti.focus(); return; }
-      const nb=addBook(t,au,pu,ph);
-      if(nb){
+      const doneEl=document.getElementById('bs-af-done');
+      const btn=document.getElementById('bs-af-add');
+      btn.disabled=true; doneEl.textContent='별을 다는 중\u2026';
+      const res=await addBook(t,au,pu,ph);
+      btn.disabled=false;
+      if(res.ok){
+        const nb=res.book;
         if(window._refreshRecentBooks) window._refreshRecentBooks();   // 새 별이 목록 맨 위로
-        document.getElementById('bs-af-done').textContent='\u2018'+nb.title+'\u2019 더해졌어요 (#'+nb.id+'). 내려받아 GitHub에 올리면 영구 반영됩니다.';
+        doneEl.textContent='\u2018'+nb.title+'\u2019 \uff03'+nb.id+' \u2014 구름에 저장되어 별밭에 떠올랐어요.';
         ti.value=''; document.getElementById('bs-af-author').value=''; document.getElementById('bs-af-pub').value=''; ti.focus();
+      } else if(res.reason==='not-logged-in'){
+        doneEl.textContent='별을 달려면 먼저 문을 여세요 (로그인).';
+        if(typeof showAuthHint==='function') showAuthHint();
+      } else if(res.reason==='rls-blocked'){
+        doneEl.textContent='구름이 별을 받지 않았어요 \u2014 RLS 정책을 확인해 주세요.';
+      } else {
+        doneEl.textContent='저장하지 못했어요 \u2014 잠시 후 다시 시도해 주세요.';
+        console.error('[bs-af-add]', res);
       }
     });
-    document.getElementById('bs-af-dl').addEventListener('click',downloadBooksJson);
+    document.getElementById('bs-af-dl').addEventListener('click',exportUniverse);
     ti.focus();
   }
   function render(list,isSuggest){
