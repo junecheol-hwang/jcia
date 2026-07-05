@@ -2806,12 +2806,13 @@ function refreshRecentVisible(){
   var box=document.getElementById('recent-lines');
   if(!box) return;
   // 메인 화면(별밭 전체뷰)이면 언제나 보인다.
-  // viewMode는 timeline(첫 진입) 또는 zoom-out(별밭으로 돌아온 뒤)일 때 모두 '홈'.
-  // 성단 안(cluster/zoom-in)·패널 열림·유성 비행 중일 때만 감춘다.
+  // 주의: body의 eye-open은 대문 연출 3초 뒤 GPU 정리를 위해 제거되므로 기준으로 쓰면 안 됨.
+  // 대문이 열렸다는 영구 표식은 #gate의 'gone' 클래스 (한 번 붙으면 안 사라짐).
+  var g=document.getElementById('gate');
+  var gateOpen=(!g) || g.classList.contains('gone') || document.body.classList.contains('eye-open');
   var flying=!!(window._nav && window._nav.flying);
   var homeMode=(viewMode==='timeline' || viewMode==='zoom-out');
-  var atHome=homeMode && !panelBook && !flying
-             && document.body.classList.contains('eye-open');
+  var atHome=homeMode && !panelBook && !flying && gateOpen;
   box.classList.toggle('show', atHome && box.children.length>0);
 }
 // 문장을 새로 저장하면 목록도 곧바로 갱신되도록 saveNow에서 부를 훅
