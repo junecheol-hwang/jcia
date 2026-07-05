@@ -2794,6 +2794,7 @@ function renderRecentLines(items){
                 +'<span class="rl-snip">'+esc(it.snip)+'</span>';
     el.addEventListener('click',function(ev){
       ev.stopPropagation();                        // 배경(캔버스)으로 클릭이 새지 않게
+      window._pendingLinesFor=it.book.id;          // 도착하면 '마음속의 문장' 서랍이 곧장 열리도록
       if(window.selectBook) window.selectBook(it.book);  // 검색과 '동일한' 유성 비행 + 패널 오픈
     });
     box.appendChild(el);
@@ -2860,6 +2861,10 @@ async function openPanel(book){
   bumpView(book);                                // 열람 횟수 +1 (로그인 무관)
   hideCalli();                                   // 이전 별의 글씨는 스러짐
   renderLists(book); renderDial(book); renderCalli(book); renderEssayMark(book);   // 우선 로컬(기존) 렌더
+  // 최근문장 목록에서 온 방문이면 — 마음속의 문장 서랍을 곧장 펼친다
+  // (표식은 어떤 별을 열든 소모: 도중에 다른 별로 새면 낡은 표식이 남지 않도록)
+  var _pl=window._pendingLinesFor; window._pendingLinesFor=null;
+  if(_pl===book.id && window._drawerOpen) window._drawerOpen('lines');
   const local=ensureData(book);
   if(local.calligraphy) showCalli(local.calligraphy);       // 로컬에 이미 있으면 즉시 띄움
   const remote=await loadBook(book.id);          // 그 책의 저장된 노트 불러오기
@@ -3446,6 +3451,7 @@ whenSB(bumpSite);
   function openD(sec){ cur=sec; show(sec); body.classList.add('open'); }
   function closeD(){ cur=null; show(null); body.classList.remove('open'); }
   window._drawerClose=closeD;              // 빈 하늘 클릭이 서랍만 접을 수 있게
+  window._drawerOpen=openD;                // 최근문장 목록 클릭 → 도착 시 문장 서랍 자동 펼침용
   strip.addEventListener('click',function(e){
     var b=e.target.closest('button'); if(!b) return;
     if(!panelBook) return;                       // 잠김 — 별을 먼저
