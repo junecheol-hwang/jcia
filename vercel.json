@@ -1,0 +1,7 @@
+{
+  "cleanUrls": true,
+  "redirects": [
+    { "source": "/m.html", "destination": "/", "permanent": false },
+    { "source": "/timeline_3d.html", "destination": "/", "permanent": false }
+  ]
+}

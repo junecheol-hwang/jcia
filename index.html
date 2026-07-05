@@ -1,0 +1,3581 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<!-- 앱 옷 — 홈 화면에 추가하면 전체화면 앱으로 열림 -->
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#060912">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<!-- 브라우저 탭 파비콘 — 순청자 인장 (인라인 data URI, 별도 파일 불필요) -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240'%3E%3Crect x='14' y='14' width='212' height='212' rx='40' fill='%23C25E3F'/%3E%3Ccircle cx='120' cy='120' r='60' fill='none' stroke='%23FFFFFF' stroke-width='9' opacity='0.95'/%3E%3Ccircle cx='120' cy='60' r='15' fill='%23FFFFFF'/%3E%3Ccircle cx='120' cy='180' r='15' fill='%23FFFFFF'/%3E%3Ccircle cx='120' cy='120' r='19' fill='%23FFFFFF'/%3E%3Ccircle cx='120' cy='120' r='8' fill='%23C25E3F'/%3E%3C/svg%3E">
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" type="image/png" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="도반의 여정">
+<title>Timeline — 도반의 여정</title>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Song+Myung&family=Cardo:ital@0;1&family=Noto+Serif+KR:wght@400;500&family=Cormorant:ital,wght@0,400;0,600;1,400&family=EB+Garamond:wght@400;500&family=Unbounded:wght@400&display=swap" rel="stylesheet">
+<script type="importmap">
+  { "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+      "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2"
+  }}
+</script>
+<script>
+  // [모바일] 터치 기기 여부를 일찍 판정 — 항법·렌더가 처음부터 참조
+  window._MOBILE = (matchMedia('(pointer:coarse)').matches) || innerWidth<=820;
+  // 아무것도 안 할 때 우주가 아주 천천히 도는 명상적 회전 (멀미 시 false 로)
+  window._AMBIENT_SPIN = true;
+</script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --gray-light:#C8C5BE; --gray-mid:#A09D96; --gray-dark:#6E6C66;
+  --orange-pale:#F2E0C8; --orange-faded:#D9A96E; --orange-worn:#B87D3E;
+  --orange-deep:#8C5A20; --orange-dark:#5E3A10;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:none;}
+#three-container{position:fixed;inset:0;z-index:1;}
+#ui-layer{position:fixed;inset:0;z-index:10;pointer-events:none;animation:uiFadeIn 2.5s ease forwards;}
+@keyframes uiFadeIn{from{opacity:0}to{opacity:1}}
+
+/* 타임라인 헤더 */
+#header{
+  position:fixed;left:3rem;bottom:9.2rem;z-index:30;
+  pointer-events:none;
+}
+#header-subtitle{
+  font-family:'Song Myung','Noto Serif KR',serif;font-weight:400;
+  font-size:0.84rem;color:var(--orange-faded);letter-spacing:0.18em;
+}
+#header-title{
+  font-family:'Song Myung','Noto Serif KR',serif;font-weight:400;
+  font-size:1.02rem;color:var(--gray-light);letter-spacing:0.1em;
+  line-height:1.5;margin-top:2px;
+}
+
+/* 성단 헤더 */
+/* 문패 — 상단 서랍의 머리 (좌: 별똥별 · 우: 책이름/작가/출판사) */
+#book-panel{display:none;}                 /* 옛 카드 껍데기 — JS 호환용 */
+#bp-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:1.2rem;
+  margin:0 0 1rem;padding-bottom:0.75rem;
+  border-bottom:0.5px solid rgba(217,169,110,0.16);
+  font-family:'Gowun Batang',serif;
+}
+#bp-views{flex:none;padding-top:3px;
+  font-size:0.7rem;color:var(--orange-worn);letter-spacing:0.08em;opacity:0.9;}
+#bp-titlebox{flex:1;min-width:0;text-align:right;}
+#bp-title{
+  font-family:'Song Myung','Noto Serif KR',serif;font-weight:400;
+  font-size:0.98rem;color:var(--orange-pale);letter-spacing:0.04em;line-height:1.45;
+}
+#bp-author{font-size:0.7rem;color:var(--gray-mid);letter-spacing:0.06em;margin-top:0.3rem;}
+#comet-slot{display:flex;align-items:baseline;gap:10px;}
+.comet{
+  display:none;white-space:nowrap;
+  font-family:'Gowun Batang',serif;font-size:0.62rem;color:var(--gray-mid);
+  letter-spacing:0.12em;pointer-events:none;
+}
+.comet b{font-weight:600;color:var(--orange-pale);letter-spacing:0.03em;
+  font-variant-numeric:tabular-nums;text-shadow:0 0 6px rgba(217,169,110,0.3);}
+.comet.show{display:block;}
+/* ── 상단 서랍 다섯 — 선택된 별의 것 ── */
+#drawer-icons{
+  position:fixed;top:0.95rem;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:1.7rem;z-index:46;
+}
+#drawer-icons button{
+  background:none;border:none;cursor:pointer;padding:5px 7px;
+  font-family:'Song Myung','Noto Serif KR',serif;font-size:1.02rem;letter-spacing:0.02em;
+  color:var(--orange-faded);opacity:0.72;
+  transition:opacity 0.3s,color 0.3s;-webkit-tap-highlight-color:transparent;
+}
+#drawer-icons button:hover,#drawer-icons button.on{opacity:1;color:var(--orange-pale);}
+#drawer-icons button svg{width:17px;height:17px;display:block;}
+#drawer-icons.locked button{opacity:0.16;pointer-events:none;}
+#bp-body{
+  position:fixed;top:0;left:50%;z-index:45;
+  width:min(600px,92vw);
+  transform:translate(-50%,-108%);
+  transition:transform 0.5s cubic-bezier(.22,.61,.36,1);
+  background:rgba(6,9,18,0.6);                                /* 투명 60% */
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:0.5px solid rgba(217,169,110,0.22);border-top:none;
+  border-radius:0 0 14px 14px;
+  padding:3.6rem 1.5rem 1.3rem;
+  max-height:70vh;overflow-y:auto;
+}
+#bp-body.open{transform:translate(-50%,0);}
+#bp-body .bp-section{display:none;}
+#bp-body .bp-section.active{display:block;}
+#bp-body::-webkit-scrollbar{width:5px;}
+#bp-body::-webkit-scrollbar-thumb{background:rgba(110,108,102,0.3);border-radius:3px;}
+.bp-section{margin-bottom:1.1rem;}
+.bp-section:last-child{margin-bottom:0;}
+.bp-label{font-family:'Song Myung','Noto Serif KR',serif;font-size:0.73rem;color:var(--orange-pale);letter-spacing:0.05em;margin-bottom:0.55rem;text-shadow:0 0 6px rgba(217,169,110,0.28);}
+.bp-add{display:flex;gap:6px;}
+.bp-input{
+  flex:1;background:rgba(255,255,255,0.03);
+  border:0.5px solid rgba(110,108,102,0.35);border-radius:2px;
+  padding:0.4rem 0.55rem;color:var(--gray-light);
+  font-size:0.74rem;font-weight:300;outline:none;
+}
+.bp-input:focus{border-color:rgba(217,169,110,0.6);}
+.bp-input::placeholder{color:rgba(110,108,102,0.7);}
+.bp-btn{
+  flex:none;width:28px;background:rgba(217,169,110,0.12);
+  border:0.5px solid rgba(217,169,110,0.4);border-radius:2px;
+  color:var(--orange-pale);font-size:0.9rem;cursor:pointer;transition:background 0.15s;
+}
+.bp-btn:hover{background:rgba(217,169,110,0.22);}
+.bp-list{margin-top:0.5rem;}
+.bp-item{
+  display:flex;align-items:flex-start;gap:6px;
+  font-size:0.79rem;color:var(--gray-light);line-height:1.55;letter-spacing:0.01em;
+  padding:0.28rem 0;border-bottom:0.5px solid rgba(110,108,102,0.12);
+}
+.bp-item:last-child{border-bottom:none;}
+.bp-item a{color:var(--gray-light);text-decoration:none;border-bottom:0.5px dotted rgba(110,108,102,0.5);}
+.bp-item a:hover{color:var(--orange-pale);}
+.bp-item-text{flex:1;word-break:break-word;}
+.bp-del{flex:none;cursor:pointer;color:rgba(110,108,102,0.6);font-size:0.85rem;line-height:1;padding:0 2px;}
+.bp-del:hover{color:var(--orange-worn);}
+/* 유튜브 카드 (음악) */
+.bp-yt{align-items:center;}
+.bp-yt-link{display:flex;align-items:center;gap:8px;flex:1;min-width:0;border-bottom:none!important;}
+.bp-yt-thumb{width:54px;height:30px;object-fit:cover;border-radius:2px;flex:none;opacity:0.88;background:rgba(110,108,102,0.15);transition:opacity 0.3s;}
+.bp-yt-link:hover .bp-yt-thumb{opacity:1;}
+.bp-yt-title{flex:1;min-width:0;color:var(--gray-light);font-size:0.72rem;line-height:1.35;
+  overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.bp-yt-title.loading{color:var(--gray-dark);font-style:italic;}
+.bp-yt-link:hover .bp-yt-title{color:var(--orange-pale);}
+/* 붓글씨 — 하늘 글로우 레이어 (다: 패널과 함께 떴다 닫으면 스러짐) */
+#calli-sky{
+  position:fixed;top:0;left:0;width:62vw;height:100vh;z-index:30;
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:none;opacity:0;transition:opacity 1.3s ease;
+}
+#calli-sky.show{opacity:1;}
+#calli-img{
+  max-width:44%;max-height:54vh;object-fit:contain;
+  filter:drop-shadow(0 0 5px #ffe6a8) drop-shadow(0 0 15px #ffd98a) drop-shadow(0 0 34px rgba(255,200,110,0.55));
+}
+/* 대문 천문 — 문은 상단 원자 로고에 숨어 있음: 투명한 원(#brand-door), 커서도 바뀌지 않음 */
+#brand-door{position:absolute;left:-6px;top:50%;transform:translateY(-50%);
+  width:40px;height:40px;border-radius:50%;pointer-events:auto;
+  background:transparent;-webkit-tap-highlight-color:transparent;}
+#home-calli-edit{position:fixed;right:3rem;top:3.4rem;z-index:48;width:232px;
+  background:rgba(18,17,15,0.93);border:1px solid rgba(217,169,110,0.28);border-radius:10px;
+  padding:13px 14px;box-shadow:0 8px 30px rgba(0,0,0,0.5);
+  font-family:'Gowun Batang',serif;color:var(--gray-light);display:none;}
+#home-calli-edit.open{display:block;}
+#home-calli-edit .hc-title{font-size:0.78rem;color:var(--orange-faded);margin:0 0 9px;letter-spacing:0.05em;}
+#home-calli-edit .hc-prev{min-height:60px;display:flex;align-items:center;justify-content:center;margin-bottom:9px;}
+#home-calli-edit .hc-prev canvas,#home-calli-edit .hc-prev img{max-width:60%;max-height:90px;object-fit:contain;}
+#home-calli-edit .hc-ctrl{display:flex;align-items:center;gap:8px;font-size:0.68rem;color:var(--gray-mid);margin:5px 0;}
+#home-calli-edit .hc-ctrl span{width:26px;flex:none;}
+#home-calli-edit .hc-ctrl input[type=range]{flex:1;accent-color:var(--orange-faded);}
+#home-calli-edit .hc-sws{display:grid;grid-template-columns:repeat(6,20px);gap:8px 9px;margin:9px 0;justify-content:start;}
+#home-calli-edit .hc-sw{width:20px;height:20px;border-radius:0;border:1px solid rgba(255,255,255,0.25);cursor:pointer;padding:0;}
+#home-calli-edit .hc-sw.on{outline:2px solid var(--orange-faded);outline-offset:1px;}
+#home-calli-edit .hc-row{display:flex;gap:7px;margin-top:10px;}
+#home-calli-edit .hc-row button{flex:1;font-family:'Gowun Batang',serif;font-size:0.72rem;padding:6px 0;
+  background:none;border:1px solid rgba(217,169,110,0.4);border-radius:6px;color:var(--orange-faded);cursor:pointer;transition:background 0.2s;}
+#home-calli-edit .hc-row button:hover{background:rgba(217,169,110,0.12);}
+#home-calli-edit .hc-row button.primary{background:rgba(217,169,110,0.18);color:var(--orange-pale);}
+#home-calli-edit .hc-empty{font-size:0.68rem;color:var(--gray-dark);line-height:1.5;margin:0 0 4px;}
+/* 붓글씨 — 패널 업로드 UI */
+.bp-calli-empty{font-size:0.7rem;color:var(--gray-dark);line-height:1.5;}
+.bp-calli-up{display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-size:0.7rem;
+  color:var(--orange-worn);border:0.5px solid rgba(217,169,110,0.4);border-radius:3px;padding:4px 9px;transition:border-color 0.2s;}
+.bp-calli-up:hover{border-color:rgba(217,169,110,0.7);}
+.bp-calli-prev{margin-top:7px;background:#070b18;border-radius:4px;padding:10px;display:flex;align-items:center;justify-content:center;min-height:74px;}
+.bp-calli-prev img,.bp-calli-prev canvas{max-width:100%;max-height:120px;object-fit:contain;}
+.bp-calli-sws{display:flex;gap:8px;margin-top:9px;justify-content:center;}
+.bp-calli-sw{width:19px;height:19px;border-radius:50%;border:1px solid rgba(110,108,102,0.45);cursor:pointer;padding:0;transition:box-shadow 0.2s,border-color 0.2s;}
+.bp-calli-sw.on{border-color:var(--gray-light);box-shadow:0 0 0 1.5px var(--gray-light);}
+/* 글쓰기 — 상단에서 내려오는 에디터 */
+#essay-pen{position:absolute;left:-48px;top:50%;transform:translateY(-50%);
+  width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;opacity:0.55;transition:opacity 0.3s;color:var(--orange-faded);
+  -webkit-tap-highlight-color:transparent;}
+#essay-pen:hover{opacity:1;}
+#essay-editor{position:fixed;top:0;right:0;left:auto;transform:translateX(102%);
+  width:33.4vw;min-width:340px;height:100vh;max-height:none;z-index:60;display:flex;flex-direction:column;
+  background:rgba(6,9,18,0.6);backdrop-filter:blur(18px) saturate(1.15);-webkit-backdrop-filter:blur(18px) saturate(1.15);
+  border:0.5px solid rgba(217,169,110,0.3);border-right:none;border-radius:14px 0 0 14px;
+  box-shadow:-14px 0 50px rgba(0,0,0,0.45);
+  transition:transform 0.55s cubic-bezier(.22,.61,.36,1);font-family:'Gowun Batang',serif;}
+#essay-editor.open{transform:translateX(0);}
+#essay-tools{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:11px 15px;
+  border-bottom:0.5px solid rgba(110,108,102,0.22);}
+#essay-tools select,#essay-tools button{background:rgba(255,255,255,0.04);
+  border:0.5px solid rgba(110,108,102,0.4);border-radius:3px;color:var(--gray-light);
+  font-size:0.72rem;padding:4px 8px;cursor:pointer;font-family:inherit;transition:border-color 0.15s;line-height:1;}
+#essay-tools button:hover,#essay-tools select:hover{border-color:rgba(217,169,110,0.6);}
+#essay-tools button.act{min-width:26px;}
+#essay-tools .sep{width:1px;height:15px;background:rgba(110,108,102,0.3);margin:0 2px;}
+.essay-sw{width:17px;height:17px;border-radius:50%;border:1px solid rgba(110,108,102,0.45);cursor:pointer;padding:0;}
+#essay-body{flex:1;overflow-y:auto;padding:20px 24px;min-height:230px;
+  color:var(--gray-light);font-size:0.96rem;line-height:1.95;outline:none;word-break:break-word;}
+#essay-body:empty:before{content:attr(data-ph);color:var(--gray-dark);}
+#essay-foot{display:flex;justify-content:space-between;align-items:center;
+  padding:11px 15px;border-top:0.5px solid rgba(110,108,102,0.22);}
+#essay-pub{display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--gray-mid);cursor:pointer;}
+#essay-status{font-size:0.66rem;color:var(--gray-dark);margin-left:10px;}
+.essay-acts{display:flex;gap:7px;}
+.essay-acts button{background:transparent;border:0.5px solid rgba(110,108,102,0.4);
+  border-radius:3px;color:var(--gray-mid);font-size:0.74rem;padding:5px 13px;cursor:pointer;
+  font-family:inherit;transition:border-color 0.15s;}
+.essay-acts button#essay-save{border-color:rgba(217,169,110,0.5);color:var(--orange-pale);}
+.essay-acts button:hover{border-color:rgba(217,169,110,0.7);}
+#essay-pen.pulse{animation:essayPulse 2.2s ease-in-out infinite;color:var(--orange-pale);}
+@keyframes essayPulse{0%,100%{opacity:0.35;}50%{opacity:1;}}
+.bp-calli-ctrl{display:flex;align-items:center;gap:7px;margin-top:7px;}
+.bp-calli-ctrl span{font-size:0.62rem;color:var(--gray-dark);white-space:nowrap;}
+.bp-calli-ctrl input[type=range]{flex:1;}
+.bp-calli-row{display:flex;gap:7px;margin-top:8px;}
+.bp-calli-row button{flex:none;cursor:pointer;font-size:0.66rem;border-radius:3px;padding:4px 11px;
+  background:transparent;border:0.5px solid rgba(110,108,102,0.4);color:var(--gray-mid);transition:all 0.2s;}
+.bp-calli-row button.primary{border-color:rgba(217,169,110,0.5);color:var(--orange-worn);}
+.bp-calli-row button:hover{border-color:rgba(217,169,110,0.7);}
+
+/* 문장 다이얼 — 가운데 또렷, 위아래 페이드+축소 */
+#bp-dial{
+  position:relative;height:168px;margin-top:0.6rem;
+  overflow-y:auto;overflow-x:hidden;
+  -ms-overflow-style:none;scrollbar-width:none;
+  -webkit-mask-image:linear-gradient(to bottom,transparent,#000 24%,#000 76%,transparent);
+          mask-image:linear-gradient(to bottom,transparent,#000 24%,#000 76%,transparent);
+}
+#bp-dial::-webkit-scrollbar{display:none;}
+#bp-dial-track{padding:64px 0;}
+.bp-line{
+  font-family:'Gowun Batang',serif;font-weight:300;
+  font-size:0.84rem;line-height:1.6;color:var(--gray-light);
+  text-align:center;padding:0.45rem 0.5rem;position:relative;
+  transition:opacity 0.1s,transform 0.1s,filter 0.1s;transform-origin:center;
+}
+.bp-line .bp-line-del{
+  position:absolute;right:-2px;top:50%;transform:translateY(-50%);
+  opacity:0;cursor:pointer;color:rgba(110,108,102,0.7);font-size:0.8rem;transition:opacity 0.15s;
+}
+.bp-line:hover .bp-line-del{opacity:1;}
+.bp-line .bp-line-edit-btn{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  opacity:0;cursor:pointer;color:rgba(110,108,102,0.7);font-size:0.72rem;transition:opacity 0.15s;
+}
+.bp-line:hover .bp-line-edit-btn{opacity:1;}
+.bp-line.bp-line-editing{opacity:1!important;transform:none!important;filter:none!important;display:flex;align-items:center;gap:6px;justify-content:center;}
+.bp-line-edit-input{
+  flex:1;background:rgba(255,255,255,0.04);border:0.5px solid rgba(217,169,110,0.5);border-radius:2px;
+  padding:0.3rem 0.5rem;color:var(--gray-light);font-family:'Gowun Batang',serif;font-size:0.82rem;outline:none;text-align:center;
+}
+.bp-line-save,.bp-line-cancel{flex:none;cursor:pointer;font-size:0.8rem;padding:0 3px;}
+.bp-line-save{color:var(--orange-pale);}
+.bp-line-cancel{color:rgba(110,108,102,0.8);}
+#bp-line-count{text-align:center;font-size:0.6rem;color:var(--gray-dark);letter-spacing:0.1em;margin-top:0.5rem;}
+
+/* 로그인(magic link) — 좌측 하단, 책 검색창 바로 위 · 클로드 주황 */
+#auth-box{
+  position:fixed;left:3rem;bottom:2.4rem;z-index:45;text-align:left;   /* 검색창 아래 */
+  display:flex;flex-direction:column;gap:4px;align-items:flex-start;
+}
+#auth-box::before{content:'';width:190px;height:1px;margin-bottom:3px;
+  background:linear-gradient(90deg,rgba(217,119,87,0.55),transparent);}   /* 낙관의 주황선 */
+#auth-line{display:flex;align-items:baseline;justify-content:flex-start;gap:11px;
+  flex-wrap:wrap;
+  font-family:'Gowun Batang',sans-serif;pointer-events:auto;
+}
+#auth-box.flash{animation:authflash 1.6s;}
+@keyframes authflash{0%,100%{opacity:1}30%{opacity:0.3}}
+#auth-status{display:none;font-family:'Cardo','Gowun Batang',serif;
+  font-size:0.62rem;color:var(--gray-mid);letter-spacing:0.07em;text-decoration:none;border-bottom:none;}
+#auth-status::before{content:'';display:inline-block;width:4px;height:4px;border-radius:50%;
+  background:#D97757;margin-right:6px;vertical-align:1.5px;}   /* 로그인됨 — 주황 점 */
+#auth-login{display:flex;gap:6px;align-items:center;justify-content:flex-start;}
+#auth-email{
+  background:rgba(2,5,10,0.7);border:0.5px solid rgba(217,119,87,0.4);border-radius:2px;
+  padding:0.4rem 0.6rem;width:150px;color:var(--gray-light);
+  font-size:0.72rem;font-weight:300;outline:none;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+}
+#auth-email:focus{border-color:rgba(217,119,87,0.8);}
+#auth-email::placeholder{color:rgba(110,108,102,0.75);}
+#auth-send{
+  width:28px;height:28px;flex:none;
+  background:rgba(217,119,87,0.14);border:0.5px solid rgba(217,119,87,0.5);border-radius:2px;
+  color:#E8A38C;cursor:pointer;font-size:0.85rem;
+}
+#auth-send:hover{background:rgba(217,119,87,0.26);}
+#auth-msg{font-size:0.6rem;color:var(--gray-dark);margin-top:5px;letter-spacing:0.04em;min-height:0.8rem;max-width:200px;margin-right:auto;}
+/* 6자리 코드 입력 — PWA(홈 화면 앱)는 메일 링크가 사파리와 다른 저장공간을 쓰므로
+   링크 클릭이 아니라 코드 직접 입력으로 같은 창 안에서 로그인을 끝낸다 */
+#auth-otp{display:none;gap:6px;align-items:center;justify-content:flex-start;margin-top:6px;}
+#auth-otp.show{display:flex;}
+#auth-code{
+  background:rgba(2,5,10,0.7);border:0.5px solid rgba(110,108,102,0.4);border-radius:2px;
+  padding:0.4rem 0.6rem;width:90px;color:var(--gray-light);
+  font-size:0.85rem;font-weight:300;outline:none;letter-spacing:0.3em;text-align:center;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+}
+#auth-code:focus{border-color:rgba(217,119,87,0.8);}
+#auth-code::placeholder{color:rgba(110,108,102,0.75);letter-spacing:0.1em;}
+#auth-verify{
+  width:28px;height:28px;flex:none;
+  background:rgba(217,119,87,0.14);border:0.5px solid rgba(217,119,87,0.5);border-radius:2px;
+  color:#E8A38C;cursor:pointer;font-size:0.85rem;
+}
+#auth-verify:hover{background:rgba(217,119,87,0.26);}
+
+#tl-canvas{position:fixed;inset:0;z-index:15;pointer-events:all;}
+
+/* 성간이동 네비 */
+#nav{
+  position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);
+  z-index:30;display:flex;gap:10px;align-items:center;pointer-events:all;
+}
+.nav-dot{
+  width:9px;height:9px;border-radius:50%;
+  background:rgba(110,108,102,0.35);cursor:pointer;
+  transition:all 0.35s ease;border:0.5px solid rgba(110,108,102,0.5);
+}
+.nav-dot.active{
+  background:var(--orange-worn);border-color:var(--orange-faded);
+  box-shadow:0 0 10px rgba(184,125,62,0.6);width:11px;height:11px;
+}
+.nav-dot:hover{background:var(--orange-faded);transform:scale(1.3);}
+
+/* ── 주크박스 — 좌하단, 별밭 팔레트 재생 카드 ── */
+#jukebox{position:fixed;bottom:calc(40% - 3.6rem);left:calc(50% - 38px);   /* 마음속 문장 아래 */z-index:30;pointer-events:all;
+  font-family:'Gowun Batang',serif;}
+#jb-toggle{width:30px;height:30px;border-radius:50%;
+  background:transparent;border:0.5px solid rgba(110,108,102,0.45);
+  color:var(--orange-worn);font-size:0.85rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:border-color 0.25s,color 0.25s;-webkit-tap-highlight-color:transparent;}
+#jb-toggle:hover{border-color:var(--orange-faded);color:var(--orange-pale);}
+#jb-toggle svg{width:16px;height:16px;display:block;}
+#jb-card{position:absolute;left:15px;top:40px;width:min(296px,88vw);   /* 토글 아래로 — 위의 문장 목록을 덮지 않게 */
+  background:rgba(6,9,18,0.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:0.5px solid rgba(217,169,110,0.28);border-radius:16px;
+  padding:0.95rem 1rem 0.85rem;box-shadow:0 10px 34px rgba(0,0,0,0.45);
+  opacity:0;transform:translateX(-50%) translateY(-8px);pointer-events:none;
+  transition:opacity 0.35s,transform 0.35s;}
+#jukebox.open #jb-card{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
+#jb-top{display:flex;align-items:center;gap:0.8rem;}
+#jb-art{width:50px;height:50px;border-radius:9px;flex:none;overflow:hidden;
+  border:0.5px solid rgba(217,169,110,0.35);
+  background:linear-gradient(135deg,#1a2138,#0c1020);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--orange-faded);font-size:1.15rem;}
+#jb-art img{width:100%;height:100%;object-fit:cover;display:block;}
+#jb-meta{flex:1;min-width:0;}
+#jb-title{font-family:'Cardo','Song Myung','Noto Serif KR',serif;font-size:0.95rem;font-weight:400;color:var(--gray-light);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#jb-artist{font-size:0.72rem;color:var(--gray-mid);margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#jb-up{flex:none;width:24px;height:24px;border-radius:6px;background:none;cursor:pointer;
+  border:0.5px solid rgba(217,169,110,0.4);color:var(--orange-faded);font-size:0.85rem;
+  line-height:1;transition:color .2s,border-color .2s;}
+#jb-up:hover{color:var(--orange-pale);border-color:var(--orange-faded);}
+#jb-up.hidden{display:none;}
+#jb-prog{display:flex;align-items:center;gap:0.5rem;margin-top:0.8rem;}
+#jb-prog span{font-size:0.62rem;color:var(--gray-mid);flex:none;font-variant-numeric:tabular-nums;}
+#jb-bar{flex:1;height:3px;border-radius:2px;background:rgba(232,226,214,0.16);
+  position:relative;cursor:pointer;}
+#jb-fill{position:absolute;left:0;top:0;bottom:0;width:0%;
+  background:var(--orange-faded);border-radius:2px;pointer-events:none;}
+#jb-ctrl{display:flex;align-items:center;justify-content:center;gap:1.9rem;margin-top:0.55rem;}
+#jb-ctrl button{background:none;border:none;cursor:pointer;color:var(--gray-light);
+  font-size:0.95rem;padding:2px 6px;transition:color .2s;-webkit-tap-highlight-color:transparent;}
+#jb-ctrl button:hover{color:var(--orange-pale);}
+#jb-play{font-size:1.2rem;color:var(--orange-faded);}
+
+/* back to the timeline */
+#back-btn{
+  position:fixed;bottom:2.9rem;left:50%;transform:translateX(-50%);
+  z-index:30;pointer-events:all;
+  font-family:'Cormorant',serif;font-style:italic;
+  font-size:0.88rem;color:var(--gray-dark);letter-spacing:0.18em;
+  cursor:pointer;opacity:0;white-space:nowrap;transition:color 0.25s;
+}
+#back-btn:hover{color:var(--orange-faded);}
+/* 1단계: 옛 타임라인 은유 UI 숨김 — nav 점·스크롤 힌트 (3D 우주엔 어긋남) */
+#nav,#scroll-hint{display:none;}
+
+/* 스크롤 힌트 */
+#scroll-hint{
+  position:fixed;bottom:4.5rem;left:50%;transform:translateX(-50%);
+  font-family:'Gowun Batang',sans-serif;font-weight:300;
+  font-size:0.7rem;color:var(--gray-dark);letter-spacing:0.25em;
+  z-index:20;pointer-events:none;
+  animation:fadeHint 4s ease 2.5s forwards;
+}
+@keyframes fadeHint{0%{opacity:0.7}100%{opacity:0}}
+
+/* 호버 패널 — 성단 뷰에서는 숨김 */
+#hover-panel{
+  display:none;
+}
+
+/* 책 검색창 — 우측 상단, 타임라인·성단 공통 */
+/* 상단 우측 로고 — studio-jcia, 조용히 floating */
+#brand{
+  position:fixed;top:1.05rem;right:3rem;z-index:46;
+  display:flex;align-items:center;gap:8px;pointer-events:none;
+  opacity:0;animation:brandIn 2.4s ease 0.4s forwards;
+}
+#brand-mark{
+  width:26px;height:26px;flex:none;
+  animation:brandFloat 6.5s ease-in-out infinite;
+  filter:drop-shadow(0 0 6px rgba(217,119,87,0.4));
+}
+#brand-name{
+  font-family:'Cardo','Song Myung',serif;font-weight:400;
+  font-size:0.86rem;letter-spacing:0.24em;color:var(--orange-pale);opacity:0.9;
+  text-transform:lowercase;
+}
+@keyframes brandIn{to{opacity:1;}}
+@keyframes brandFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
+#book-search{
+  position:fixed;bottom:6.4rem;left:3rem;z-index:45;   /* 메일·혜성 위 */
+  width:clamp(230px,24vw,300px);pointer-events:all;
+  font-family:'Gowun Batang',sans-serif;
+}
+#book-search-box{
+  display:flex;align-items:center;gap:9px;
+  background:rgba(2,5,10,0.7);
+  border:0.5px solid rgba(110,108,102,0.45);
+  border-radius:2px;padding:0.55rem 0.85rem;
+  backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+  transition:border-color 0.25s;
+}
+#book-search-box:focus-within{border-color:rgba(217,169,110,0.7);}
+#book-search-icon{width:13px;height:13px;flex:none;opacity:0.55;}
+#book-search-input{
+  flex:1;background:transparent;border:none;outline:none;
+  color:var(--gray-light);font-size:0.8rem;font-weight:300;letter-spacing:0.04em;
+}
+#book-search-input::placeholder{color:rgba(110,108,102,0.85);}
+/* 우측 상단 · 새로 달린 별 목록 — 문패 아래, 별똥별 꼬리선 하나를 긋고 그 밑으로 */
+#recent-books{
+  position:fixed;top:3.1rem;right:3rem;z-index:24;
+  display:flex;flex-direction:column;align-items:flex-end;gap:0.42rem;
+  pointer-events:auto;                /* 이 박스 안의 마우스는 목록에만 */
+  opacity:0;visibility:hidden;transition:opacity 1.1s ease;
+  font-family:'Cardo','Song Myung',serif;
+}
+#recent-books.show{opacity:1;visibility:visible;}
+#rb-head{                              /* 목록의 이름 — 최근의 별들 */
+  color:var(--orange-pale);font-size:0.72rem;letter-spacing:0.3em;opacity:0.85;
+  font-family:'Song Myung','Cardo',serif;
+}
+#rb-list{                              /* 다섯 줄만 보이고, 나머지는 스크롤 */
+  display:flex;flex-direction:column;align-items:flex-end;gap:0.42rem;
+  max-height:calc(5 * 1.3rem + 4 * 0.42rem);
+  overflow-y:auto;padding-left:0.6rem;
+  scrollbar-width:thin;scrollbar-color:rgba(217,169,110,0.3) transparent;
+}
+#rb-list::-webkit-scrollbar{width:3px;}
+#rb-list::-webkit-scrollbar-thumb{background:rgba(217,169,110,0.3);border-radius:2px;}
+#rb-list::-webkit-scrollbar-track{background:transparent;}
+#rb-tail{                              /* 별똥별 꼬리 — 머리는 밝고 꼬리는 스러진다 */
+  width:150px;height:1px;margin-bottom:0.2rem;position:relative;
+  background:linear-gradient(270deg, rgba(242,224,200,0.85), rgba(217,169,110,0.35) 40%, transparent);
+}
+#rb-tail::after{                       /* 유성의 머리 — 오른끝의 작은 별점 */
+  content:'';position:absolute;right:-1px;top:50%;transform:translate(0,-50%);
+  width:3px;height:3px;border-radius:50%;background:#F2E0C8;
+  box-shadow:0 0 6px rgba(242,224,200,0.9);
+}
+.rb-item{
+  pointer-events:auto;cursor:pointer;white-space:nowrap;
+  color:var(--orange-pale);
+  font-size:0.86rem;letter-spacing:0.06em;  /* 문패와 같은 크기로 복귀 */
+  line-height:1.3rem;height:1.3rem;flex:none;
+  opacity:0.55;transition:opacity 0.4s,text-shadow 0.4s;
+  -webkit-tap-highlight-color:transparent;
+}
+.rb-item .rb-date{opacity:0.65;margin-right:0.55em;font-variant-numeric:tabular-nums;}
+.rb-item:hover{opacity:1;text-shadow:0 0 12px rgba(242,224,200,0.55);}
+
+/* 별밭 홈 · 최근 마음속 문장 목록 — 화면 아래에서 40% 높이, 가로 중앙 */
+#recent-lines{
+  position:fixed;left:50%;bottom:40%;transform:translateX(-50%);
+  z-index:24;                         /* 별(캔버스)보다 위, 패널·검색보다 아래 */
+  display:flex;flex-direction:column;align-items:center;
+  pointer-events:auto;                /* 투명 사각 박스 — 이 안의 마우스는 목록에만 먹는다 */
+  opacity:0;visibility:hidden;transition:opacity 1.1s ease;
+  font-family:'Cardo','Song Myung',serif;
+  width:max-content;max-width:min(560px,80vw);
+  max-height:calc(5 * 1.8rem + 0.6rem);   /* 다섯 줄까지만 — 넘치면 스크롤, 모자라면 줄어듦 */
+  overflow-y:auto;                    /* 나머지 열다섯은 스크롤로 */
+  padding:0.3rem 1.1rem;
+  scrollbar-width:thin;scrollbar-color:rgba(217,169,110,0.3) transparent;
+}
+#recent-lines::-webkit-scrollbar{width:3px;}
+#recent-lines::-webkit-scrollbar-thumb{background:rgba(217,169,110,0.3);border-radius:2px;}
+#recent-lines::-webkit-scrollbar-track{background:transparent;}
+#recent-lines.show{opacity:1;visibility:visible;}
+.rl-item{
+  pointer-events:auto;               /* 글자 줄만 클릭 가능 */
+  cursor:pointer;white-space:nowrap;
+  color:var(--orange-pale);          /* 우측 상단 '읽는 jcia' 문패와 동일 색 */
+  font-size:0.98rem;letter-spacing:0.05em;  /* 원래 크기로 복귀 */
+  line-height:1.8rem;height:1.8rem;flex:none;
+  overflow:hidden;text-overflow:ellipsis;max-width:100%;
+  text-shadow:0 0 12px rgba(217,169,110,0.25);
+  opacity:0.32;                      /* 처음엔 흐리게 */
+  animation:rlBreath 4.6s ease-in-out infinite;
+  transition:opacity 0.5s, text-shadow 0.5s, transform 0.4s;
+  -webkit-tap-highlight-color:transparent;
+}
+.rl-item .rl-title{font-weight:400;}
+.rl-item .rl-snip{opacity:0.72;font-style:italic;margin-left:0.5em;}
+/* 흐리게 호흡 — 밝기가 은은히 오간다 */
+@keyframes rlBreath{
+  0%,100%{opacity:0.24;}
+  50%{opacity:0.42;}
+}
+/* 손이 닿으면 — 밝고 세차게 맥동 */
+.rl-item:hover{
+  animation:rlPulse 1.15s ease-in-out infinite;
+  transform:scale(1.04);
+  text-shadow:0 0 20px rgba(242,224,200,0.7),0 0 34px rgba(217,169,110,0.4);
+}
+@keyframes rlPulse{
+  0%,100%{opacity:0.72;}
+  50%{opacity:1;}
+}
+#book-search-results{
+  position:absolute;left:0;right:0;bottom:calc(100% + 7px);margin-top:0;background:rgba(2,5,10,0.93);
+  border:0.5px solid rgba(110,108,102,0.3);border-radius:2px;
+  backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
+  max-height:62vh;overflow-y:auto;display:none;
+}
+#book-search-results.open{display:block;}
+#book-search-results::-webkit-scrollbar{width:5px;}
+#book-search-results::-webkit-scrollbar-thumb{background:rgba(110,108,102,0.35);border-radius:3px;}
+.bs-hint{
+  padding:0.55rem 0.9rem;font-size:0.62rem;color:var(--gray-dark);
+  letter-spacing:0.14em;border-bottom:0.5px solid rgba(110,108,102,0.18);
+}
+.bs-item{
+  padding:0.55rem 0.9rem;cursor:pointer;
+  border-bottom:0.5px solid rgba(110,108,102,0.1);
+  transition:background 0.15s;
+}
+.bs-item:last-child{border-bottom:none;}
+.bs-item:hover,.bs-item.active{background:rgba(217,169,110,0.1);}
+.bs-item-title{
+  font-family:'Gowun Batang',serif;font-weight:400;
+  font-size:0.82rem;color:var(--orange-pale);letter-spacing:0.02em;
+}
+.bs-item-meta{
+  font-size:0.66rem;color:var(--gray-dark);margin-top:2px;letter-spacing:0.05em;
+}
+.bs-empty{padding:0.75rem 0.9rem;font-size:0.72rem;color:var(--gray-dark);}
+.bs-add{padding:0.6rem 0.9rem;font-size:0.74rem;color:var(--orange-pale);cursor:pointer;border-top:0.5px solid rgba(110,108,102,0.18);transition:background 0.2s;}
+.bs-add:hover{background:rgba(217,169,110,0.08);}
+.bs-addform{padding:0.7rem 0.85rem;display:flex;flex-direction:column;gap:7px;}
+.bs-af-title{font-size:0.78rem;color:var(--orange-pale);margin-bottom:3px;letter-spacing:0.03em;}
+.bs-af-in{width:100%;box-sizing:border-box;background:rgba(20,22,28,0.6);border:0.5px solid rgba(110,108,102,0.3);border-radius:5px;padding:6px 9px;color:var(--gray-light);font-size:0.74rem;font-family:inherit;outline:none;}
+.bs-af-in:focus{border-color:rgba(217,169,110,0.6);}
+.bs-af-btn{background:rgba(217,169,110,0.14);border:0.5px solid rgba(217,169,110,0.45);border-radius:5px;padding:7px;color:var(--orange-pale);font-size:0.74rem;cursor:pointer;font-family:inherit;transition:background 0.2s;}
+.bs-af-btn:hover{background:rgba(217,169,110,0.22);}
+.bs-af-done{font-size:0.68rem;color:#8fc99a;line-height:1.5;}
+.bs-af-dl{background:none;border:0.5px solid rgba(110,108,102,0.4);border-radius:5px;padding:6px;color:var(--gray-light);font-size:0.7rem;cursor:pointer;font-family:inherit;margin-top:2px;}
+.bs-af-dl:hover{border-color:rgba(217,169,110,0.5);color:var(--orange-pale);}
+.bs-af-note{font-size:0.63rem;color:var(--gray-dark);line-height:1.6;}
+
+/* ── 방명록 — 낯선 이의 별 ── */
+#cm-btn{position:fixed;left:calc(50% + 8px);bottom:calc(40% - 3.6rem);   /* ♪ 옆 */z-index:30;
+  width:30px;height:30px;border-radius:50%;
+  background:transparent;border:0.5px solid rgba(110,108,102,0.45);
+  color:var(--orange-worn);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:border-color 0.25s,color 0.25s;-webkit-tap-highlight-color:transparent;}
+#cm-btn:hover{border-color:var(--orange-faded);color:var(--orange-pale);}
+#cm-btn svg{width:15px;height:15px;}
+#gb-compose{position:fixed;left:50%;transform:translateX(-50%);top:calc(60% + 3.6rem + 10px);bottom:auto;z-index:48;width:300px;   /* 단추 아래로 */
+  background:rgba(6,9,18,0.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:0.5px solid rgba(217,169,110,0.28);border-radius:14px;
+  padding:1rem 1.05rem 0.9rem;box-shadow:0 10px 34px rgba(0,0,0,0.45);
+  font-family:'Gowun Batang',serif;
+  opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .35s,transform .35s;}
+#gb-compose.open{opacity:1;transform:translateY(0);pointer-events:auto;}
+#gb-compose .gb-title{font-family:'Song Myung','Noto Serif KR',serif;font-size:0.8rem;color:var(--orange-pale);letter-spacing:0.06em;margin-bottom:0.6rem;}
+#gb-body{width:100%;height:88px;resize:none;background:rgba(2,5,10,0.55);
+  border:0.5px solid rgba(110,108,102,0.4);border-radius:8px;outline:none;
+  color:var(--gray-light);font-family:'Gowun Batang',serif;font-size:0.8rem;line-height:1.7;
+  padding:0.55rem 0.65rem;}
+#gb-body:focus{border-color:rgba(217,169,110,0.6);}
+#gb-compose .gb-row{display:flex;align-items:center;gap:0.6rem;margin-top:0.55rem;}
+#gb-nick{flex:1;min-width:0;background:rgba(2,5,10,0.55);border:0.5px solid rgba(110,108,102,0.4);
+  border-radius:8px;outline:none;color:var(--gray-light);
+  font-family:'Gowun Batang',serif;font-size:0.74rem;padding:0.42rem 0.6rem;}
+#gb-nick:focus{border-color:rgba(217,169,110,0.6);}
+#gb-count{flex:none;font-size:0.62rem;color:var(--gray-mid);}
+#gb-msg{min-height:0.9rem;font-size:0.64rem;color:var(--orange-worn);margin-top:0.35rem;}
+#gb-compose .gb-acts{display:flex;justify-content:flex-end;gap:0.5rem;margin-top:0.2rem;}
+#gb-compose .gb-acts button{background:none;border:0.5px solid rgba(110,108,102,0.4);border-radius:8px;
+  color:var(--gray-light);font-family:'Gowun Batang',serif;font-size:0.72rem;
+  padding:0.35rem 0.85rem;cursor:pointer;transition:border-color .2s,color .2s;}
+#gb-compose .gb-acts button:hover{border-color:var(--orange-faded);color:var(--orange-pale);}
+#gb-send{border-color:rgba(217,169,110,0.5) !important;color:var(--orange-pale) !important;}
+/* 흐르는 헤드라인 — glow 입은 한 줄들이 화면 아래를 지나감 */
+#gb-ticker{position:fixed;left:0;right:0;bottom:0;height:32px;z-index:46;
+  overflow:hidden;display:none;align-items:center;pointer-events:auto;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);}
+#gb-ticker.on{display:flex;}
+#gb-track{display:inline-flex;align-items:center;white-space:nowrap;will-change:transform;}
+.gbt-seg{display:inline-flex;align-items:center;}
+.gbt-item{display:inline-flex;align-items:center;gap:0.45rem;margin:0 1.1rem;
+  font-family:'Song Myung','Cardo','Noto Serif KR',serif;font-size:0.76rem;letter-spacing:0.04em;
+  color:#ffe0b3;text-shadow:0 0 9px rgba(217,169,110,0.85),0 0 22px rgba(217,169,110,0.4);}
+.gbt-item b{font-weight:600;color:var(--orange-pale);}
+.gbt-item i{font-style:normal;opacity:0.5;}
+.gbt-star{color:rgba(217,169,110,0.5);font-size:0.6rem;margin:0 0.2rem;
+  text-shadow:0 0 7px rgba(217,169,110,0.6);}
+.gbt-x{background:none;border:none;color:rgba(232,226,214,0.45);font-size:0.8rem;
+  cursor:pointer;padding:0 2px;line-height:1;}
+.gbt-x:hover{color:var(--orange-pale);}
+
+/* ── 대문: 눈을 뜨다 ── */
+body.gated #three-container, body.gated #tl-canvas{filter:blur(10px) brightness(0.75);}
+body.gated.eye-open #three-container, body.gated.eye-open #tl-canvas{
+  animation:gateFocus 3s cubic-bezier(.4,0,.4,1) forwards;}      /* 초점 사냥 */
+@keyframes gateFocus{
+  0%  {filter:blur(10px) brightness(0.75);}
+  28% {filter:blur(2.5px) brightness(0.9);}
+  44% {filter:blur(6px)   brightness(0.85);}
+  62% {filter:blur(1.2px) brightness(0.97);}
+  76% {filter:blur(3px)   brightness(0.93);}
+  100%{filter:blur(0)     brightness(1);}
+}
+#gate{position:fixed;inset:0;z-index:200;cursor:pointer;}
+.gate-lid{position:absolute;left:0;right:0;height:58%;
+  background:linear-gradient(180deg,#070a15,#04060d);will-change:transform;}
+.gate-lid.top{top:0;
+  -webkit-mask-image:radial-gradient(72% 15% at 50% 100%, transparent 98%, #000 100%);
+          mask-image:radial-gradient(72% 15% at 50% 100%, transparent 98%, #000 100%);}
+.gate-lid.bot{bottom:0;
+  -webkit-mask-image:radial-gradient(72% 15% at 50% 0%,   transparent 98%, #000 100%);
+          mask-image:radial-gradient(72% 15% at 50% 0%,   transparent 98%, #000 100%);}
+#gate-lash{position:absolute;left:8%;right:8%;top:50%;height:1px;transform:translateY(-50%);
+  background:linear-gradient(90deg,transparent,rgba(217,169,110,0.8) 25%,rgba(217,169,110,0.8) 75%,transparent);
+  filter:drop-shadow(0 0 7px rgba(217,169,110,0.8));
+  animation:gateBreath 3s ease-in-out infinite;}
+@keyframes gateBreath{0%,100%{opacity:0.3;}50%{opacity:0.85;}}
+#gate-plate{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);
+  display:flex;flex-direction:column;align-items:center;gap:14px;transition:opacity 0.8s;}
+#gate-lockup{display:inline-flex;align-items:flex-end;gap:2px;}
+#gate-seal{width:44px;height:44px;flex:none;display:block;
+  filter:drop-shadow(0 0 12px rgba(217,119,87,0.35));}
+#gate-plate .gate-word{font-family:'Unbounded',sans-serif;font-weight:400;
+  font-size:1.46rem;line-height:1;white-space:nowrap;
+  transform:scaleX(0.85);transform-origin:left bottom;display:inline-block;
+  margin-bottom:3px;                               /* studio 베이스라인 = 로고 하단 */
+  color:#eec48b;text-shadow:0 0 14px rgba(217,169,110,0.4);}
+#gate-plate .gate-enter{font-family:'Song Myung','Noto Serif KR',serif;
+  font-size:0.66rem;letter-spacing:0.46em;margin-left:0.46em;
+  color:rgba(200,197,190,0.55);animation:gateBreath 3s ease-in-out infinite;}
+body.eye-open .gate-lid.top{animation:gateLidTop 2.7s cubic-bezier(.55,.02,.3,1) forwards;}
+body.eye-open .gate-lid.bot{animation:gateLidBot 2.7s cubic-bezier(.55,.02,.3,1) forwards;}
+@keyframes gateLidTop{
+  0%{transform:translateY(0);} 30%{transform:translateY(-34%);}
+  46%{transform:translateY(-26%);}                     /* 실눈 — 초점이 흔들리는 순간 */
+  100%{transform:translateY(-106%);}}
+@keyframes gateLidBot{
+  0%{transform:translateY(0);} 30%{transform:translateY(34%);}
+  46%{transform:translateY(26%);}
+  100%{transform:translateY(106%);}}
+body.eye-open #gate-lash{opacity:0;transition:opacity 0.4s;animation:none;}
+body.eye-open #gate-plate{opacity:0;}
+#gate.gone{display:none;}
+
+/* ══════════ 모바일 층 — 폰 화면 맞춤 (레이아웃 문법은 데스크탑과 동일) ══════════ */
+@media (max-width:820px){
+  /* 최근 마음속 문장 목록 — 폰: 아래 40%, 다섯 줄 스크롤, 원래 크기 */
+  #recent-lines{bottom:40%;max-width:92vw;max-height:calc(5 * 1.7rem + 0.6rem);}
+  #recent-lines .rl-item{font-size:0.86rem;line-height:1.7rem;height:1.7rem;text-align:center;}
+  /* 최근의 별들 — 폰: 문패(right:1rem, top:0.9rem) 아래로 */
+  #recent-books{right:1rem;top:2.9rem;}
+  #rb-tail{width:110px;}
+  .rb-item{font-size:0.78rem;}
+  html,body{overscroll-behavior:none;-webkit-text-size-adjust:100%;}
+  #tl-canvas{touch-action:none;}
+  #hover-panel{display:none !important;}          /* 터치엔 호버가 없음 */
+  #scroll-hint{display:none;}
+
+  /* 첫 줄: 서랍 아이콘(좌측 고정 — 우측 문패와 겹침 방지) + 원자 로고(우측, 숨은 문 그대로) */
+  #drawer-icons{top:0.55rem;left:0.75rem;transform:none;gap:0.9rem;}
+  #drawer-icons button{font-size:0.95rem;padding:5px 4px;}
+  #drawer-icons button svg{width:16px;height:16px;}
+  #brand{right:1rem;top:0.9rem;}
+
+  /* 좌하단 스택 — 데스크탑과 동일 문법: 검색 → 로그인 → 주크박스·댓글 → 제목 */
+  #book-search{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 7rem);
+    left:1rem;right:auto;width:min(240px,66vw);}
+  #book-search-input{font-size:16px;}             /* iOS 자동 확대 방지 */
+
+  #auth-box{left:1rem;right:auto;top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 4.4rem);}   /* 검색창 아래 */
+  #auth-email{width:min(150px,40vw);font-size:16px;}
+
+  /* 상단 서랍 — 전폭, 아이콘 줄만 비우고 검색은 서랍이 잠시 덮음 */
+  #bp-body{width:100vw;border-radius:0 0 14px 14px;
+    padding:3.1rem 1rem 1.1rem;max-height:76vh;max-height:76dvh;}
+  #bp-head{gap:0.9rem;}
+  #bp-title{font-size:0.92rem;}
+
+  /* 글쓰기 서랍 — 화면 대부분, 만년필 손잡이는 그대로 왼쪽 모서리에 */
+  #essay-editor{width:88vw;min-width:0;height:100vh;height:100dvh;}
+  #essay-pen{left:-44px;width:40px;height:40px;}
+
+  /* 대문천문 편집판 — 로고 아래 */
+  #home-calli-edit{right:0.8rem;top:3.1rem;width:min(232px,88vw);}
+
+  /* 주크박스 — 좌하단, 로그인 위 */
+  #jukebox{left:calc(50% - 38px);bottom:calc(40% - 3.6rem);}
+  #jb-card{width:min(296px,88vw);}
+
+  /* 좌하단 제목 · 하단 버튼 */
+  #header{left:1rem;bottom:calc(env(safe-area-inset-bottom,0px) + 9.6rem);}
+  #back-btn{bottom:calc(env(safe-area-inset-bottom,0px) + 2.4rem);}
+
+  /* 방명록 — 댓글 단추는 ♪ 옆, 헤드라인은 맨 아래 */
+  #cm-btn{left:calc(50% + 8px);bottom:calc(40% - 3.6rem);}
+  #gb-compose{right:0.8rem;left:0.8rem;width:auto;transform:none;top:calc(60% + 3.6rem + 10px);bottom:auto;}
+  #gb-body,#gb-nick{font-size:16px;}              /* iOS 자동 확대 방지 */
+  #gb-ticker{height:30px;bottom:env(safe-area-inset-bottom,0px);}
+  .gbt-item{font-size:0.72rem;}
+}
+</style>
+</head>
+<body>
+<!-- ── 대문: 눈을 뜨다 — 첫 탭에 눈꺼풀이 열리고, 초점이 헤매다 별밭이 맺힘 ── -->
+<div id="gate">
+  <div class="gate-lid top"></div>
+  <div class="gate-lid bot"></div>
+  <div id="gate-lash"></div>
+  <div id="gate-plate">
+    <!-- studio jcia 공식 로고 CL3 (2026.07 확정) — 짙은 클로드 주황 #C25E3F 바탕 + 흰 내부
+         구조: 궤도 1 · 상하 전자 2(r14, 양의) · 핵(태극 음각) · 천원지방 -->
+    <div id="gate-lockup">
+      <svg id="gate-seal" viewBox="0 0 240 240" aria-hidden="true">
+        <rect x="14" y="14" width="212" height="212" rx="40" fill="#C25E3F"/>
+        <circle cx="120" cy="120" r="60" fill="none" stroke="#FFFFFF" stroke-width="5" opacity="0.95"/>
+        <circle cx="120" cy="60" r="14" fill="#FFFFFF"/><circle cx="120" cy="180" r="14" fill="#FFFFFF"/>
+        <circle cx="120" cy="120" r="18" fill="#FFFFFF"/><circle cx="120" cy="120" r="8" fill="#C25E3F"/>
+      </svg>
+      <span class="gate-word">studio jcia</span>
+    </div>
+    <div class="gate-enter">눈 을 뜨 다</div>
+  </div>
+</div>
+
+<div id="three-container"></div>
+
+<div id="ui-layer">
+  <div id="header">
+    <div id="header-subtitle"></div>
+    <div id="header-title"></div>
+  </div>
+
+  <canvas id="tl-canvas"></canvas>
+  <div id="scroll-hint">← scroll →</div>
+  <div id="nav"></div>
+  <div id="back-btn" onclick="exitCluster()">BACK TO THE TIMELINE</div>
+
+  <!-- 주크박스 — 좌하단 재생 카드 (♪ 단추로 여닫음) -->
+  <div id="jukebox">
+    <button id="jb-toggle" title="주크박스"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 9v6l5-3z" fill="currentColor" stroke="none"/></svg></button>
+    <div id="jb-card">
+      <div id="jb-top">
+        <div id="jb-art"><span>♪</span></div>
+        <div id="jb-meta">
+          <div id="jb-title">별밭의 노래</div>
+          <div id="jb-artist"></div>
+        </div>
+        <button id="jb-up" class="hidden" title="곡 올리기 (mp3)">＋</button>
+        <input type="file" id="jb-file" accept="audio/mpeg,.mp3" multiple style="display:none">
+      </div>
+      <div id="jb-prog">
+        <span id="jb-t0">0:00</span>
+        <div id="jb-bar"><i id="jb-fill"></i></div>
+        <span id="jb-t1">−0:00</span>
+      </div>
+      <div id="jb-ctrl">
+        <button id="jb-prev" title="이전 곡">◀◀</button>
+        <button id="jb-play" title="재생/멈춤">▶</button>
+        <button id="jb-next" title="다음 곡">▶▶</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 호버 아포리즘 패널 -->
+<div id="hover-panel">
+  <div id="hover-book-title"></div>
+  <div id="hover-book-author"></div>
+  <div id="hover-divider"></div>
+  <div id="hover-aphorism"></div>
+</div>
+
+<!-- 상단 우측 로고 -->
+<div id="brand">
+  <div id="brand-door"></div>
+  <!-- 순청자 인장 (studio_jcia_logo_final.svg · 궤도 stroke 1.2→6 소형 광학 보정) -->
+  <svg id="brand-mark" viewBox="0 0 240 240" aria-hidden="true">
+    <rect x="14" y="14" width="212" height="212" rx="40" fill="#C25E3F"/>
+    <circle cx="120" cy="120" r="60" fill="none" stroke="#FFFFFF" stroke-width="6" opacity="0.95"/>
+    <circle cx="120" cy="60" r="14" fill="#FFFFFF"/><circle cx="120" cy="180" r="14" fill="#FFFFFF"/>
+    <circle cx="120" cy="120" r="18" fill="#FFFFFF"/><circle cx="120" cy="120" r="8" fill="#C25E3F"/>
+  </svg>
+  <span id="brand-name">읽는 jcia</span>
+</div>
+
+<!-- 책 검색창 — 우측 상단 -->
+<div id="book-search">
+  <div id="book-search-box">
+    <svg id="book-search-icon" viewBox="0 0 24 24" fill="none" stroke="rgba(200,197,190,0.85)" stroke-width="1.6">
+      <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/>
+    </svg>
+    <input id="book-search-input" type="text" autocomplete="off" spellcheck="false"
+           placeholder="책 이름으로 검색 · 초성도 가능">
+  </div>
+  <div id="book-search-results"></div>
+</div>
+
+<!-- 별밭 홈 · 최근 마음속 문장이 새겨진 별들 (호흡하듯 떠 있다가, 손이 닿으면 세차게 맥동) -->
+<div id="recent-lines" aria-hidden="true"></div>
+
+<!-- 우측 상단 · 새로 달린 별 목록 (문패 아래 유성 꼬리선, 그 밑으로 최근 별들) -->
+<div id="recent-books" aria-hidden="true"></div>
+
+<!-- 책 패널 — 검색창 아래: 책 정보 + 입력/저장 -->
+<div id="book-panel"><div id="bp-info"></div></div><!-- 문패는 상단 서랍 머리로 이사, 껍데기만 유지 -->
+
+<!-- 상단 서랍 다섯 — 선택된 별의 것 (별 미선택 시 잠김) -->
+<div id="drawer-icons" class="locked">
+  <button data-sec="music" title="같이 하면 좋을 음악"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg></button>
+  <button data-sec="movie" title="같이 보면 좋을 영화"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M6.8 5v14M17.2 5v14M2.5 9.5h4.3M2.5 14.5h4.3M17.2 9.5h4.3M17.2 14.5h4.3"/></svg></button>
+  <button data-sec="reading" title="더 읽을거리들"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.2C10.2 4.8 7.9 4.2 4.5 4.2v13.6c3.4 0 5.7.6 7.5 2 1.8-1.4 4.1-2 7.5-2V4.2c-3.4 0-5.7.6-7.5 2z"/><path d="M12 6.2v13.6"/></svg></button>
+  <button data-sec="lines" title="내 마음속의 문장들"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M4 6h4.4v4.8c0 2.2-1.3 3.6-3.5 4.2l-.6-1.3c1.2-.4 2-1.1 2.1-2.2H4z"/><path d="M20 18h-4.4v-4.8c0-2.2 1.3-3.6 3.5-4.2l.6 1.3c-1.2.4-2 1.1-2.1 2.2H20z"/></svg></button>
+  <button data-sec="calli" title="천문"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 4L9 12.5"/><path d="M9 12.5c-1.7.4-2.7 1.4-3.1 3.1-.2 1-.9 1.7-2.1 2.1 2.7 1.3 5 .8 6.2-1.1.7-1 .8-2.1.4-3.1z" fill="currentColor" stroke="none"/><path d="M19 8.5l.8 1.7 1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8z" fill="currentColor" stroke="none"/></svg></button>
+</div>
+<div id="bp-body">
+  <div id="bp-head">
+    <div id="bp-views"></div>
+    <div id="bp-titlebox">
+      <div id="bp-title"></div>
+      <div id="bp-author"></div>
+    </div>
+  </div>
+    <div class="bp-section">
+      <div class="bp-label">♪ 같이 하면 좋을 음악</div>
+      <div class="bp-add">
+        <input class="bp-input" id="bp-music-input" placeholder="곡 · 앨범 · 링크" autocomplete="off" spellcheck="false">
+        <button class="bp-btn" data-add="music">+</button>
+      </div>
+      <div class="bp-list" id="bp-music-list"></div>
+    </div>
+    <div class="bp-section">
+      <div class="bp-label">▷ 같이 보면 좋을 영화</div>
+      <div class="bp-add">
+        <input class="bp-input" id="bp-movie-input" placeholder="제목 · 감독 · 링크" autocomplete="off" spellcheck="false">
+        <button class="bp-btn" data-add="movie">+</button>
+      </div>
+      <div class="bp-list" id="bp-movie-list"></div>
+    </div>
+    <div class="bp-section">
+      <div class="bp-label">✶ 더 읽을거리들</div>
+      <div class="bp-add">
+        <input class="bp-input" id="bp-reading-input" placeholder="제목 · 링크" autocomplete="off" spellcheck="false">
+        <button class="bp-btn" data-add="reading">+</button>
+      </div>
+      <div class="bp-list" id="bp-reading-list"></div>
+    </div>
+    <div class="bp-section bp-lines-section">
+      <div class="bp-label">&ldquo; 내 마음속의 문장들</div>
+      <div class="bp-add">
+        <input class="bp-input" id="bp-line-input" placeholder="문장을 적고 Enter" autocomplete="off" spellcheck="false">
+        <button class="bp-btn" data-add="line">+</button>
+      </div>
+      <div id="bp-dial"><div id="bp-dial-track"></div></div>
+      <div id="bp-line-count"></div>
+    </div>
+    <div class="bp-section">
+      <div class="bp-label">墨 천문</div>
+      <div id="bp-calli"></div>
+    </div>
+  </div>
+
+<div id="calli-sky"><img id="calli-img" alt=""></div>
+
+<!-- 대문 천문 — 편집판 (문은 상단 로고에 숨어 있음) -->
+<div id="home-calli-edit"></div>
+
+<!-- 방명록 — 흐르는 헤드라인: 댓글 단추(♪ 옆)로 남기고, 화면 아래를 뉴스처럼 흐름 -->
+<button id="cm-btn" title="흔적 남기기">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 5h16v11H9l-5 3.5V16z"/>
+    <path d="M8 9.5h8M8 12.5h5"/>
+  </svg>
+</button>
+<div id="gb-compose">
+  <div class="gb-title">흔적 | 痕迹</div>
+  <textarea id="gb-body" maxlength="200" placeholder="짧은 글 한 줄 — 이 별밭에 흔적으로 남습니다 (200자)"></textarea>
+  <div class="gb-row">
+    <input id="gb-nick" maxlength="20" placeholder="이름 (선택)">
+    <span id="gb-count">0 / 200</span>
+  </div>
+  <div id="gb-msg"></div>
+  <div class="gb-acts"><button id="gb-cancel">닫기</button><button id="gb-send">남기기</button></div>
+</div>
+<div id="gb-ticker"><div id="gb-track"></div></div>
+
+<!-- 글쓰기: 우측 서랍 — 왼쪽 모서리의 만년필 손잡이로 여닫음 -->
+<div id="essay-editor">
+  <div id="essay-pen" title="이 별에 글 쓰기">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 21.5 7.4 12.6C6.6 9.4 8.8 6.6 12 6.6s5.4 2.8 4.6 6L12 21.5z"/>
+      <circle cx="12" cy="12.1" r="1.15"/>
+      <path d="M12 13.3v6.4"/>
+      <path d="M9.4 4.2h5.2"/>
+    </svg>
+  </div>
+  <div id="essay-tools">
+    <select id="essay-font" title="글꼴">
+      <option value="'Gowun Batang',serif">명조</option>
+      <option value="'Song Myung','Noto Serif KR',serif">송명</option>
+      <option value="'Cardo','Song Myung',serif">칼도</option>
+      <option value="'EB Garamond',serif">개러몬드</option>
+      <option value="'Cormorant',serif">코모란트</option>
+      <option value="sans-serif">고딕</option>
+    </select>
+    <span class="sep"></span>
+    <button class="act" data-cmd="bold" title="굵게"><b>B</b></button>
+    <button class="act" data-cmd="italic" title="기울임"><i>I</i></button>
+    <span class="sep"></span>
+    <button class="essay-sw" data-color="#e8e4da" style="background:#e8e4da" title="흰빛"></button>
+    <button class="essay-sw" data-color="#d9b97a" style="background:#d9b97a" title="금빛"></button>
+    <button class="essay-sw" data-color="#9fb8d4" style="background:#9fb8d4" title="청빛"></button>
+    <button class="essay-sw" data-color="#a9c9b8" style="background:#a9c9b8" title="비취"></button>
+    <span class="sep"></span>
+    <button class="act" data-cmd="justifyLeft" title="왼쪽 정렬">‹</button>
+    <button class="act" data-cmd="justifyCenter" title="가운데 정렬">∙</button>
+    <button class="act" data-cmd="justifyRight" title="오른쪽 정렬">›</button>
+    <span class="sep"></span>
+    <button class="act" data-cmd="indent" title="들여쓰기">⇥</button>
+    <button class="act" data-cmd="outdent" title="내어쓰기">⇤</button>
+  </div>
+  <div id="essay-body" contenteditable="true" data-ph="여기에, 문득 차오른 글을…"></div>
+  <div id="essay-foot">
+    <label id="essay-pub"><input type="checkbox" id="essay-pub-cb" checked> 공개<span id="essay-status"></span></label>
+    <div class="essay-acts">
+      <button id="essay-del">삭제</button>
+      <button id="essay-save">새기기</button>
+      <button id="essay-close">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 로그인 (magic link) — 좌측 하단 -->
+<div id="auth-box">
+  <div id="auth-line">
+    <div id="auth-status"></div>
+    <div id="comet-slot">
+      <div id="comet-site" class="comet"></div>
+      <div id="comet-phase" class="comet"></div>
+    </div>
+  </div>
+  <div id="auth-login">
+    <input id="auth-email" type="email" autocomplete="email" spellcheck="false" placeholder="이메일로 로그인">
+    <button id="auth-send" title="로그인 코드 받기">→</button>
+  </div>
+  <div id="auth-otp">
+    <input id="auth-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="코드 6자리">
+    <button id="auth-verify" title="코드 확인">✓</button>
+  </div>
+  <div id="auth-msg"></div>
+</div>
+
+<!-- SUPABASE 초기화 -->
+<script type="module">
+// 동적 import + CDN 폴백 — esm.sh 실패 시 jsdelivr 로 재시도 (모바일 회선 대비)
+const SUPABASE_URL = 'https://ebxaaxvpilouizujjwgt.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_g3UpSee8YCFDJWaVWmLpQg_HFvOG2-B';
+const _SB_CDNS = [
+  'https://esm.sh/@supabase/supabase-js@2',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+];
+let createClient = null, _sbLoadErr = null;
+for (const _u of _SB_CDNS) {
+  try { const m = await import(_u); createClient = m.createClient; if (createClient) break; }
+  catch (e) { _sbLoadErr = e; console.warn('[Supabase] CDN 로드 실패:', _u, e); }
+}
+try {
+  if (!createClient) throw _sbLoadErr || new Error('createClient 로드 실패');
+  window.sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+  });
+} catch(e) {
+  console.error('Supabase init 실패:', e);
+  window.sb = null;
+  window._sbError = (e && e.message) ? e.message : String(e);
+}
+window.dispatchEvent(new Event('sb-ready'));
+</script>
+
+<!-- THREE.JS 파티클 배경 — 청백 통일 -->
+<script type="module">
+import * as THREE from 'three';
+window.THREE=THREE;
+const container=document.getElementById('three-container');
+const clock=new THREE.Clock();
+const N=10000;
+const basePos=new Float32Array(N*3);
+const sizes  =new Float32Array(N);
+const colors =new Float32Array(N*3);
+let scene,camera,renderer,pts;
+window._bg={targetZ:100,currentZ:100,targetX:0,currentX:0,targetY:27,currentY:27};
+
+function init(){
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x02050a);
+  scene.fog=new THREE.FogExp2(0x02050a,0.008);
+  camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,0.1,1000);
+  camera.position.set(0,27,100);
+  renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setSize(innerWidth,innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  container.appendChild(renderer.domElement);
+
+  const geo=new THREE.BufferGeometry();
+  for(let i=0;i<N;i++){
+    const i3=i*3;
+    const x=(Math.random()-0.5)*300;
+    const y=(Math.random()-0.5)*40;
+    const z=(Math.random()-0.5)*280;
+    basePos[i3]=x; basePos[i3+1]=y; basePos[i3+2]=z;
+    const df=1-Math.abs(z)/280*0.6;
+    // 미지의 별 — 아직 이름 없는 별들, 실제 밤하늘의 색 스펙트럼으로
+    const bright=(0.50+df*0.70)*1.0;
+    const t=Math.random();
+    let cr,cg,cb;
+    if(t<0.18){              // 적색 (적색거성·M형)
+      cr=1.0; cg=0.42+Math.random()*0.20; cb=0.36+Math.random()*0.14;
+    } else if(t<0.38){       // 황백색 (F/G형)
+      cr=1.0; cg=0.90+Math.random()*0.08; cb=0.70+Math.random()*0.16;
+    } else if(t<0.72){       // 백색 (A형)
+      const w=0.90+Math.random()*0.10; cr=w; cg=w; cb=w;
+    } else {                 // 청백색 (O/B형)
+      cr=0.66+Math.random()*0.16; cg=0.78+Math.random()*0.14; cb=1.0;
+    }
+    colors[i3]  =cr*bright;
+    colors[i3+1]=cg*bright;
+    colors[i3+2]=cb*bright;
+    const base=Math.random()>0.94 ? Math.random()*1.8+0.9 : Math.random()*0.55+0.18;
+    sizes[i]=base*df;
+  }
+  geo.setAttribute('position',   new THREE.BufferAttribute(basePos.slice(),3));
+  geo.setAttribute('size',       new THREE.BufferAttribute(sizes,1));
+  geo.setAttribute('customColor',new THREE.BufferAttribute(colors,3));
+
+  const cv=document.createElement('canvas'); cv.width=64; cv.height=64;
+  const c2=cv.getContext('2d');
+  const g=c2.createRadialGradient(32,32,0,32,32,32);
+  g.addColorStop(0,'rgba(255,255,255,1)');
+  g.addColorStop(0.25,'rgba(210,228,255,0.7)');
+  g.addColorStop(0.6,'rgba(170,200,255,0.15)');
+  g.addColorStop(1,'transparent');
+  c2.fillStyle=g; c2.fillRect(0,0,64,64);
+
+  const mat=new THREE.ShaderMaterial({
+    uniforms:{pointTexture:{value:new THREE.CanvasTexture(cv)}},
+    vertexShader:`
+      attribute float size; attribute vec3 customColor; varying vec3 vColor;
+      void main(){vColor=customColor;
+        vec4 mvPos=modelViewMatrix*vec4(position,1.0);
+        gl_PointSize=size*(380.0/-mvPos.z);
+        gl_Position=projectionMatrix*mvPos;}`,
+    fragmentShader:`
+      uniform sampler2D pointTexture; varying vec3 vColor;
+      void main(){gl_FragColor=vec4(vColor,0.85)*texture2D(pointTexture,gl_PointCoord);}`,
+    blending:THREE.AdditiveBlending,depthTest:false,transparent:true
+  });
+  pts=new THREE.Points(geo,mat);
+  scene.add(pts);
+  window.scene=scene; window.camera=camera; window.renderer=renderer;
+  window._bgPts=pts;
+  // 룩어라운드 항법 + 유성 비행 — 위치(pos)와 시선(yaw/pitch)을 분리
+  window._nav={pos:{x:0,y:0,z:165}, yaw:Math.PI, pitch:0, yawV:0, pitchV:0,
+               dragging:false, interactT:performance.now()-9999, drift:1,
+               center:{x:0,y:0,z:0}, flying:false, flyT:0, flyStep:1/120,
+               p0:null,pc:null,p1:null, onArrive:null};
+  window.addEventListener('resize',()=>{
+    camera.aspect=innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth,innerHeight);
+  });
+  animate();
+}
+
+function bez3(a,c,b,t){
+  const u=1-t;
+  return { x:u*u*a.x+2*u*t*c.x+t*t*b.x,
+           y:u*u*a.y+2*u*t*c.y+t*t*b.y,
+           z:u*u*a.z+2*u*t*c.z+t*t*b.z };
+}
+
+function animate(){
+  requestAnimationFrame(animate);
+  const t=clock.getElapsedTime();
+  const nav=window._nav;
+  const now=performance.now();
+
+  if(nav.flying){
+    // ── 담백한 비행 — 카메라가 곡선을 직접 타고 부드럽게 ──
+    nav.flyT += nav.flyStep;
+    const ftt=Math.min(1,nav.flyT);
+    const e=ftt*ftt*ftt*(ftt*(ftt*6-15)+10);  // smootherstep
+    const P=bez3(nav.p0,nav.pc,nav.p1,e);      // 카메라 위치 = 곡선 위
+    // 진행방향(접선)을 봄 — 가는 쪽을 향해
+    const Pb=bez3(nav.p0,nav.pc,nav.p1,Math.max(0,e-0.03));
+    let tdx=P.x-Pb.x, tdy=P.y-Pb.y, tdz=P.z-Pb.z;
+    const tdl=Math.hypot(tdx,tdy,tdz)||1; tdx/=tdl; tdy/=tdl; tdz/=tdl;
+    let look={x:P.x+tdx*20, y:P.y+tdy*20, z:P.z+tdz*20};
+    // 시작 이음매 — 직전 시선에서 진행방향으로 부드럽게
+    if(ftt<0.14){
+      const k=ftt/0.14, sx=k*k*(3-2*k);
+      look={x:nav.flyStartLook.x+(look.x-nav.flyStartLook.x)*sx,
+            y:nav.flyStartLook.y+(look.y-nav.flyStartLook.y)*sx,
+            z:nav.flyStartLook.z+(look.z-nav.flyStartLook.z)*sx};
+    }
+    // [모바일] 비행 후반: 진행방향 → 목적 별로 시선을 스르륵 모아 도착 시 별을 화면 중앙에
+    if(window._MOBILE && nav.center && ftt>0.55){
+      const k=(ftt-0.55)/0.45, ks=k*k*(3-2*k);
+      look={x:look.x+(nav.center.x-look.x)*ks,
+            y:look.y+(nav.center.y-look.y)*ks,
+            z:look.z+(nav.center.z-look.z)*ks};
+    }
+    camera.position.set(P.x,P.y,P.z);
+    camera.lookAt(look.x,look.y,look.z);
+    if(ftt>=1){
+      nav.flying=false;
+      nav.pos={x:nav.p1.x, y:nav.p1.y, z:nav.p1.z};
+      // 데스크탑: 진행방향 시선 그대로 / [모바일] 목적 별을 정면으로
+      const _aim=(window._MOBILE && nav.center) ? nav.center : look;
+      const vx=_aim.x-nav.pos.x, vy=_aim.y-nav.pos.y, vz=_aim.z-nav.pos.z;
+      const vl=Math.max(1,Math.hypot(vx,vy,vz));
+      nav.yaw=Math.atan2(vx,vz);
+      nav.pitch=Math.max(-1.35,Math.min(1.35,Math.asin(vy/vl)));
+      nav.yawV=0; nav.pitchV=0; nav.drift=0;
+      nav.interactT=performance.now();
+      if(nav.onArrive){ const cb=nav.onArrive; nav.onArrive=null; cb(); }
+    }
+  } else {
+    // ── 정·동의 호흡 — 제자리에서 시선을 돌림 (룩어라운드) ──
+    const since=now-nav.interactT;
+    let wantDrift = nav.dragging ? 0 : Math.min(1, Math.max(0,(since-700)/2600));
+    if(window._MOBILE && !window._AMBIENT_SPIN) wantDrift=0;   // 모바일 자동 회전은 _AMBIENT_SPIN 으로
+    nav.drift += (wantDrift-nav.drift)*0.02;
+    if(!nav.dragging){
+      nav.yaw   += nav.yawV;
+      nav.pitch += nav.pitchV;
+      nav.yawV  *= 0.90;
+      nav.pitchV*= 0.90;
+      // [모바일] 핀치 줌 관성 — 손 뗀 뒤 시선방향으로 잠깐 미끄러지다 멈춤
+      if(nav.zoomV){
+        const zx=Math.cos(nav.pitch)*Math.sin(nav.yaw), zy=Math.sin(nav.pitch), zz=Math.cos(nav.pitch)*Math.cos(nav.yaw);
+        nav.pos.x+=zx*nav.zoomV; nav.pos.y+=zy*nav.zoomV; nav.pos.z+=zz*nav.zoomV;
+        nav.zoomV*=0.90;
+        if(Math.abs(nav.zoomV)<0.01) nav.zoomV=0;
+      }
+    }
+    nav.yaw   += 0.00018*nav.drift;                  // 제자리 두리번 — 아주 느리게
+    nav.pitch += Math.sin(t*0.05)*0.00008*nav.drift; // 미세한 끄덕임
+    nav.pitch = Math.max(-1.35, Math.min(1.35, nav.pitch));
+    camera.position.set(nav.pos.x, nav.pos.y, nav.pos.z);
+    const dx=Math.cos(nav.pitch)*Math.sin(nav.yaw);
+    const dy=Math.sin(nav.pitch);
+    const dz=Math.cos(nav.pitch)*Math.cos(nav.yaw);
+    camera.lookAt(nav.pos.x+dx, nav.pos.y+dy, nav.pos.z+dz);
+  }
+
+  // ── 미지의 별 — 느린 표류 ──
+  const pos=pts.geometry.attributes.position.array;
+  const aw = window._MOBILE ? 0.16 : 1;   // [모바일] 배경 별 표류 진폭 축소 — 멀미 완화
+  for(let i=0;i<N;i++){
+    const i3=i*3;
+    pos[i3]  =basePos[i3]  +Math.sin(t*0.28+i*0.71)*0.55*aw;
+    pos[i3+1]=basePos[i3+1]+Math.sin(t*0.19+i*0.53)*0.95*aw;
+    pos[i3+2]=basePos[i3+2]+Math.cos(t*0.23+i*0.41)*0.45*aw;
+  }
+  pts.geometry.attributes.position.needsUpdate=true;
+
+  // ── 책 별 반짝임 ──
+  if(window._bookMat) window._bookMat.uniforms.uTime.value=t;
+  // ── 시냅스 점화 ──
+  if(window._web) window._web.mat.uniforms.uTime.value=t;
+
+  renderer.render(scene,camera);
+}
+init();
+</script>
+
+<!-- TIMELINE UI -->
+<script>
+// ── 책 별 분광형 색상 — 책마다 랜덤 고정 ─────────────
+// ── 책 별 색상 — 배경 청백 파티클과 조화로운 좁은 팔레트 ──
+const BOOK_STAR_TYPES=[
+  {r:0.74,g:0.84,b:1.00},  // 청
+  {r:0.82,g:0.89,b:1.00},  // 옅은 청
+  {r:0.92,g:0.95,b:1.00},  // 청백
+  {r:0.98,g:0.99,b:1.00},  // 흰
+  {r:1.00,g:0.98,b:0.91},  // 따뜻한 흰 (미묘)
+];
+
+// ── 결정론적 시드 난수 (mulberry32) — 책마다 고정된 위치/특성 ──
+function seededRand(seed){
+  let t=seed>>>0;
+  return function(){
+    t+=0x6D2B79F5;
+    let x=Math.imul(t^t>>>15,1|t);
+    x^=x+Math.imul(x^x>>>7,61|x);
+    return ((x^x>>>14)>>>0)/4294967296;
+  };
+}
+
+// ── 데이터 ────────────────────────────────────────────
+const PHASES=[
+  {id:1,name:'우주론',              desc:'태극은 양의를 생하고'},
+  {id:2,name:'우주를 기술하는 언어', desc:'컵속에 담긴 우주'},
+  {id:3,name:'생명의 진화',          desc:'관계론적 세계관'},
+  {id:4,name:'인류의 역사',          desc:'오래된 미래'},
+  {id:5,name:'뇌과학',              desc:'프로메테우스의 저주'},
+  {id:6,name:'철학',                desc:'세계인식의 틀'},
+  {id:7,name:'시·소설',             desc:'구체에서 추상으로'},
+  {id:8,name:'여백',                desc:'Potentiality | 무한한 가능태'},
+];
+
+// ── 데이터 — books.json에서 fetch ────────────────────
+let BOOKS = [];
+let booksData = null;   // 전체 {meta,phases,books} — 새 책 추가/내려받기용
+let dataReady = false;
+
+function assignStarColors(){
+  BOOKS.forEach(book=>{
+    const t=BOOK_STAR_TYPES[Math.floor((Math.sin(book.id*73.1)*0.5+0.5)*BOOK_STAR_TYPES.length)];
+    book._starColor=t;
+  });
+}
+
+// ── 불규칙 성운 — 듬성한 무리들의 씨앗 (빈 곳과 별떼를 함께) ──
+const NEB_SEEDS=[];
+(function(){
+  const r=seededRand(20260628);
+  const K=16;
+  for(let i=0;i<K;i++){
+    const a=r()*Math.PI*2, p=Math.acos(2*r()-1), rad=18+r()*78;
+    NEB_SEEDS.push({
+      x:rad*Math.sin(p)*Math.cos(a),
+      y:rad*Math.sin(p)*Math.sin(a)*0.72,
+      z:rad*Math.cos(p),
+      w:0.4+r()*1.1
+    });
+  }
+})();
+function seedPos3D(id){
+  const r=seededRand(id*131+7);
+  const pick=NEB_SEEDS[Math.floor(r()*NEB_SEEDS.length)];
+  const spread=7+pick.w*11;
+  const g=()=>(r()+r()+r()-1.5)*spread;   // 대략 정규분포 산포
+  return {x:pick.x+g(), y:pick.y+g()*0.82, z:pick.z+g()};
+}
+
+// ── 책 별을 3D 우주에 박기 ──
+let bookPts=null, bookRay=null;
+function buildBookStars(){
+  const THREE=window.THREE;
+  if(!THREE || !window.scene){ setTimeout(buildBookStars,40); return; }  // 모듈 준비 대기
+  const n=BOOKS.length;
+  const positions=new Float32Array(n*3);
+  const bcolors=new Float32Array(n*3);
+  const bsizes=new Float32Array(n);
+  BOOKS.forEach((b,i)=>{
+    const p=seedPos3D(b.id);
+    b._p3=p; b._starIdx=i;
+    positions[i*3]=p.x; positions[i*3+1]=p.y; positions[i*3+2]=p.z;
+    const c=b._starColor||{r:0.92,g:0.95,b:1};
+    bcolors[i*3]=c.r; bcolors[i*3+1]=c.g; bcolors[i*3+2]=c.b;
+    bsizes[i]=2.0 + seededRand(b.id*17+3)()*1.7;
+  });
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',   new THREE.BufferAttribute(positions,3));
+  g.setAttribute('customColor',new THREE.BufferAttribute(bcolors,3));
+  g.setAttribute('size',       new THREE.BufferAttribute(bsizes,1));
+
+  // 책 별 텍스처 — 또렷한 코어 + 따뜻한 글로우 (미지의 별과 대비)
+  const cv=document.createElement('canvas'); cv.width=64; cv.height=64;
+  const c2=cv.getContext('2d');
+  const grad=c2.createRadialGradient(32,32,0,32,32,32);
+  grad.addColorStop(0,   'rgba(255,255,255,1)');
+  grad.addColorStop(0.18,'rgba(255,251,238,0.95)');
+  grad.addColorStop(0.5, 'rgba(255,238,198,0.35)');
+  grad.addColorStop(1,   'transparent');
+  c2.fillStyle=grad; c2.fillRect(0,0,64,64);
+
+  const bookTex=new THREE.CanvasTexture(cv);
+  window._bookTex=bookTex;
+  const mat=new THREE.ShaderMaterial({
+    uniforms:{ pointTexture:{value:bookTex}, uTime:{value:0} },
+    vertexShader:`
+      attribute float size; attribute vec3 customColor; varying vec3 vColor;
+      uniform float uTime;
+      void main(){
+        vColor=customColor;
+        float tw=0.82+0.18*sin(uTime*1.4+position.x*0.7+position.y*1.3);
+        vec4 mv=modelViewMatrix*vec4(position,1.0);
+        gl_PointSize=size*tw*(420.0/-mv.z);
+        gl_Position=projectionMatrix*mv;
+      }`,
+    fragmentShader:`
+      uniform sampler2D pointTexture; varying vec3 vColor;
+      void main(){ gl_FragColor=vec4(vColor,1.0)*texture2D(pointTexture,gl_PointCoord); }`,
+    blending:THREE.AdditiveBlending, depthTest:false, transparent:true
+  });
+  bookPts=new THREE.Points(g,mat);
+  window.scene.add(bookPts);
+  window._bookMat=mat; window._bookPts=bookPts;
+
+  bookRay=new THREE.Raycaster();
+  bookRay.params.Points.threshold=2.6;
+
+
+  // ── 성단 안에서 깨어나기 — 가장 바깥 책별에서 안쪽으로 1/3 잠긴 반경 (방향은 촘촘한 무리 쪽) ──
+  let startNeb=NEB_SEEDS[0];
+  for(const s of NEB_SEEDS) if(s.w<startNeb.w) startNeb=s;  // w 작을수록 촘촘
+  let rMin=Infinity, rMax=0;
+  BOOKS.forEach(b=>{ if(!b._p3) return;
+    const d=Math.hypot(b._p3.x,b._p3.y,b._p3.z);
+    if(d<rMin) rMin=d; if(d>rMax) rMax=d; });
+  if(!isFinite(rMin) || rMax<=0){ rMin=40; rMax=120; }   // 안전값 — 책 데이터 이상 시
+  const startD=rMax-(rMax-rMin)/3;     // R − (R−r)/3 : 바깥 별에서 성단 속으로 1/3
+  const mr=Math.max(1,Math.hypot(startNeb.x,startNeb.y,startNeb.z));
+  const nav=window._nav;
+  const f=startD/mr;
+  nav.pos={x:startNeb.x*f, y:startNeb.y*f, z:startNeb.z*f};
+  // 시선은 성단의 심장(원점)으로 — 깨어나며 더 깊은 안쪽을 바라봄
+  const vx=-nav.pos.x, vy=-nav.pos.y, vz=-nav.pos.z;
+  const vl=Math.max(1,Math.hypot(vx,vy,vz));
+  nav.yaw   = Math.atan2(vx, vz);
+  nav.pitch = Math.max(-1.0, Math.min(1.0, Math.asin(vy/vl)));
+  nav.interactT = performance.now()-9999;
+
+  buildWeb();   // 그물망 생성
+}
+
+// ── 살아 숨 쉬는 그물망 — 별마다 가까운 이웃을 잇고, 밝기 파동만 흐름 ──
+function buildWeb(){
+  const THREE=window.THREE;
+  if(!THREE||!window.scene||!BOOKS.length) return;
+  const K=5, SEG=28;
+  const edges=[]; const seen=new Set();
+  for(let i=0;i<BOOKS.length;i++){
+    const A=BOOKS[i]; if(!A._p3) continue;
+    const ds=[];
+    for(let j=0;j<BOOKS.length;j++){
+      if(i===j) continue; const B=BOOKS[j]; if(!B._p3) continue;
+      const dx=B._p3.x-A._p3.x,dy=B._p3.y-A._p3.y,dz=B._p3.z-A._p3.z;
+      ds.push({j,d2:dx*dx+dy*dy+dz*dz});
+    }
+    ds.sort((x,y)=>x.d2-y.d2);
+    for(let k=0;k<Math.min(K,ds.length);k++){
+      const j=ds[k].j, key=i<j?i+'_'+j:j+'_'+i;
+      if(seen.has(key)) continue; seen.add(key);
+      edges.push([A._p3, BOOKS[j]._p3]);
+    }
+  }
+  const TOT=edges.length*SEG;
+  const pos=new Float32Array(TOT*3), ph=new Float32Array(TOT), drp=new Float32Array(TOT);
+  let p=0;
+  for(const e of edges){
+    const a=e[0], b=e[1];
+    const eph=(a.x+a.y+a.z+b.x+b.y+b.z)*0.04 + Math.random()*6.283;
+    const len=Math.hypot(b.x-a.x,b.y-a.y,b.z-a.z);
+    const sag=len*0.14;                          // 실 길이에 비례한 기준 처짐
+    for(let sg=0;sg<SEG;sg++){
+      const tt=sg/(SEG-1);
+      pos[p*3]=a.x+(b.x-a.x)*tt;                 // 직선으로 깔고 (처짐은 셰이더에서)
+      pos[p*3+1]=a.y+(b.y-a.y)*tt;
+      pos[p*3+2]=a.z+(b.z-a.z)*tt;
+      ph[p]=eph;
+      drp[p]=sag*4.0*tt*(1.0-tt);                // 가운데가 가장 늘어지는 기준량
+      p++;
+    }
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  g.setAttribute('aPhase',new THREE.BufferAttribute(ph,1));
+  g.setAttribute('aDrop',new THREE.BufferAttribute(drp,1));
+  const m=new THREE.ShaderMaterial({
+    uniforms:{ uTex:{value:window._bookTex||null}, uTime:{value:0}, uBright:{value:0.1}, uSagMul:{value:0.0} },
+    vertexShader:`
+      attribute float aPhase; attribute float aDrop; varying float vW; varying float vH;
+      uniform float uTime; uniform float uSagMul;
+      void main(){
+        vW=0.5+0.5*sin(uTime*0.5+aPhase);
+        vH=fract(aPhase*0.159 + uTime*0.015);        // 엣지마다 색이 다르고, 아주 천천히 흐름
+        vec3 pos2=position; pos2.y -= uSagMul*aDrop;  // 중력 방향 처짐 (게이지 조절)
+        vec4 mv=modelViewMatrix*vec4(pos2,1.0);
+        gl_PointSize=3.2*(360.0/-mv.z);
+        gl_Position=projectionMatrix*mv;
+      }`,
+    fragmentShader:`
+      uniform sampler2D uTex; uniform float uBright; varying float vW; varying float vH;
+      vec3 hsv2rgb(vec3 c){
+        vec4 K=vec4(1.0,2.0/3.0,1.0/3.0,3.0);
+        vec3 p=abs(fract(c.xxx+K.xyz)*6.0-K.www);
+        return c.z*mix(K.xxx,clamp(p-K.xxx,0.0,1.0),c.y);
+      }
+      void main(){
+        float hue=fract(vH + vW*0.12);              // 위상마다 다른 색, 일렁이며 번짐
+        vec3 c=hsv2rgb(vec3(hue, 0.55, 1.0));
+        float a=(0.10+0.42*vW)*uBright;
+        gl_FragColor=vec4(c,a)*texture2D(uTex,gl_PointCoord);
+      }`,
+    blending:THREE.AdditiveBlending, depthTest:false, depthWrite:false, transparent:true
+  });
+  const pts=new THREE.Points(g,m); pts.frustumCulled=false;
+  window.scene.add(pts);
+  window._web={ pts, mat:m };
+}
+
+// ── 3D → 화면 좌표 투영 (라벨용) ──
+function project3d(p){
+  const v=new window.THREE.Vector3(p.x,p.y,p.z).project(window.camera);
+  return { x:(v.x*0.5+0.5)*W, y:(-v.y*0.5+0.5)*H, vis:(v.z<1) };
+}
+// ── 화면 좌표 → 책 별 픽 (클릭/호버) ──
+function pickBook(mx,my){
+  if(!bookPts||!bookRay) return null;
+  const ndc=new window.THREE.Vector2((mx/innerWidth)*2-1, -(my/innerHeight)*2+1);
+  bookRay.params.Points.threshold=window._MOBILE?6.5:2.4;   // [모바일] 손가락 히트박스 확대
+  bookRay.setFromCamera(ndc, window.camera);
+  const hits=bookRay.intersectObject(bookPts);
+  if(hits.length){ return BOOKS[hits[0].index]||null; }
+  return null;
+}
+
+// ── 유성의 곡선 비행 시작 ──
+window.flyTo=function(book,onArrive){
+  const nav=window._nav, cam=window.camera;
+  if(!book||!book._p3||!cam){ if(onArrive) onArrive(); return; }
+  const star=book._p3;
+  const p0={x:nav.pos.x, y:nav.pos.y, z:nav.pos.z};   // 직전 책 앞 그 자리 — 드래그로 둘러봐도 불변
+  const arrive=42;                       // 도착 시 별로부터의 거리
+  let ax=p0.x-star.x, ay=p0.y-star.y, az=p0.z-star.z;
+  let al=Math.hypot(ax,ay,az);
+  if(al<1){ ax=0; ay=0.2; az=1; al=Math.hypot(ax,ay,az); }  // 이미 별 위면 임의 방향
+  ax/=al; ay/=al; az/=al;
+  const p1={x:star.x+ax*arrive, y:star.y+ay*arrive, z:star.z+az*arrive};
+  const mid={x:(p0.x+p1.x)/2, y:(p0.y+p1.y)/2, z:(p0.z+p1.z)/2};
+  const dx=p1.x-p0.x, dy=p1.y-p0.y, dz=p1.z-p0.z;
+  const dlen=Math.max(1,Math.hypot(dx,dy,dz));
+  // 진행방향 × up(0,1,0) = (-dz,0,dx) → 수평 수직벡터로 휨
+  let px=-dz, pz=dx;
+  const pl=Math.hypot(px,pz)||1; px/=pl; pz/=pl;
+  const rnd=seededRand(book.id*977+13);
+  const side=(rnd()<0.5?-1:1);
+  const bend=dlen*0.22;                   // 멀수록 크게 휘고, 가까우면 거의 직진
+  const lift=dlen*0.10*(0.5+rnd()*0.6);
+  nav.pc={x:mid.x+px*bend*side, y:mid.y+lift, z:mid.z+pz*bend*side};
+  nav.p0=p0; nav.p1=p1;
+  nav.center={x:star.x, y:star.y, z:star.z};
+  // 1인칭↔3인칭 이음매용
+  nav.flyStart={x:nav.pos.x, y:nav.pos.y, z:nav.pos.z};
+  const sdx=Math.cos(nav.pitch)*Math.sin(nav.yaw), sdy=Math.sin(nav.pitch), sdz=Math.cos(nav.pitch)*Math.cos(nav.yaw);
+  nav.flyStartLook={x:nav.pos.x+sdx, y:nav.pos.y+sdy, z:nav.pos.z+sdz};
+  nav.flyEnd={x:p1.x, y:p1.y, z:p1.z};
+  nav.flyDlen=dlen;
+  const frames=Math.max(150, Math.min(360, Math.round(dlen*0.9)));  // 부드럽게 천천히
+  nav.flying=true; nav.flyT=0; nav.flyStep=1/frames;
+  nav.dragging=false; nav.onArrive=onArrive||null;
+};
+
+fetch('books.json')
+  .then(r=>r.json())
+  .then(data=>{
+    booksData = data;
+    BOOKS = data.books;
+    assignStarColors();
+    buildBookStars();
+    dataReady = true;
+    if(window._refreshRecentBooks) window._refreshRecentBooks();   // 새로 달린 별 목록
+  })
+  .catch(err=>console.error('books.json 로드 실패:', err));
+
+// ── 상태 ──────────────────────────────────────────────
+const tlCanvas=document.getElementById('tl-canvas');
+const ctx=tlCanvas.getContext('2d');
+let W,H;
+
+let viewMode='timeline';
+let activeIdx=null;
+let zoomT=0;
+let clusterBooks=[];
+let currentOffset=0,targetOffset=0,currentPhaseIndex=0;
+const PHASE_SPACING=340;
+let phaseHitAreas=[];
+let hoveredPhase=-1, lastHoveredPhase=-1, phaseDescFade=0;
+
+// 호버 상태
+let hoveredBook=null;
+let hoverPanelAlpha=0;
+
+// 마우스 위치 (성단 줌 레벨용)
+let mouseX=W/2||0, mouseY=H/2||0;
+
+// ── DOM 참조 ──────────────────────────────────────────
+const elHeader  =document.getElementById('header');
+const elHoverPanel=document.getElementById('hover-panel');
+const elNav     =document.getElementById('nav');
+const elBack    =document.getElementById('back-btn');
+
+// 강조/선택 상태
+let pinnedBook=null;   // 검색/클릭으로 고정된 별
+let panelBook=null;    // 입력 패널이 열린 책
+let focusedBook=null;  // 강조 대상 = hoveredBook || pinnedBook
+const bookData={};     // 책 id별 {music:[],reading:[],lines:[]}
+let panelDirty=false;  // 패널 내용이 바뀌어 저장이 필요한 상태
+let currentUser=null;  // 로그인한 사용자 (없으면 읽기만)
+let panelShiftX=0;     // 패널 열림에 따라 별 우주가 왼쪽으로 밀리는 양 (lerp)
+const PANEL_SHIFT=150; // 패널 열렸을 때 목표 이동량(px)
+
+function resize(){W=tlCanvas.width=innerWidth;H=tlCanvas.height=innerHeight;}
+
+// ── 성단 모션 상태 ────────────────────────────────────
+let clusterEntryTime = 0;
+let floatClock = 0;
+const ENTRY_DURATION = 1.4;
+
+// 별자리 선 상태
+let constellationAlpha = 0;  // 현재 선 투명도 (0→1 페이드인, 1→0 페이드아웃)
+let constellationDir   = 0;  // 1=나타남, -1=사라짐, 0=정지
+let constellationLines = []; // (구) 연결선 목록 — 미사용
+let constellation = {members:[], edges:[]}; // 호버 별자리: 별 5~12개 + 연결
+let pendingEnter = null;     // 검색 선택 후 진입 예약 phaseIdx
+let pendingOpenBook = null;  // 검색 선택 후 성단 진입이 끝나면 열 책
+
+// ── 별자리 생성 — 호버한 별 둘레에서 5~12개를 골라 자연스럽게 연결 ──
+function buildConstellation(rootBook){
+  const all=clusterBooks
+    .map(cb=>cb.book)
+    .filter(b=>b!==rootBook && b._csx!=null && b._csy!=null);
+  if(rootBook._csx==null || all.length<4) return {members:[rootBook], edges:[]};
+
+  const rnd=seededRand(rootBook.id*40503+777);
+  const count=5+Math.floor(rnd()*8); // 5~12 (root 포함)
+  const rx=rootBook._csx, ry=rootBook._csy;
+
+  // root에서 가까운 후보 풀
+  const sorted=all.sort((a,b)=>{
+    const da=(a._csx-rx)**2+(a._csy-ry)**2;
+    const db=(b._csx-rx)**2+(b._csy-ry)**2;
+    return da-db;
+  });
+  const pool=sorted.slice(0, Math.min(sorted.length, (count-1)*2+4));
+  // 시드 셔플 후 추출 — 가깝되 매번 다른 조합
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  const members=[rootBook, ...pool.slice(0, count-1)];
+
+  // 최소신장트리(Prim) — 가까운 것끼리 나뭇가지처럼
+  const edges=primMST(members);
+  // 곁가지 1~2개 — 너무 트리스럽지 않게
+  const extra=1+Math.floor(rnd()*2);
+  for(let e=0;e<extra;e++){
+    const i=Math.floor(rnd()*members.length);
+    let bj=-1,bd=Infinity;
+    for(let j=0;j<members.length;j++){
+      if(j===i) continue;
+      if(edges.some(([a,b])=>(a===i&&b===j)||(a===j&&b===i))) continue;
+      const dx=members[i]._csx-members[j]._csx, dy=members[i]._csy-members[j]._csy;
+      const d=dx*dx+dy*dy;
+      if(d<bd){bd=d;bj=j;}
+    }
+    if(bj>=0) edges.push([i,bj]);
+  }
+  return {members, edges};
+}
+
+function primMST(nodes){
+  const n=nodes.length; if(n<2) return [];
+  const used=new Array(n).fill(false); used[0]=true;
+  const inTree=[0]; const edges=[];
+  for(let k=1;k<n;k++){
+    let best=Infinity,bi=-1,bj=-1;
+    for(const i of inTree){
+      for(let j=0;j<n;j++){
+        if(used[j]) continue;
+        const dx=nodes[i]._csx-nodes[j]._csx, dy=nodes[i]._csy-nodes[j]._csy;
+        const d=dx*dx+dy*dy;
+        if(d<best){best=d;bi=i;bj=j;}
+      }
+    }
+    if(bj<0) break;
+    used[bj]=true; inTree.push(bj); edges.push([bi,bj]);
+  }
+  return edges;
+}
+
+// ── Easing ────────────────────────────────────────────
+function eio(t){return t<0.5?2*t*t:-1+(4-2*t)*t;}
+function eout(t){return 1-(1-t)*(1-t);}
+
+// ── 헤더 통합 제어 ────────────────────────────────────
+function setHeaders(tlA,cluA){
+  elHeader.style.opacity =tlA.toFixed(3);
+  elNav.style.opacity    =tlA.toFixed(3);
+  elBack.style.opacity   =cluA.toFixed(3);
+  elNav.style.pointerEvents =tlA>0.3?'all':'none';
+  elBack.style.pointerEvents=cluA>0.3?'all':'none';
+}
+
+// ── 좌표 변환 ─────────────────────────────────────────
+function tlToScreen(tPos){
+  const relX=tPos-currentOffset;
+  const normX=relX/(W*0.72);
+  return{
+    x:W/2+relX, y:H*0.50+normX*normX*70,
+    opacity:Math.max(0,1-Math.abs(normX)*1.5),
+    scale:Math.max(0.22,1.15-Math.abs(normX)*0.9)
+  };
+}
+
+// ── 성단 배치 계산 — 시드 난수로 원판 전체에 자연 산개 ──
+function computeCluster(phaseIdx,cx,cy){
+  const books=BOOKS.filter(b=>b.phase===phaseIdx+1);
+
+  // 화면 활용 가능한 최대 반경 (화면의 42%)
+  const maxR=Math.min(W,H)*0.42;
+
+  return books.map((book)=>{
+    // 책 id로 고정된 난수 — 매번 같은 자리, 매번 같은 별자리
+    const rnd=seededRand(book.id*2654435761+12345);
+    const a=rnd()*Math.PI*2;
+    // sqrt(random) → 면적 균일 분포 (중심에 뭉치지 않고 고르게)
+    const rr=Math.sqrt(rnd())*maxR;
+    return{
+      book,
+      x:cx+Math.cos(a)*rr,
+      y:cy+Math.sin(a)*rr
+    };
+  });
+}
+
+// ── 배경 카메라 ───────────────────────────────────────
+function bgZoomIn(phaseIdx){
+  if(!window._bg) return;
+  window._bg.targetZ=24; window._bg.targetX=(phaseIdx-3.5)*5; window._bg.targetY=18;
+}
+function bgZoomOut(){
+  if(!window._bg) return;
+  window._bg.targetZ=100; window._bg.targetX=0; window._bg.targetY=27;
+}
+
+// ── 타임라인 그리기 ───────────────────────────────────
+function drawTimeline(alpha){
+  if(alpha<=0.01) return;
+
+  // 데이터 로딩 중 표시
+  if(!dataReady){
+    ctx.save();ctx.globalAlpha=alpha*0.5;ctx.textAlign='center';
+    ctx.font=`300 13px 'Gowun Batang'`;
+    ctx.fillStyle='#6E6C66';
+    ctx.fillText('책 목록을 불러오는 중…', W/2, H/2);
+    ctx.restore();
+  }
+
+  // 호 라인
+  ctx.save(); ctx.globalAlpha=alpha;
+  ctx.beginPath();
+  for(let t=-1.5;t<=1.5;t+=0.015){
+    const px=W/2+t*W*0.55,py=H*0.50+t*t*70;
+    t===-1.5?ctx.moveTo(px,py):ctx.lineTo(px,py);
+  }
+  ctx.strokeStyle='rgba(110,108,102,0.18)';ctx.lineWidth=0.5;ctx.stroke();
+  ctx.restore();
+
+  // 부제 페이드 + 마지막 호버 기억 (fade out 동안에도 직전 성단 표시)
+  if(hoveredPhase>=0) lastHoveredPhase=hoveredPhase;
+  phaseDescFade += ((hoveredPhase>=0?1:0) - phaseDescFade)*0.14;
+
+  phaseHitAreas=[];
+
+  PHASES.forEach((phase,i)=>{
+    const tPos=i*PHASE_SPACING;
+    const{x,y,opacity,scale}=tlToScreen(tPos);
+    if(opacity<0.02) return;
+    const eff=opacity*alpha;
+
+    // 중심 정렬 정도 (0~1) — 강조 강도를 부드럽게 보간
+    const cness=centernessOf(i);
+    const pulse=1+Math.sin(performance.now()/600)*0.06*cness;
+
+    // 클릭 힌트 링 — 중심일수록 선명, 가장자리는 거의 사라짐
+    ctx.save();ctx.globalAlpha=eff*(0.06+cness*0.5);
+    ctx.beginPath();ctx.arc(x,y,24*scale*pulse,0,Math.PI*2);
+    ctx.strokeStyle='#D9A96E';ctx.lineWidth=0.5+cness*0.5;ctx.stroke();ctx.restore();
+
+    // 중심 정렬 시 바깥 펄스 링 하나 더
+    if(cness>0.5){
+      ctx.save();ctx.globalAlpha=eff*(cness-0.5)*0.5;
+      ctx.beginPath();ctx.arc(x,y,34*scale*pulse,0,Math.PI*2);
+      ctx.strokeStyle='#D9A96E';ctx.lineWidth=0.5;ctx.stroke();ctx.restore();
+    }
+
+    // 마커 — 중심일수록 밝고 큼
+    const mr=(5+cness*2)*scale;
+    ctx.save();ctx.globalAlpha=eff*(0.55+cness*0.45);
+    ctx.beginPath();ctx.arc(x,y,mr,0,Math.PI*2);
+    ctx.fillStyle=cness>0.5?'#D9A96E':'#B87D3E';
+    ctx.shadowColor='rgba(184,125,62,0.85)';ctx.shadowBlur=10+cness*12;
+    ctx.fill();ctx.restore();
+
+    phaseHitAreas.push({x, y:y-14*scale, r:34*scale, phaseIdx:i});
+
+    // 레이블 — 주제(name)는 마커 위·크게
+    ctx.save();ctx.globalAlpha=eff;ctx.textAlign='center';
+    const titleSize=(15+cness*5.5)*scale;
+    ctx.font=`400 ${Math.round(titleSize)}px 'Gowun Batang'`;
+    ctx.fillStyle=cness>0.5?'#E0CDB2':'#A89B86';
+    ctx.fillText(phase.name, x, y-38*scale);
+    ctx.restore();
+  });
+
+  // 부제 — 호버한 성단의 부제를 상단 빈 하늘에 크게 (클릭하면 성단으로 들며 스러짐)
+  if(phaseDescFade>0.01){
+    const sp = hoveredPhase>=0 ? hoveredPhase : lastHoveredPhase;
+    if(sp>=0 && PHASES[sp]){
+      ctx.save();
+      ctx.globalAlpha=alpha*phaseDescFade*0.9;
+      ctx.textAlign='center';
+      ctx.font=`300 ${Math.round(31)}px 'Gowun Batang'`;
+      ctx.fillStyle='#D8C8A8';
+      ctx.fillText(PHASES[sp].desc, W/2, H*0.15);
+      ctx.restore();
+    }
+  }
+
+  // 책 별 — Phase 마커 중심으로 원형 산포
+  BOOKS.forEach(book=>{
+    const pIdx=book.phase-1;
+    // id 기반 고정 랜덤 — 매번 같은 위치 유지
+    const s1=Math.sin(book.id*137.508);
+    const s2=Math.cos(book.id*97.312);
+    const s3=Math.sin(book.id*53.7);
+    // 극좌표로 원형 배치
+    const angle=s1*Math.PI*2;
+    const radius=Math.abs(s2)*PHASE_SPACING*0.38 + Math.abs(s3)*PHASE_SPACING*0.08;
+    const tPos=pIdx*PHASE_SPACING + Math.cos(angle)*radius*0.55;
+    const yOff=Math.sin(angle)*radius*0.75;
+
+    const{x,y,opacity,scale}=tlToScreen(tPos);
+    if(opacity<0.04) return;
+    const c=book._starColor;
+    const bx=x, by=y+yOff*scale, r=2.5*scale;
+    ctx.save();ctx.globalAlpha=opacity*alpha*0.28;
+    ctx.beginPath();ctx.arc(bx,by,r,0,Math.PI*2);
+    ctx.fillStyle=`rgb(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)})`;
+    ctx.shadowColor=`rgba(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)},0.25)`;
+    ctx.shadowBlur=3;ctx.fill();ctx.restore();
+  });
+}
+
+// ── 성단 그리기 ───────────────────────────────────────
+function drawCluster(layout,alpha,phaseIdx){
+  if(alpha<=0.01||!layout.length) return;
+  const cx=W/2,cy=H/2;
+  // 패널 열림에 따라 별 우주가 왼쪽으로 부드럽게 밀림
+  panelShiftX += ((panelBook ? -PANEL_SHIFT : 0) - panelShiftX) * 0.09;
+  const phase=PHASES[phaseIdx];
+  const now=performance.now()/1000;
+
+  // 강조 대상 = 호버 별 또는 검색으로 고정된 별
+  const focused = hoveredBook || pinnedBook;
+  // 별자리는 별 위치(_csx)가 준비된 뒤 생성 (검색 진입 직후도 대응)
+  if(focused && focused._csx!=null && constellation.members.length===0 && constellationDir===1){
+    constellation=buildConstellation(focused);
+  }
+
+  // C: 진입 애니 진행도 (0→1, ENTRY_DURATION 초 동안)
+  const entryElapsed=now-clusterEntryTime;
+  const entryT=Math.min(1, entryElapsed/ENTRY_DURATION);
+  // easeOutCubic — 빠르게 퍼졌다 부드럽게 안착
+  const entryE=1-Math.pow(1-entryT,3);
+
+  // ── 별자리 — 호버한 별 둘레의 5~12개를 자연스럽게 연결 ──
+  if(constellation.members.length>1 && constellationAlpha>0.01){
+    const m=constellation.members;
+    ctx.save();
+    ctx.lineCap='round';
+    for(const [i,j] of constellation.edges){
+      const a=m[i], b=m[j];
+      if(a._csx==null||b._csx==null) continue;
+      ctx.beginPath();
+      ctx.moveTo(a._csx,a._csy);
+      ctx.lineTo(b._csx,b._csy);
+      ctx.globalAlpha=alpha*constellationAlpha*0.32;
+      ctx.strokeStyle='rgba(232,200,150,0.9)';
+      ctx.lineWidth=2.4;
+      ctx.shadowColor='rgba(217,169,110,0.9)';
+      ctx.shadowBlur=8;
+      ctx.stroke();
+      ctx.globalAlpha=alpha*constellationAlpha*0.8;
+      ctx.strokeStyle='rgba(242,224,186,0.95)';
+      ctx.lineWidth=0.8;
+      ctx.shadowBlur=0;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // 별자리 알파 애니메이션
+  if(constellationDir===1){
+    constellationAlpha=Math.min(1, constellationAlpha+0.04);
+  } else if(constellationDir===-1){
+    constellationAlpha=Math.max(0, constellationAlpha-0.03);
+    if(constellationAlpha<=0){ constellationDir=0; constellation={members:[],edges:[]}; }
+  }
+
+  layout.forEach(({book,x,y},i)=>{
+    const isHovered=(book===focused);
+    const c=book._starColor;
+    const colStr=`rgb(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)})`;
+    const glowStr=`rgba(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)},0.9)`;
+
+    // C: 진입 — 별마다 약간 다른 딜레이로 중앙에서 퍼져나옴
+    const delay=Math.min(i/layout.length*0.4, 0.38); // 0~0.38초 딜레이
+    const starT=Math.min(1, Math.max(0, (entryT-delay)/(1-delay)));
+    const starE=1-Math.pow(1-starT,3);
+
+    // 진입 위치: 중앙(cx,cy) → 최종 위치(x,y)
+    const rx=cx+(x-cx)*starE;
+    const ry=cy+(y-cy)*starE;
+
+    // A: 미세 부유 — 각 별마다 고유 주기·방향
+    const floatAmp=3+Math.abs(Math.sin(book.id*7.3))*4; // 3~7px
+    const floatSpeedX=0.4+Math.abs(Math.sin(book.id*3.1))*0.5;
+    const floatSpeedY=0.35+Math.abs(Math.cos(book.id*5.7))*0.4;
+    const floatX=Math.sin(now*floatSpeedX+book.id*2.1)*floatAmp;
+    const floatY=Math.cos(now*floatSpeedY+book.id*1.7)*floatAmp*0.7;
+
+    // 진입 완료 후 부유 적용 (진입 중엔 부유 억제)
+    const floatMix=Math.max(0, (starE-0.7)/0.3); // 70% 이후부터 부유 시작
+    const fx=rx+floatX*floatMix+panelShiftX;
+    const fy=ry+floatY*floatMix;
+
+    // 마우스 거리 기반 proximity
+    const dx=mouseX-fx, dy=mouseY-fy;
+    const dist=Math.sqrt(dx*dx+dy*dy);
+    const proximity=Math.max(0,1-dist/320);
+    const hasEssay=essayStars.has(book.id);
+    const baseAlpha=(0.2+proximity*0.8)*starE*(hasEssay?1.45:1); // 글 있으면 더 밝게
+
+    const hot = isHovered; // = focused (호버 또는 검색 고정)
+
+    // 별 크기
+    const pulse=1+Math.sin(now*2+book.id)*0.1;
+    const r = hot ? 12 : (3+proximity*6)*pulse*(hasEssay?1.3:1);
+
+    const cr=Math.round(c.r*255), cg=Math.round(c.g*255), cb2=Math.round(c.b*255);
+
+    // 은은한 파동 — focused 별 둘레로 천천히 퍼지는 동심원 (지속)
+    if(hot){
+      const period=2.6;
+      for(let k=0;k<2;k++){
+        const tt=((now/period)+k*0.5)%1;
+        ctx.save();
+        ctx.globalAlpha=alpha*(1-tt)*0.33;
+        ctx.beginPath();
+        ctx.arc(fx,fy,(r*2.2)+tt*44,0,Math.PI*2);
+        ctx.strokeStyle='rgba(242,224,200,0.8)';
+        ctx.lineWidth=0.8;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // 방사형 그라디언트 — 중심 밝고 바깥으로 흐려지는 별 느낌
+    const starAlpha=alpha*(hot?1:baseAlpha);
+    const grad=ctx.createRadialGradient(fx,fy,0,fx,fy,r*2.2);
+
+    if(hot){
+      grad.addColorStop(0,   `rgba(255,255,255,0.95)`);
+      grad.addColorStop(0.2, `rgba(${cr},${cg},${cb2},0.85)`);
+      grad.addColorStop(0.5, `rgba(${cr},${cg},${cb2},0.35)`);
+      grad.addColorStop(1,   `rgba(${cr},${cg},${cb2},0)`);
+    } else {
+      const brightness=0.5+proximity*0.4;
+      grad.addColorStop(0,   `rgba(255,255,255,${0.8*brightness})`);
+      grad.addColorStop(0.25,`rgba(${cr},${cg},${cb2},${0.65*brightness})`);
+      grad.addColorStop(0.6, `rgba(${cr},${cg},${cb2},${0.2*brightness})`);
+      grad.addColorStop(1,   `rgba(${cr},${cg},${cb2},0)`);
+    }
+
+    ctx.save();
+    ctx.globalAlpha=starAlpha;
+    ctx.beginPath();
+    ctx.arc(fx,fy,r*2.2,0,Math.PI*2);
+    ctx.fillStyle=grad;
+    ctx.fill();
+    ctx.restore();
+
+    // 호버·검색 시 제목 — 별 바로 위
+    if(hot){
+      ctx.save();ctx.globalAlpha=alpha;
+      ctx.font=`400 13px 'Gowun Batang'`;
+      ctx.fillStyle='rgba(242,224,200,0.95)';
+      ctx.shadowColor='rgba(0,0,0,0.9)';ctx.shadowBlur=10;
+      ctx.textAlign='center';
+      ctx.fillText(book.title, fx, fy-r*2.2-8);
+      ctx.restore();
+    }
+
+    book._csx=fx;book._csy=fy;book._cr=r+10;
+  });
+}
+
+// ── 책 정보 표시 (검색창 아래 패널 머리) ──────────────
+function showBookInfo(book){
+  document.getElementById('bp-title').textContent=book.title;
+  document.getElementById('bp-author').textContent=
+    book.author+(book.publisher&&book.publisher!=='(알 수 없음)'?'  ·  '+book.publisher:'');
+  document.getElementById('bp-views').textContent=''; // 별을 클릭해 패널을 열 때 채워짐
+  document.getElementById('book-panel').classList.add('visible');
+}
+function hideBookInfo(){
+  if(panelBook) return; // 입력 패널이 열려 있으면 정보 유지
+  document.getElementById('book-panel').classList.remove('visible');
+}
+
+// ── 메인 루프 ─────────────────────────────────────────
+const SPEED=0.013; // 느리게 — 천천히 빨려드는 느낌
+
+function loop(){
+  ctx.clearRect(0,0,W,H);
+  // 호버하거나 고정된 별의 제목을 화면에 투영해 표시 (별자리는 버림)
+  const f = hoveredBook || pinnedBook;
+  if(f && f._p3){
+    const s=project3d(f._p3);
+    if(s.vis){
+      ctx.save();
+      ctx.textAlign='center';
+      ctx.shadowColor='rgba(0,0,0,0.85)'; ctx.shadowBlur=9;
+      ctx.font=(window._MOBILE?'400 21px':'400 15px')+' "Song Myung","Noto Serif KR", serif';
+      ctx.fillStyle='rgba(242,238,230,0.97)';
+      ctx.fillText(f.title, s.x, s.y-(window._MOBILE?26:20));
+      if(f.author){
+        ctx.font=(window._MOBILE?'400 15px':'400 11.5px')+' "Noto Serif KR", serif';
+        ctx.fillStyle='rgba(202,198,190,0.78)';
+        ctx.fillText(f.author, s.x, s.y-4);
+      }
+      ctx.restore();
+    }
+  }
+  requestAnimationFrame(loop);
+}
+
+// ── 전환 진입점 ───────────────────────────────────────
+function enterCluster(phaseIdx){
+  if(viewMode!=='timeline') return;
+  activeIdx=phaseIdx;
+  clusterBooks=computeCluster(phaseIdx,W/2,H/2);
+  setClusterHeaderText(phaseIdx);
+  viewMode='zoom-in';zoomT=0;
+  hideCalli();                            // 성단으로 들어가면 대문 천문은 거둔다
+  clusterEntryTime=performance.now()/1000; // 진입 시각 기록
+  panelShiftX=0; // 별 밀림 초기화
+  // 혜성 카운트 — 사이트(스쳐간) 숨김, 성단(근접한) 표시 + 입장 +1
+  document.getElementById('comet-site').classList.remove('show');
+  document.getElementById('comet-phase').classList.add('show');
+  if(PHASES[phaseIdx]) bumpPhase(PHASES[phaseIdx].id);
+  bgZoomIn(phaseIdx);
+}
+
+window.exitCluster=function(){
+  if(viewMode!=='cluster') return;
+  if(typeof flushPanel==='function') flushPanel(); // 나가기 전 저장
+  hoveredBook=null;
+  constellationDir=-1; // 별자리 선 페이드아웃
+  viewMode='zoom-out';zoomT=0;
+  // 혜성 카운트 — 성단(근접한) 숨김, 사이트(스쳐간) 표시
+  document.getElementById('comet-phase').classList.remove('show');
+  document.getElementById('comet-site').classList.add('show');
+  bgZoomOut();
+};
+
+function setClusterHeaderText(idx){ /* 우측 상단 헤더 제거됨 */ }
+
+// ── UI 업데이트 ───────────────────────────────────────
+function updatePhaseUI(){
+  document.querySelectorAll('.nav-dot').forEach((d,i)=>
+    d.classList.toggle('active',i===currentPhaseIndex));
+}
+function updateNavActive(idx){
+  document.querySelectorAll('.nav-dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
+}
+
+// ── 네비 점 ───────────────────────────────────────────
+const nav=document.getElementById('nav');
+PHASES.forEach((phase,i)=>{
+  const dot=document.createElement('div');
+  dot.className='nav-dot'+(i===0?' active':'');
+  dot.title=`Phase ${phase.id} — ${phase.name}`;
+  dot.addEventListener('click',()=>{
+    if(viewMode==='timeline'||viewMode==='zoom-out')
+      targetOffset=i*PHASE_SPACING;
+  });
+  nav.appendChild(dot);
+});
+
+// ── 입력 이벤트 — 정·동 호흡 항법 + 별 픽 ──
+let isDragging=false, mdX=0, mdY=0, mdT=0, lastMX=0, lastMY=0;
+
+tlCanvas.addEventListener('mousedown',e=>{
+  if(window._nav.flying) return;
+  isDragging=true; mdX=lastMX=e.clientX; mdY=lastMY=e.clientY; mdT=Date.now();
+  const nav=window._nav; nav.dragging=true; nav.interactT=performance.now();
+  nav.yawV=0; nav.pitchV=0;
+  tlCanvas.style.cursor='grabbing';
+});
+window.addEventListener('mousemove',e=>{
+  mouseX=e.clientX; mouseY=e.clientY;
+  if(!isDragging){ checkHover(e.clientX,e.clientY); return; }
+  const dx=e.clientX-lastMX, dy=e.clientY-lastMY;
+  lastMX=e.clientX; lastMY=e.clientY;
+  const nav=window._nav;
+  nav.yaw   -= dx*0.005;
+  nav.pitch += dy*0.005;
+  nav.pitch = Math.max(-1.35,Math.min(1.35,nav.pitch));
+  nav.yawV   = -dx*0.0016;   // 관성 저장 — 손을 떼면 미끄러지다 표류로
+  nav.pitchV =  dy*0.0016;
+  nav.interactT=performance.now();
+});
+window.addEventListener('mouseup',e=>{
+  if(!isDragging) return;
+  isDragging=false;
+  const nav=window._nav; nav.dragging=false; nav.interactT=performance.now();
+  tlCanvas.style.cursor='default';
+  const dx=e.clientX-mdX, dy=e.clientY-mdY;
+  if(Math.sqrt(dx*dx+dy*dy)<6 && Date.now()-mdT<300) handleClick(e.clientX,e.clientY);
+});
+tlCanvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+  if(window._nav.flying) return;
+  const nav=window._nav;
+  const dx=Math.cos(nav.pitch)*Math.sin(nav.yaw), dy=Math.sin(nav.pitch), dz=Math.cos(nav.pitch)*Math.cos(nav.yaw);
+  const step=-e.deltaY*0.06;          // 휠 위로 = 시선 방향으로 전진
+  nav.pos.x+=dx*step; nav.pos.y+=dy*step; nav.pos.z+=dz*step;
+  nav.interactT=performance.now();
+},{passive:false});
+
+// 터치 — 한 손가락 회전, 탭으로 픽
+let tDX=0,tDY=0,tDT=0,tLX=0,tLY=0;
+let pinchD0=0, pinching=false, pinchLock=false, oneStarted=false;   // [모바일] 핀치/두리번 상태
+tlCanvas.addEventListener('touchstart',e=>{
+  if(window._nav.flying) return;
+  const nav=window._nav; nav.interactT=performance.now();
+  if(e.touches.length>=2){                        // 핀치 시작 — 두 손가락
+    const a=e.touches[0], b=e.touches[1];
+    pinchD0=Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY);
+    pinching=true; pinchLock=true; oneStarted=false;
+    nav.dragging=true; nav.yawV=0; nav.pitchV=0; nav.zoomV=0;
+    return;
+  }
+  if(pinchLock) return;                           // 핀치가 끝나기 전엔 한 손가락 입력 무시
+  const tch=e.touches[0];
+  tDX=tLX=tch.clientX; tDY=tLY=tch.clientY; tDT=Date.now();
+  oneStarted=true; pinching=false;
+  nav.dragging=true; nav.yawV=0; nav.pitchV=0; nav.zoomV=0;
+},{passive:true});
+tlCanvas.addEventListener('touchmove',e=>{
+  const nav=window._nav;
+  if(pinching && e.touches.length>=2){            // 두 손가락: 벌리면 전진, 좁히면 후진
+    const a=e.touches[0], b=e.touches[1];
+    const d=Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY);
+    const delta=d-pinchD0; pinchD0=d;
+    const dirx=Math.cos(nav.pitch)*Math.sin(nav.yaw), diry=Math.sin(nav.pitch), dirz=Math.cos(nav.pitch)*Math.cos(nav.yaw);
+    const step=delta*0.12;
+    nav.pos.x+=dirx*step; nav.pos.y+=diry*step; nav.pos.z+=dirz*step;
+    nav.zoomV=step;                               // [관성] 마지막 줌 속도 기억
+    nav.interactT=performance.now();
+    return;
+  }
+  if(pinchLock) return;                           // 핀치에서 손가락 하나 떼도 두리번으로 안 넘어감(튐 방지)
+  if(!oneStarted || e.touches.length>1) return;   // 손가락 하나만 두리번
+  const tch=e.touches[0];
+  const dx=tch.clientX-tLX, dy=tch.clientY-tLY;
+  tLX=tch.clientX; tLY=tch.clientY;
+  nav.yaw-=dx*0.0035; nav.pitch+=dy*0.0035;       // 감도 ↓ (멀미 완화)
+  nav.pitch=Math.max(-1.35,Math.min(1.35,nav.pitch));
+  nav.yawV=-dx*0.0011; nav.pitchV=dy*0.0011;      // [관성] 손 뗀 뒤 잠깐 미끄러짐
+  nav.interactT=performance.now();
+},{passive:true});
+tlCanvas.addEventListener('touchend',e=>{
+  const nav=window._nav; nav.interactT=performance.now();
+  if(e.touches.length>0){                          // 아직 손가락이 남음
+    if(e.touches.length<2) pinching=false;         // 핀치 줌만 멈추고, pinchLock 은 유지(두리번 금지)
+    return;
+  }
+  // 모든 손가락이 떨어짐 — 상태 정리
+  const wasTap = oneStarted && !pinchLock;         // 핀치가 섞이지 않은 순수 한 손가락만 탭 후보
+  nav.dragging=false; pinching=false; pinchLock=false; oneStarted=false;
+  // yawV·pitchV·zoomV 는 남겨 둠 → 손 뗀 뒤 잠깐 미끄러지다 멈춤(관성)
+  if(wasTap){
+    const ch=e.changedTouches[0];
+    const dx=ch.clientX-tDX, dy=ch.clientY-tDY;
+    if(Math.sqrt(dx*dx+dy*dy)<8 && Date.now()-tDT<300) handleClick(ch.clientX,ch.clientY);
+  }
+});
+
+function clamp(){targetOffset=Math.max(0,Math.min((PHASES.length-1)*PHASE_SPACING,targetOffset));}
+
+// ── 중심 정렬(snap-to-center) ─────────────────────────
+// 각 Phase가 화면 중심에 얼마나 가까운지: 정확히 중심=1, 반 칸 벗어나면 0
+function centernessOf(i){
+  return Math.max(0, 1 - Math.abs(currentOffset - i*PHASE_SPACING)/(PHASE_SPACING*0.5));
+}
+// 현재 중심 Phase가 충분히 정렬되었는가 (진입 허용 임계)
+function isCentered(){
+  return centernessOf(currentPhaseIndex) > 0.72;
+}
+// 가장 가까운 Phase로 즉시 스냅
+function snapNow(){
+  if(snapTimer){clearTimeout(snapTimer);snapTimer=null;}
+  if(viewMode!=='timeline') return;
+  targetOffset=Math.round(targetOffset/PHASE_SPACING)*PHASE_SPACING;
+  clamp();
+}
+// 입력이 멈춘 뒤 디바운스로 스냅 (자유 스크롤 감각 유지)
+let snapTimer=null;
+function scheduleSnap(delay=140){
+  if(snapTimer) clearTimeout(snapTimer);
+  snapTimer=setTimeout(()=>{ snapTimer=null; snapNow(); },delay);
+}
+
+function handleClick(mx,my){
+  const clicked=pickBook(mx,my);
+  if(clicked){
+    if(panelBook && panelBook!==clicked) flushPanel();
+    pinnedBook=clicked; hoveredBook=clicked;
+    if(typeof refreshFocus==='function') refreshFocus();
+    openPanel(clicked);
+  } else {
+    // 빈 하늘 클릭 — 서랍만 접고, 잡은 별과의 연(緣)은 다른 별을 고르기 전까지 유지
+    flushPanel();
+    hideCalli();
+    if(window._drawerClose) window._drawerClose();
+    if(typeof refreshFocus==='function') refreshFocus();
+  }
+}
+
+function checkHover(mx,my){
+  if(isDragging) return;
+  // 오른쪽 패널·검색창·게이지 등 UI 위에서는 그 아래 별 호버를 막음
+  const el=document.elementFromPoint(mx,my);
+  if(el && el.id!=='tl-canvas'){
+    if(hoveredBook){ hoveredBook=null; if(typeof refreshFocus==='function') refreshFocus(); }
+    tlCanvas.style.cursor='default';
+    return;
+  }
+  const nb=pickBook(mx,my);
+  if(nb!==hoveredBook){
+    hoveredBook=nb;
+    if(nb && nb!==pinnedBook) pinnedBook=null;
+    if(typeof refreshFocus==='function') refreshFocus();
+  }
+  tlCanvas.style.cursor = hoveredBook ? 'pointer' : 'default';
+}
+
+// ── 키보드 ────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  const si=document.getElementById('book-search-input');
+  if(si && document.activeElement===si) return; // 검색 입력 중엔 항법 조작 안 함
+  if(e.key==='Escape'){
+    if(panelBook){
+      flushPanel();
+      panelBook=null; pinnedBook=null; hideCalli();
+      _lastAtHome=false;                   // 대문으로 돌아옴 — 대문 천문 재평가
+      document.getElementById('book-panel').classList.remove('open');
+      if(typeof refreshFocus==='function') refreshFocus();
+    }
+    return;
+  }
+});
+
+// ── 주크박스 — Supabase Storage 'jukebox' 버킷의 mp3를 차례로 ──
+(function jukebox(){
+  var $=function(id){ return document.getElementById(id); };
+  var box=$('jukebox'); if(!box) return;
+  var audio=new Audio(); audio.preload='metadata'; audio.volume=0.5;
+  var tracks=[], idx=-1, coverUrl=null;
+
+  function fmt(s){ s=Math.max(0,Math.floor(s||0)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+  function nameMeta(fn){
+    var b=fn.replace(/\.[^.]+$/,'').replace(/^\d+[\s._-]+/,'');
+    var m=b.split(' - ');
+    return m.length>=2 ? {artist:m[0].trim(), title:m.slice(1).join(' - ').trim()} : {artist:'', title:b.trim()};
+  }
+
+// parseId3(bytes:Uint8Array) → {title?, artist?, coverBytes?, coverMime?} | null
+function parseId3(buf){
+  try{
+    if(buf[0]!==0x49||buf[1]!==0x44||buf[2]!==0x33) return null;   // 'ID3'
+    var ver=buf[3];
+    var syn=function(a,o){ return ((a[o]&0x7f)<<21)|((a[o+1]&0x7f)<<14)|((a[o+2]&0x7f)<<7)|(a[o+3]&0x7f); };
+    var size=syn(buf,6)+10, off=10;
+    if(buf[5]&0x40){ var ext=(ver===4)?syn(buf,10):(((buf[10]<<24)|(buf[11]<<16)|(buf[12]<<8)|buf[13])>>>0)+4; off+=ext; }
+    var dec=function(enc,b){
+      try{
+        if(enc===0) return new TextDecoder('latin1').decode(b);
+        if(enc===1) return new TextDecoder('utf-16').decode(b);
+        if(enc===2) return new TextDecoder('utf-16be').decode(b);
+        return new TextDecoder('utf-8').decode(b);
+      }catch(e){ try{ return new TextDecoder('utf-8').decode(b); }catch(_){ return ''; } }
+    };
+    var out={}, end=Math.min(size, buf.length);
+    while(off+10<=end){
+      var id=String.fromCharCode(buf[off],buf[off+1],buf[off+2],buf[off+3]);
+      if(!/^[A-Z0-9]{4}$/.test(id)) break;
+      var fsz=(ver===4)?syn(buf,off+4):(((buf[off+4]<<24)|(buf[off+5]<<16)|(buf[off+6]<<8)|buf[off+7])>>>0);
+      var st=off+10;
+      if(fsz<=0 || st>buf.length) break;
+      var data=buf.subarray(st, Math.min(st+fsz, buf.length));
+      if(id==='TIT2'||id==='TPE1'){
+        var s=dec(data[0], data.subarray(1)).replace(/\0+$/g,'').replace(/^\uFEFF/,'').trim();
+        if(id==='TIT2') out.title=s; else out.artist=s;
+      }else if(id==='APIC' && !out.coverBytes){
+        var enc=data[0], p=1;
+        while(p<data.length && data[p]!==0) p++;
+        var mime=dec(0, data.subarray(1,p)); p++;
+        p++;                                            // picture type
+        if(enc===1||enc===2){ while(p+1<data.length && !(data[p]===0&&data[p+1]===0)) p+=2; p+=2; }
+        else{ while(p<data.length && data[p]!==0) p++; p++; }
+        var img=data.subarray(p);
+        if(img.length>40){ out.coverBytes=img; out.coverMime=mime||'image/jpeg'; }
+      }
+      off=st+fsz;
+      if(out.title && out.artist && out.coverBytes) break;
+    }
+    return out;
+  }catch(e){ return null; }
+}
+
+  async function refineMeta(t){
+    try{
+      var res=await fetch(t.url,{headers:{Range:'bytes=0-262143'}});
+      var tag=parseId3(new Uint8Array(await res.arrayBuffer()));
+      if(!tag) return;
+      if(tag.title) t.title=tag.title;
+      if(tag.artist) t.artist=tag.artist;
+      if(tag.coverBytes) t.cover=new Blob([tag.coverBytes],{type:tag.coverMime});
+      if(tracks[idx]===t) paint(t);
+    }catch(e){}
+  }
+
+  function paint(t){
+    $('jb-title').textContent=t.title||'—';
+    $('jb-artist').textContent=t.artist||'';
+    var art=$('jb-art');
+    if(coverUrl){ URL.revokeObjectURL(coverUrl); coverUrl=null; }
+    if(t.cover){ coverUrl=URL.createObjectURL(t.cover); art.innerHTML='<img alt="" src="'+coverUrl+'">'; }
+    else art.innerHTML='<span>♪</span>';
+  }
+  function paintBtn(){ $('jb-play').textContent=audio.paused?'▶':'❚❚'; }
+
+  function playAt(i, autoplay){
+    if(!tracks.length) return;
+    idx=(i+tracks.length)%tracks.length;
+    var t=tracks[idx];
+    audio.src=t.url; paint(t);
+    if(!t._refined){ t._refined=true; refineMeta(t); }
+    if(autoplay!==false) audio.play().catch(function(){});
+    paintBtn();
+  }
+
+  async function loadList(first){
+    if(!window.sb){ setTimeout(function(){ loadList(first); },400); return; }
+    try{
+      var r=await window.sb.storage.from('jukebox').list('',{limit:300,sortBy:{column:'name',order:'asc'}});
+      if(r.error) throw r.error;
+      tracks=(r.data||[]).filter(function(f){ return /\.mp3$/i.test(f.name); })
+        .map(function(f){
+          var m=nameMeta(f.name);
+          return { name:f.name, title:m.title, artist:m.artist,
+                   url:window.sb.storage.from('jukebox').getPublicUrl(f.name).data.publicUrl };
+        });
+      if(tracks.length && first) playAt(0,false);          // 목록만 준비 — 소리는 첫 손짓 뒤
+      if(!tracks.length){ $('jb-title').textContent='별밭의 노래'; $('jb-artist').textContent='아직 곡이 없어요'; }
+    }catch(e){ console.warn('jukebox list', e); }
+  }
+
+  // ── 컨트롤 ──
+  $('jb-toggle').addEventListener('click',function(){ box.classList.toggle('open'); });
+  if(!window._MOBILE){                             // 데스크탑: 호버로 피고, 벗어나면 0.3초 뒤 스르륵
+    var hoverT=null;
+    box.addEventListener('mouseenter',function(){ clearTimeout(hoverT); box.classList.add('open'); });
+    box.addEventListener('mouseleave',function(){ clearTimeout(hoverT);
+      hoverT=setTimeout(function(){ box.classList.remove('open'); },300); });
+  }
+  $('jb-play').addEventListener('click',function(){
+    if(idx<0){ playAt(0); return; }
+    if(audio.paused) audio.play().catch(function(){}); else audio.pause();
+  });
+  $('jb-prev').addEventListener('click',function(){ playAt(idx-1); });
+  $('jb-next').addEventListener('click',function(){ playAt(idx+1); });
+  audio.addEventListener('play',paintBtn);
+  audio.addEventListener('pause',paintBtn);
+  audio.addEventListener('ended',function(){ playAt(idx+1); });
+  audio.addEventListener('timeupdate',function(){
+    var d=audio.duration||0, c=audio.currentTime||0;
+    $('jb-fill').style.width=(d? (c/d*100):0)+'%';
+    $('jb-t0').textContent=fmt(c);
+    $('jb-t1').textContent='\u2212'+fmt(Math.max(0,d-c));
+  });
+  $('jb-bar').addEventListener('click',function(e){
+    if(!audio.duration) return;
+    var r=e.currentTarget.getBoundingClientRect();
+    audio.currentTime=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*audio.duration;
+  });
+
+  // 첫 손짓에 흐르기 — 브라우저 자동재생 규칙(사용자 입력 이후에만) 준수
+  function firstTouch(){
+    document.removeEventListener('click',firstTouch);
+    document.removeEventListener('keydown',firstTouch);
+    if(tracks.length && audio.paused && idx>=0) audio.play().catch(function(){});
+  }
+  document.addEventListener('click',firstTouch);
+  document.addEventListener('keydown',firstTouch);
+
+  // ── 곡 올리기 — 주인에게만 (+). 붓글씨 올리듯 Storage에 ──
+  setInterval(function(){
+    var up=$('jb-up'); if(!up) return;
+    var me=(typeof currentUser!=='undefined')?currentUser:null;
+    up.classList.toggle('hidden', !me);
+  },1500);
+  $('jb-up').addEventListener('click',function(){ $('jb-file').click(); });
+  $('jb-file').addEventListener('change',async function(){
+    var files=Array.prototype.slice.call(this.files||[]); this.value='';
+    if(!files.length || !window.sb) return;
+    $('jb-artist').textContent='올리는 중\u2026 0/'+files.length;
+    var done=0;
+    for(var i=0;i<files.length;i++){
+      try{
+        var f=files[i];
+        var safe=f.name.replace(/[^\w.\u3131-\uD79D\s()\[\]&+,'-]/g,'_');
+        var r=await window.sb.storage.from('jukebox').upload(safe, f, {upsert:true, contentType:'audio/mpeg'});
+        if(r.error) throw r.error;
+        done++; $('jb-artist').textContent='올리는 중\u2026 '+done+'/'+files.length;
+      }catch(e){ console.warn('jukebox upload', e); $('jb-artist').textContent='올리기 실패: '+(e.message||e); }
+    }
+    loadList(false);
+  });
+
+  loadList(true);
+})();
+
+// ── 책 패널 (정보 + 입력/저장, 세션 메모리) ───────────
+function refreshFocus(){
+  const f = hoveredBook || pinnedBook;
+  if(f===focusedBook) return;
+  focusedBook=f;
+  if(f){
+    constellation={members:[],edges:[]}; // drawCluster가 _csx 준비 시 재생성
+    constellationDir=1;
+    showBookInfo(panelBook||f);
+  } else {
+    constellationDir=-1;
+    hideBookInfo();
+  }
+}
+function parseEssay(raw){
+  if(!raw) return null;
+  if(typeof raw==='object') return raw;
+  try{ var o=JSON.parse(raw); if(o&&typeof o.html==='string') return o; }catch(e){}
+  return null;
+}
+function ensureData(book){
+  if(!bookData[book.id]) bookData[book.id]={music:[],movie:[],reading:[],lines:[],calligraphy:null,essay:null};
+  if(bookData[book.id].calligraphy===undefined) bookData[book.id].calligraphy=null;
+  if(bookData[book.id].essay===undefined) bookData[book.id].essay=null;
+  return bookData[book.id];
+}
+function bpEsc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+// ── 유튜브 카드: 문자열에서 영상 ID 추출 + oEmbed 제목(캐시) ──
+function ytId(s){
+  if(!s) return null;
+  const m=String(s).match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:\S*&)?v=|embed\/|shorts\/|v\/)|music\.youtube\.com\/watch\?(?:\S*&)?v=)([A-Za-z0-9_-]{11})/);
+  return m?m[1]:null;
+}
+const ytTitleCache=new Map();
+async function ytTitle(vid){
+  if(ytTitleCache.has(vid)) return ytTitleCache.get(vid);
+  try{
+    const u='https://www.youtube.com/oembed?url='+encodeURIComponent('https://www.youtube.com/watch?v='+vid)+'&format=json';
+    const r=await fetch(u);
+    if(!r.ok) throw 0;
+    const j=await r.json();
+    const t=j.title||null; ytTitleCache.set(vid,t); return t;
+  }catch(e){ ytTitleCache.set(vid,null); return null; }
+}
+// ── 붓글씨: 배경제거(흰 획) + Storage 저장 + 하늘 글로우 ──
+let calliEdit=null;
+function calliGlow(color){
+  return 'drop-shadow(0 0 4px '+color+') drop-shadow(0 0 13px '+color+') drop-shadow(0 0 30px '+color+'88)';
+}
+function parseCalli(raw){
+  if(!raw) return null;
+  if(typeof raw==='object') return raw;
+  try{ var o=JSON.parse(raw); if(o&&o.url) return o; }catch(e){}
+  return {url:raw, color:'#ffd98a', size:44};
+}
+function calliExtract(img, thr, soft){
+  var iw=img.naturalWidth||img.width, ih=img.naturalHeight||img.height;
+  if(!iw||!ih) return null;
+  var sc=Math.min(1,820/Math.max(iw,ih));
+  var W=Math.max(1,Math.round(iw*sc)), H=Math.max(1,Math.round(ih*sc));
+  var src=document.createElement('canvas'); src.width=W; src.height=H;
+  var sctx=src.getContext('2d'); sctx.drawImage(img,0,0,W,H);
+  var sd; try{ sd=sctx.getImageData(0,0,W,H); }catch(e){ console.warn('calli getImageData', e); return null; }
+  var out=document.createElement('canvas'); out.width=W; out.height=H;
+  var octx=out.getContext('2d'), od=octx.createImageData(W,H), s=sd.data, o=od.data;
+  for(var i=0;i<s.length;i+=4){
+    var lum=0.299*s[i]+0.587*s[i+1]+0.114*s[i+2];
+    var ink=(thr-lum)/soft; ink=ink<0?0:(ink>1?1:ink);
+    o[i]=255;o[i+1]=255;o[i+2]=255;o[i+3]=Math.round(ink*255);
+  }
+  octx.putImageData(od,0,0);
+  return out;
+}
+function showCalli(meta){
+  meta=parseCalli(meta);
+  if(!meta||!meta.url) return;
+  var sky=document.getElementById('calli-sky'), img=document.getElementById('calli-img');
+  if(!sky||!img) return;
+  img.src=meta.url;
+  img.style.maxWidth=(meta.size||44)+'%';
+  img.style.filter=calliGlow(meta.color||'#ffd98a');
+  sky.classList.add('show');
+}
+function hideCalli(){
+  var sky=document.getElementById('calli-sky');
+  if(sky) sky.classList.remove('show');
+}
+// ── 대문 천문 (Home 천문) ──────────────────────────────
+// 손님(비로그인 방문자)에게도 대문 천문을 보이려면 아래에 소유자 user.id 를 한 줄 넣으세요.
+var HOME_CALLI_OWNER = '';
+var homeCalliEditState = null;
+var _lastAtHome = false;
+function homeCalliMeta(){
+  try{ var s=JSON.parse(localStorage.getItem('jcia_home_calli')); if(s&&s.url) return s; }catch(e){}
+  if(window.sb && HOME_CALLI_OWNER){
+    var pub=window.sb.storage.from('calligraphy').getPublicUrl(HOME_CALLI_OWNER+'/_home.png');
+    return {url:pub.data.publicUrl, color:'#ffd98a', size:44};
+  }
+  return null;
+}
+function showHomeCalli(){
+  if(viewMode!=='timeline' || panelBook) return;
+  var m=homeCalliMeta();
+  if(!m){ hideCalli(); return; }
+  var probe=new Image();
+  probe.onload=function(){ if(viewMode==='timeline' && !panelBook) showCalli(m); };
+  probe.onerror=function(){ hideCalli(); };
+  probe.src=m.url;
+}
+// 대문에 도착한 순간(패널 없음·비행 아님·timeline)을 받아채 대문 천문을 띄움
+function syncHomeCalli(){
+  var atHome = viewMode==='timeline' && !panelBook && !(window._nav && window._nav.flying);
+  if(atHome!==_lastAtHome){
+    _lastAtHome=atHome;
+    if(atHome) showHomeCalli();
+  }
+}
+function refreshHomeCalliBtn(){
+  var b=document.getElementById('home-calli-btn');
+  if(b) b.classList.toggle('hidden', !currentUser);
+}
+function closeHomeCalliEditor(){
+  var el=document.getElementById('home-calli-edit');
+  if(homeCalliEditState && homeCalliEditState.objurl) URL.revokeObjectURL(homeCalliEditState.objurl);
+  homeCalliEditState=null;
+  if(el){ el.classList.remove('open'); el.innerHTML=''; }
+}
+function openHomeCalliEditor(){
+  if(!currentUser){ if(typeof showAuthHint==='function') showAuthHint(); return; }
+  var el=document.getElementById('home-calli-edit');
+  if(el.classList.contains('open')){ closeHomeCalliEditor(); return; }
+  el.classList.add('open'); renderHomeCalliEdit();
+}
+function pickHomeCalli(){
+  var inp=document.createElement('input');
+  inp.type='file'; inp.accept='image/png,image/jpeg,image/webp,image/*';
+  inp.style.position='fixed'; inp.style.left='-10000px'; inp.style.top='0'; inp.style.opacity='0';
+  document.body.appendChild(inp);
+  inp.addEventListener('change',function(e){
+    var f=e.target.files&&e.target.files[0];
+    if(inp.parentNode) inp.parentNode.removeChild(inp);
+    if(!f) return;
+    var u=URL.createObjectURL(f), im=new Image();
+    im.onload=function(){
+      if(homeCalliEditState && homeCalliEditState.objurl) URL.revokeObjectURL(homeCalliEditState.objurl);
+      homeCalliEditState={img:im, objurl:u, thr:155, soft:20, color:'#ffd98a', size:44, canvas:null};
+      renderHomeCalliEdit();
+    };
+    im.onerror=function(){ URL.revokeObjectURL(u); };
+    im.src=u;
+  });
+  inp.click();
+}
+function renderHomeCalliEdit(){
+  var el=document.getElementById('home-calli-edit'); if(!el) return;
+  var st=homeCalliEditState;
+  if(st && st.img){
+    var sw=function(c,n){ return '<button class="hc-sw'+(st.color===c?' on':'')+'" data-c="'+c+'" title="'+n+'" style="background:'+c+'"></button>'; };
+    el.innerHTML='<p class="hc-title">대문에 띄울 천문</p>'
+      +'<div class="hc-prev"><canvas id="hc-cv"></canvas></div>'
+      +'<div class="hc-sws">'
+        +sw('#f4f1e8','순백')+sw('#e9ddbf','미색')+sw('#ffd98a','금빛')+sw('#d9a96e','호박')+sw('#ee8a6a','주홍')+sw('#f3b0c3','매화')
+        +sw('#c5a3e0','자란')+sw('#8fb0e8','청람')+sw('#dfe9ff','달빛')+sw('#a9e6cf','비취')+sw('#d3dc9b','송화')+sw('#b9c0cc','은회')
+      +'</div>'
+      +'<div class="hc-ctrl"><span>감도</span><input type="range" id="hc-thr" min="40" max="235" value="'+st.thr+'" step="1"></div>'
+      +'<div class="hc-ctrl"><span>번짐</span><input type="range" id="hc-soft" min="2" max="70" value="'+st.soft+'" step="1"></div>'
+      +'<div class="hc-ctrl"><span>크기</span><input type="range" id="hc-size" min="20" max="72" value="'+st.size+'" step="1"></div>'
+      +'<div class="hc-row"><button class="primary" id="hc-save">하늘에 새기기</button><button id="hc-cancel">취소</button></div>';
+    var redraw=function(){
+      var cv=calliExtract(st.img, +document.getElementById('hc-thr').value, +document.getElementById('hc-soft').value);
+      if(!cv) return;
+      var disp=document.getElementById('hc-cv'); disp.width=cv.width; disp.height=cv.height;
+      disp.getContext('2d').drawImage(cv,0,0); st.canvas=cv;
+      disp.style.maxWidth=st.size+'%'; disp.style.filter=calliGlow(st.color);
+    };
+    redraw();
+    document.getElementById('hc-thr').addEventListener('input',function(){ st.thr=+this.value; redraw(); });
+    document.getElementById('hc-soft').addEventListener('input',function(){ st.soft=+this.value; redraw(); });
+    document.getElementById('hc-size').addEventListener('input',function(){ st.size=+this.value; redraw(); });
+    Array.prototype.forEach.call(el.querySelectorAll('.hc-sw'),function(b){
+      b.addEventListener('click',function(){ st.color=b.getAttribute('data-c'); el.querySelectorAll('.hc-sw').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); redraw(); });
+    });
+    document.getElementById('hc-cancel').addEventListener('click',closeHomeCalliEditor);
+    document.getElementById('hc-save').addEventListener('click',async function(){
+      var btn=this;
+      if(!st.canvas){ btn.textContent='이미지 오류 — 취소 후 재시도'; return; }
+      btn.textContent='새기는 중…'; btn.disabled=true;
+      var r=await homeCalliUpload(st.canvas);
+      if(r.ok){
+        var meta={url:r.url, color:st.color, size:st.size};
+        try{ localStorage.setItem('jcia_home_calli', JSON.stringify(meta)); }catch(e){}
+        closeHomeCalliEditor();
+        if(viewMode==='timeline' && !panelBook){ _lastAtHome=true; showCalli(meta); }
+      } else {
+        btn.disabled=false; btn.textContent = r.reason==='not-logged-in' ? '로그인이 필요해요' : '실패 — 다시';
+      }
+    });
+  } else {
+    var hasOne = !!homeCalliMeta();
+    el.innerHTML='<p class="hc-title">대문 천문</p>'
+      +(hasOne?'<p class="hc-empty">대문에 천문이 새겨져 있어요.</p>':'<p class="hc-empty">대문에 띄울 글씨 한 장을 올려보세요.</p>')
+      +'<div class="hc-row"><button class="primary" id="hc-pick">'+(hasOne?'다시 올리기':'천문 올리기')+'</button>'
+      +(hasOne?'<button id="hc-del">지우기</button>':'<button id="hc-close">닫기</button>')+'</div>';
+    document.getElementById('hc-pick').addEventListener('click',pickHomeCalli);
+    var dl=document.getElementById('hc-del');
+    if(dl) dl.addEventListener('click',function(){
+      try{ localStorage.removeItem('jcia_home_calli'); }catch(e){}
+      if(window.sb && currentUser){ window.sb.storage.from('calligraphy').remove([currentUser.id+'/_home.png']).catch(function(){}); }
+      closeHomeCalliEditor();
+      _lastAtHome=false;
+      if(viewMode==='timeline' && !panelBook) hideCalli();
+    });
+    var cl=document.getElementById('hc-close');
+    if(cl) cl.addEventListener('click',closeHomeCalliEditor);
+  }
+}
+async function homeCalliUpload(canvas){
+  if(!window.sb||!currentUser) return {ok:false, reason:'not-logged-in'};
+  var blob=await new Promise(function(res){ canvas.toBlob(res,'image/png'); });
+  if(!blob) return {ok:false, reason:'blob-failed'};
+  var path=currentUser.id+'/_home.png';
+  var up=await window.sb.storage.from('calligraphy').upload(path, blob, {upsert:true, contentType:'image/png'});
+  if(up.error){ console.warn('home calli upload', up.error); return {ok:false, error:up.error}; }
+  var pub=window.sb.storage.from('calligraphy').getPublicUrl(path);
+  return {ok:true, url:pub.data.publicUrl+'?t='+Date.now()};
+}
+async function calliUpload(book, canvas){
+  if(!window.sb||!currentUser) return {ok:false, reason:'not-logged-in'};
+  var blob=await new Promise(function(res){ canvas.toBlob(res,'image/png'); });
+  if(!blob) return {ok:false, reason:'blob-failed'};
+  var path=currentUser.id+'/'+book.id+'.png';
+  var up=await window.sb.storage.from('calligraphy').upload(path, blob, {upsert:true, contentType:'image/png'});
+  if(up.error){ console.warn('calli upload', up.error); return {ok:false, error:up.error}; }
+  var pub=window.sb.storage.from('calligraphy').getPublicUrl(path);
+  return {ok:true, url:pub.data.publicUrl+'?t='+Date.now()};
+}
+function pickCalli(book){
+  var inp=document.createElement('input');
+  inp.type='file'; inp.accept='image/png,image/jpeg,image/webp,image/*';
+  inp.style.position='fixed'; inp.style.left='-10000px'; inp.style.top='0'; inp.style.opacity='0';
+  document.body.appendChild(inp);
+  inp.addEventListener('change',function(e){
+    var f=e.target.files&&e.target.files[0];
+    if(inp.parentNode) inp.parentNode.removeChild(inp);
+    if(!f){ console.warn('[천문] 파일 선택 없음'); return; }
+    console.log('[천문] 파일 선택:', f.name, f.type, f.size+'B');
+    var u=URL.createObjectURL(f), im=new Image();
+    im.onload=function(){
+      console.log('[천문] 이미지 로드 OK', im.naturalWidth+'x'+im.naturalHeight);
+      calliEdit={book:book, img:im, objurl:u, thr:155, soft:20, color:'#ffd98a', size:44, canvas:null};
+      renderCalli(book);
+    };
+    im.onerror=function(){
+      console.warn('[천문] 이미지 디코드 실패');
+      URL.revokeObjectURL(u);
+      var el=document.getElementById('bp-calli');
+      if(!el) return;
+      el.innerHTML='<div class="bp-calli-empty">이 사진을 불러올 수 없어요. JPG나 PNG로 다시 시도해 주세요.</div>'
+        +'<div class="bp-calli-row" style="margin-top:7px"><button id="bp-calli-retry">다시 시도</button></div>';
+      var rb=document.getElementById('bp-calli-retry');
+      if(rb) rb.addEventListener('click',function(){ pickCalli(book); });
+    };
+    im.src=u;
+  });
+  inp.click();
+}
+function renderCalli(book){
+  var d=ensureData(book), el=document.getElementById('bp-calli');
+  if(!el) return;
+  if(calliEdit && calliEdit.book===book){
+    var sw=function(c,name){ return '<button class="bp-calli-sw'+(calliEdit.color===c?' on':'')+'" data-c="'+c+'" title="'+name+'" style="background:'+c+'"></button>'; };
+    el.innerHTML=
+      '<div class="bp-calli-prev"><canvas id="bp-calli-cv"></canvas></div>'
+      +'<div class="bp-calli-sws">'+sw('#ffd98a','금빛')+sw('#dfe9ff','달빛')+sw('#a9e6cf','비취')+sw('#f3b0c3','매화')+'</div>'
+      +'<div class="bp-calli-ctrl"><span>감도</span><input type="range" id="bp-calli-thr" min="40" max="235" value="'+calliEdit.thr+'" step="1"></div>'
+      +'<div class="bp-calli-ctrl"><span>번짐</span><input type="range" id="bp-calli-soft" min="2" max="70" value="'+calliEdit.soft+'" step="1"></div>'
+      +'<div class="bp-calli-ctrl"><span>크기</span><input type="range" id="bp-calli-size" min="20" max="72" value="'+calliEdit.size+'" step="1"></div>'
+      +'<div class="bp-calli-row"><button class="primary" id="bp-calli-save">하늘에 새기기</button><button id="bp-calli-cancel">취소</button></div>';
+    var redraw=function(){
+      var cv=calliExtract(calliEdit.img, +document.getElementById('bp-calli-thr').value, +document.getElementById('bp-calli-soft').value);
+      if(!cv){ return; }
+      var disp=document.getElementById('bp-calli-cv'); disp.width=cv.width; disp.height=cv.height;
+      disp.getContext('2d').drawImage(cv,0,0); calliEdit.canvas=cv;
+      disp.style.maxWidth=calliEdit.size+'%';
+      disp.style.filter=calliGlow(calliEdit.color);
+    };
+    redraw();
+    document.getElementById('bp-calli-thr').addEventListener('input',function(){ calliEdit.thr=+this.value; redraw(); });
+    document.getElementById('bp-calli-soft').addEventListener('input',function(){ calliEdit.soft=+this.value; redraw(); });
+    document.getElementById('bp-calli-size').addEventListener('input',function(){ calliEdit.size=+this.value; redraw(); });
+    Array.prototype.forEach.call(el.querySelectorAll('.bp-calli-sw'),function(b){
+      b.addEventListener('click',function(){ calliEdit.color=b.getAttribute('data-c'); el.querySelectorAll('.bp-calli-sw').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); redraw(); });
+    });
+    document.getElementById('bp-calli-cancel').addEventListener('click',function(){ if(calliEdit&&calliEdit.objurl)URL.revokeObjectURL(calliEdit.objurl); calliEdit=null; renderCalli(book); });
+    document.getElementById('bp-calli-save').addEventListener('click',async function(){
+      var btn=this;
+      if(!calliEdit.canvas){ btn.textContent='이미지 오류 — 취소 후 재시도'; return; }
+      btn.textContent='새기는 중…'; btn.disabled=true;
+      var r=await calliUpload(book, calliEdit.canvas);
+      if(r.ok){
+        var meta={url:r.url, color:calliEdit.color, size:calliEdit.size};
+        d.calligraphy=meta;
+        if(calliEdit.objurl)URL.revokeObjectURL(calliEdit.objurl);
+        calliEdit=null;
+        await saveBook(book.id, d);
+        renderCalli(book);
+        if(panelBook===book) showCalli(meta);
+      } else {
+        btn.disabled=false;
+        btn.textContent = r.reason==='not-logged-in' ? '로그인이 필요해요' : '실패 — 다시';
+      }
+    });
+    return;
+  }
+  if(d.calligraphy && d.calligraphy.url){
+    var canEdit=!!currentUser;
+    el.innerHTML='<div class="bp-calli-prev"><img id="bp-calli-shown" src="'+d.calligraphy.url+'" alt=""></div>'
+      +(canEdit?'<div class="bp-calli-row"><button id="bp-calli-replace">다시 올리기</button><button id="bp-calli-del">지우기</button></div>':'');
+    var shown=document.getElementById('bp-calli-shown');
+    if(shown){ shown.style.maxWidth=(d.calligraphy.size||44)+'%'; shown.style.filter=calliGlow(d.calligraphy.color||'#ffd98a'); }
+    if(canEdit){
+      document.getElementById('bp-calli-replace').addEventListener('click',function(){ pickCalli(book); });
+      document.getElementById('bp-calli-del').addEventListener('click',async function(){
+        d.calligraphy=null; await saveBook(book.id, d); renderCalli(book); if(panelBook===book) hideCalli();
+      });
+    }
+    return;
+  }
+  if(currentUser){
+    el.innerHTML='<label class="bp-calli-up">천문 띄우기</label>';
+    el.querySelector('.bp-calli-up').addEventListener('click',function(){ pickCalli(book); });
+  } else {
+    el.innerHTML='<div class="bp-calli-empty">로그인하면 이 별에 천문을 띄울 수 있어요.</div>';
+  }
+}
+// ── 글쓰기 에디터 ──────────────────────────────────────
+var essayBook=null;
+var essayStars=new Set();   // 글이 있는 책 id (별을 더 밝게)
+function essayCmd(cmd){ document.getElementById('essay-body').focus(); document.execCommand(cmd,false,null); }
+function openEssay(book){
+  if(!book) return;
+  essayBook=book;
+  var d=ensureData(book), es=d.essay;
+  var body=document.getElementById('essay-body');
+  body.innerHTML = (es&&es.html) ? es.html : '';
+  document.getElementById('essay-pub-cb').checked = es ? (es.isPublic!==false) : true;
+  document.getElementById('essay-del').style.display = (es&&es.html) ? '' : 'none';
+  document.getElementById('essay-status').textContent='';
+  document.getElementById('essay-editor').classList.add('open');
+  setTimeout(function(){ body.focus(); }, 220);
+}
+function closeEssay(){ document.getElementById('essay-editor').classList.remove('open'); essayBook=null; }
+async function saveEssay(){
+  if(!essayBook) return;
+  var st=document.getElementById('essay-status');
+  if(!currentUser){ st.textContent='로그인이 필요해요'; return; }
+  var body=document.getElementById('essay-body');
+  var html=body.innerHTML.trim();
+  if(!html || html==='<br>'){ st.textContent='빈 글은 새길 수 없어요'; return; }
+  var d=ensureData(essayBook);
+  d.essay={html:html, isPublic:document.getElementById('essay-pub-cb').checked};
+  st.textContent='새기는 중…';
+  var r=await saveBook(essayBook.id, d);
+  if(r && r.ok){
+    st.textContent='새겼어요';
+    essayStars.add(essayBook.id);
+    if(panelBook===essayBook) renderEssayMark(essayBook);
+    setTimeout(closeEssay, 650);
+  } else { st.textContent='실패 — 다시'; }
+}
+async function deleteEssay(){
+  if(!essayBook) return;
+  var d=ensureData(essayBook); d.essay=null;
+  essayStars.delete(essayBook.id);
+  var b=essayBook;
+  await saveBook(b.id, d);
+  if(panelBook===b) renderEssayMark(b);
+  closeEssay();
+}
+function renderEssayMark(book){
+  var pen=document.getElementById('essay-pen');
+  if(!pen) return;
+  var d=ensureData(book), es=d.essay;
+  var canSee = es && es.html && (es.isPublic!==false || !!currentUser);
+  pen.classList.toggle('pulse', !!canSee);   // 글이 있는 별 — 만년필이 숨 쉬듯 밝아졌다 어두워짐
+}
+async function loadEssayStars(){
+  if(!window.sb) return;
+  try{
+    var q=await window.sb.from('books_notes').select('book_id,essay').not('essay','is',null);
+    if(q && q.data) q.data.forEach(function(r){
+      var e=parseEssay(r.essay);
+      if(e && e.html) essayStars.add(r.book_id);
+    });
+  }catch(e){ console.warn('essayStars', e); }
+}
+(function(){
+  var pen=document.getElementById('essay-pen');
+  if(pen) pen.addEventListener('click',function(){
+    var ed=document.getElementById('essay-editor');
+    if(ed && ed.classList.contains('open')){ closeEssay(); return; }   // 다시 누르면 우측으로 스르륵
+    if(panelBook) openEssay(panelBook);
+    else if(pen.animate) pen.animate([{opacity:1},{opacity:0.25},{opacity:1}],{duration:700});
+  });
+  document.querySelectorAll('#essay-tools button.act').forEach(function(b){
+    b.addEventListener('mousedown',function(e){ e.preventDefault(); });
+    b.addEventListener('click',function(){ essayCmd(b.getAttribute('data-cmd')); });
+  });
+  document.querySelectorAll('#essay-tools .essay-sw').forEach(function(b){
+    b.addEventListener('mousedown',function(e){ e.preventDefault(); });
+    b.addEventListener('click',function(){ var bd=document.getElementById('essay-body'); bd.focus(); document.execCommand('foreColor',false,b.getAttribute('data-color')); });
+  });
+  var fs=document.getElementById('essay-font');
+  if(fs) fs.addEventListener('change',function(){ var bd=document.getElementById('essay-body'); bd.focus(); document.execCommand('fontName',false,fs.value); });
+  var sv=document.getElementById('essay-save'); if(sv) sv.addEventListener('click',saveEssay);
+  var dl=document.getElementById('essay-del'); if(dl) dl.addEventListener('click',deleteEssay);
+  var cl=document.getElementById('essay-close'); if(cl) cl.addEventListener('click',closeEssay);
+  loadEssayStars();
+})();
+
+// ── 별밭 홈 · 최근 마음속 문장 목록 ────────────────────────
+// 로그인 없이도 보인다(읽기는 public). 문장을 넣을 때마다 updated_at 순으로 갱신.
+var _recentTimer=null;
+async function loadRecentLines(){
+  if(!window.sb) return;
+  try{
+    // lines가 빈 배열이 아닌 책들을, 최근 갱신순으로 (public read 정책으로 로그인 불필요)
+    var q=await window.sb.from('books_notes')
+      .select('book_id,lines,updated_at')
+      .not('lines','is',null)
+      .order('updated_at',{ascending:false})
+      .limit(60);
+    if(!q||!q.data){ renderRecentLines([]); return; }
+    var picked=[];
+    for(var i=0;i<q.data.length;i++){
+      var r=q.data[i];
+      var arr=r.lines;
+      if(!Array.isArray(arr)||arr.length===0) continue;
+      var book=BOOKS.find(function(b){return b.id===r.book_id;});
+      if(!book) continue;                          // 삭제된 책 등은 건너뜀
+      if(picked.some(function(p){return p.book.id===book.id;})) continue;  // 같은 책은 한 줄만
+      var last=String(arr[arr.length-1]||'').trim(); // 가장 최근에 더한 문장
+      if(!last) continue;
+      picked.push({book:book, title:book.title, snip:last.slice(0,10)});
+      var LIMIT = 20;                              // 스무 개 담고, 다섯 줄만 보이며 스크롤
+      if(picked.length>=LIMIT) break;
+    }
+    renderRecentLines(picked);
+  }catch(e){ console.warn('loadRecentLines', e); }
+}
+function renderRecentLines(items){
+  var box=document.getElementById('recent-lines');
+  if(!box) return;
+  box.innerHTML='';
+  items.forEach(function(it,idx){
+    var el=document.createElement('div');
+    el.className='rl-item';
+    el.style.animationDelay=(idx*0.5)+'s';        // 줄마다 호흡 위상차 — 물결처럼
+    el.innerHTML='<span class="rl-title">'+esc(it.title)+'</span>'
+                +'<span class="rl-snip">'+esc(it.snip)+'</span>';
+    el.addEventListener('click',function(ev){
+      ev.stopPropagation();                        // 배경(캔버스)으로 클릭이 새지 않게
+      window._pendingLinesFor=it.book.id;          // 도착하면 '마음속의 문장' 서랍이 곧장 열리도록
+      if(window.selectBook) window.selectBook(it.book);  // 검색과 '동일한' 유성 비행 + 패널 오픈
+    });
+    box.appendChild(el);
+  });
+  refreshRecentVisible();
+}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+// ── 우측 상단 · 새로 달린 별 목록 ─────────────────────────
+// 최근순 근거: addBook이 항상 maxId+1을 부여하므로 id가 클수록 나중에 단 별.
+// 날짜(added)는 이 갱신 이후 단 별에만 존재 — 없는 옛 별은 제목만 표시.
+function renderRecentBooks(){
+  var box=document.getElementById('recent-books');
+  if(!box || !BOOKS || !BOOKS.length) return;
+  var LIMIT=20;   // 스무 권 담고, 다섯 줄만 보이며 스크롤
+  var recent=BOOKS.slice().sort(function(a,b){return b.id-a.id;}).slice(0,LIMIT);
+  box.innerHTML='<div id="rb-head">최근의 별들</div><div id="rb-tail"></div><div id="rb-list"></div>';
+  var list=box.querySelector('#rb-list');
+  recent.forEach(function(b){
+    var el=document.createElement('div');
+    el.className='rb-item';
+    el.innerHTML=(b.added?'<span class="rb-date">'+esc(b.added)+'</span>':'')
+                +'<span class="rb-title">'+esc(b.title)+'</span>';
+    el.addEventListener('click',function(ev){
+      ev.stopPropagation();
+      window._pendingLinesFor=b.id;               // 도착하면 마음속의 문장 서랍이 곧장 열리도록
+      if(window.selectBook) window.selectBook(b);
+    });
+    list.appendChild(el);
+  });
+  refreshRecentVisible();
+}
+window._refreshRecentBooks=renderRecentBooks;
+// 홈(별밭 전체뷰, 패널 없음)일 때만 보인다
+function refreshRecentVisible(){
+  var box=document.getElementById('recent-lines');
+  if(!box) return;
+  // 항상 표시 — 대문만 열려 있으면 비행·패널·성단과 무관하게 화면에 남는다.
+  // (eye-open은 연출 3초 뒤 제거되므로, 영구 표식인 #gate의 'gone'을 기준으로.)
+  var g=document.getElementById('gate');
+  var gateOpen=(!g) || g.classList.contains('gone') || document.body.classList.contains('eye-open');
+  box.classList.toggle('show', gateOpen && box.children.length>0);
+  var rb=document.getElementById('recent-books');
+  var rbl=rb?rb.querySelector('#rb-list'):null;
+  if(rb) rb.classList.toggle('show', gateOpen && rbl && rbl.children.length>0);
+}
+// 문장을 새로 저장하면 목록도 곧바로 갱신되도록 saveNow에서 부를 훅
+window._refreshRecentLines=function(){ clearTimeout(_recentTimer); _recentTimer=setTimeout(loadRecentLines,400); };
+// 초기 로드 + 주기적 가시성 점검(패널 여닫힘·비행 상태 변화를 받아챔)
+setTimeout(loadRecentLines, 1400);
+setInterval(refreshRecentVisible, 600);
+
+// ── 새 책 더하기 → books.json 내려받기 ──────────────────
+function addBook(title,author,publisher,phase){
+  if(!booksData) return null;
+  var maxId=BOOKS.reduce(function(m,b){return Math.max(m,b.id);},0);
+  var ph=PHASES[phase-1];
+  var d=new Date(), dd=String(d.getDate()).padStart(2,'0'), mm=String(d.getMonth()+1).padStart(2,'0');
+  var nb={id:maxId+1, title:title, author:author, publisher:publisher,
+          phase:phase, phase_name:ph.name, subtitle:ph.desc,
+          added:dd+'/'+mm+'/'+d.getFullYear()};   // 별이 달린 날 — dd/mm/yyyy
+  BOOKS.push(nb);
+  booksData.books=BOOKS;
+  if(booksData.meta) booksData.meta.total=BOOKS.length;
+  if(booksData.phases){
+    var pp=booksData.phases.filter(function(p){return p.id===phase;})[0];
+    if(pp) pp.count=(pp.count||0)+1;
+  }
+  assignStarColors();
+  return nb;
+}
+function downloadBooksJson(){
+  if(!booksData) return;
+  var blob=new Blob([JSON.stringify(booksData,null,2)],{type:'application/json'});
+  var u=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=u; a.download='books.json'; document.body.appendChild(a); a.click();
+  document.body.removeChild(a); setTimeout(function(){URL.revokeObjectURL(u);},1000);
+}
+;
+
+function bpLinkify(text){
+  const t=bpEsc(text);
+  if(/^https?:\/\//i.test(text)) return '<a href="'+t+'" target="_blank" rel="noopener">'+t+'</a>';
+  return t;
+}
+async function openPanel(book){
+  panelBook=book; panelDirty=false; calliEdit=null; ensureData(book);
+  showBookInfo(book);
+  const bp=document.getElementById('book-panel');
+  bp.classList.add('visible','open');
+  bumpView(book);                                // 열람 횟수 +1 (로그인 무관)
+  hideCalli();                                   // 이전 별의 글씨는 스러짐
+  renderLists(book); renderDial(book); renderCalli(book); renderEssayMark(book);   // 우선 로컬(기존) 렌더
+  // 최근문장 목록에서 온 방문이면 — 마음속의 문장 서랍을 곧장 펼친다
+  // (표식은 어떤 별을 열든 소모: 도중에 다른 별로 새면 낡은 표식이 남지 않도록)
+  var _pl=window._pendingLinesFor; window._pendingLinesFor=null;
+  if(_pl===book.id && window._drawerOpen) window._drawerOpen('lines');
+  const local=ensureData(book);
+  if(local.calligraphy) showCalli(local.calligraphy);       // 로컬에 이미 있으면 즉시 띄움
+  const remote=await loadBook(book.id);          // 그 책의 저장된 노트 불러오기
+  if(panelBook===book && remote){                // 그새 다른 책으로 넘어가지 않았으면 반영
+    bookData[book.id]=remote;
+    renderLists(book); renderDial(book); renderCalli(book); renderEssayMark(book);
+    if(remote.calligraphy) showCalli(remote.calligraphy); else hideCalli();
+  }
+}
+// 별을 열 때 Supabase 함수로 +1, 반환된 누적값을 패널에 표시
+function bumpView(book){
+  if(!window.sb) return;
+  window.sb.rpc('bump_view',{bid:book.id}).then(({data,error})=>{
+    if(!error && data!=null && panelBook===book)
+      document.getElementById('bp-views').textContent='별똥별  '+data;
+  }).catch(()=>{});
+}
+// 스쳐간 혜성들 — 사이트 진입 시 +1 (페이지 로드 1회)
+function bumpSite(){
+  if(!window.sb) return;
+  window.sb.rpc('bump_site').then(({data,error})=>{
+    if(!error && data!=null){
+      const el=document.getElementById('comet-site');
+      el.innerHTML='혜성&nbsp;<b>'+data+'</b>';
+      if(viewMode==='timeline') el.classList.add('show');
+    }
+  }).catch(()=>{});
+}
+// 근접한 혜성들 — 성단 입장 시 +1
+function bumpPhase(phaseId){
+  if(!window.sb) return;
+  window.sb.rpc('bump_phase',{pid:phaseId}).then(({data,error})=>{
+    if(!error && data!=null)
+      document.getElementById('comet-phase').innerHTML='근접한 혜성&nbsp;<b>'+data+'</b>';
+  }).catch(()=>{});
+}
+function renderLists(book){
+  const d=ensureData(book);
+  ['music','movie','reading'].forEach(kind=>{
+    const el=document.getElementById('bp-'+kind+'-list');
+    el.innerHTML=d[kind].map((v,i)=>{
+      const vid=(kind==='music')?ytId(v):null;
+      if(vid){
+        return '<div class="bp-item bp-yt" data-i="'+i+'">'
+          +'<a class="bp-yt-link" href="https://www.youtube.com/watch?v='+vid+'" target="_blank" rel="noopener">'
+          +'<img class="bp-yt-thumb" src="https://i.ytimg.com/vi/'+vid+'/mqdefault.jpg" alt="" loading="lazy">'
+          +'<span class="bp-yt-title loading">불러오는 중…</span></a>'
+          +'<span class="bp-del" data-i="'+i+'">×</span></div>';
+      }
+      return '<div class="bp-item"><span class="bp-item-text">'+bpLinkify(v)+'</span>'
+        +'<span class="bp-del" data-i="'+i+'">×</span></div>';
+    }).join('');
+    el.querySelectorAll('.bp-del').forEach(x=>{
+      x.addEventListener('click',()=>{ d[kind].splice(+x.dataset.i,1); panelDirty=true; renderLists(book); });
+    });
+    if(kind==='music'){
+      el.querySelectorAll('.bp-yt').forEach(card=>{
+        const vid=ytId(d.music[+card.dataset.i]); if(!vid) return;
+        const t=card.querySelector('.bp-yt-title');
+        ytTitle(vid).then(title=>{ if(t){ t.classList.remove('loading'); t.textContent=title||'제목 없음'; } });
+      });
+    }
+  });
+}
+let editingLine=-1;
+function renderDial(book){
+  const d=ensureData(book);
+  const track=document.getElementById('bp-dial-track');
+  track.innerHTML=d.lines.map((v,i)=>{
+    if(i===editingLine){
+      return '<div class="bp-line bp-line-editing" data-i="'+i+'">'
+        +'<input class="bp-line-edit-input" value="'+bpEsc(v).replace(/"/g,'&quot;')+'">'
+        +'<span class="bp-line-save" title="저장">✓</span>'
+        +'<span class="bp-line-cancel" title="취소">×</span></div>';
+    }
+    return '<div class="bp-line" data-i="'+i+'">'+bpEsc(v)
+      +'<span class="bp-line-edit-btn" data-i="'+i+'" title="수정">✎</span>'
+      +'<span class="bp-line-del" data-i="'+i+'" title="삭제">×</span></div>';
+  }).join('');
+  track.querySelectorAll('.bp-line-edit-btn').forEach(x=>{
+    x.addEventListener('click',e=>{ e.stopPropagation(); editingLine=+x.dataset.i; renderDial(book);
+      const inp=track.querySelector('.bp-line-edit-input'); if(inp) inp.focus(); });
+  });
+  track.querySelectorAll('.bp-line-del').forEach(x=>{
+    x.addEventListener('click',e=>{ e.stopPropagation(); d.lines.splice(+x.dataset.i,1); panelDirty=true; editingLine=-1; renderDial(book); });
+  });
+  track.querySelectorAll('.bp-line-save').forEach(x=>{
+    x.addEventListener('click',e=>{ e.stopPropagation(); saveLineEdit(book); });
+  });
+  track.querySelectorAll('.bp-line-cancel').forEach(x=>{
+    x.addEventListener('click',e=>{ e.stopPropagation(); editingLine=-1; renderDial(book); });
+  });
+  track.querySelectorAll('.bp-line-edit-input').forEach(inp=>{
+    inp.addEventListener('keydown',e=>{ e.stopPropagation();
+      if(e.key==='Enter') saveLineEdit(book);
+      else if(e.key==='Escape'){ editingLine=-1; renderDial(book); } });
+  });
+  document.getElementById('bp-line-count').textContent=d.lines.length?d.lines.length+' 문장':'';
+  updateDialFocus();
+}
+function saveLineEdit(book){
+  const d=ensureData(book);
+  const inp=document.querySelector('.bp-line-edit-input');
+  if(inp && editingLine>=0){ const v=inp.value.trim(); if(v){ d.lines[editingLine]=v; panelDirty=true; } }
+  editingLine=-1; renderDial(book);
+}
+function updateDialFocus(){
+  const dial=document.getElementById('bp-dial');
+  const lines=dial.querySelectorAll('.bp-line');
+  if(!lines.length) return;
+  const rect=dial.getBoundingClientRect();
+  const cy=rect.top+rect.height/2;
+  lines.forEach(el=>{
+    const r=el.getBoundingClientRect();
+    const dist=Math.min(1,Math.abs((r.top+r.height/2)-cy)/(rect.height/2));
+    el.style.opacity=(1-dist*0.82).toFixed(3);
+    el.style.transform='scale('+(1-dist*0.22).toFixed(3)+')';
+    el.style.filter='saturate('+(1-dist*0.65).toFixed(2)+')';
+  });
+}
+function addItem(kind){
+  if(!panelBook) return;
+  const inp=document.getElementById('bp-'+kind+'-input');
+  const v=inp.value.trim(); if(!v) return;
+  const d=ensureData(panelBook);
+  if(kind==='line'){
+    d.lines.push(v); panelDirty=true; inp.value=''; renderDial(panelBook);
+    requestAnimationFrame(()=>{
+      const ls=document.getElementById('bp-dial').querySelectorAll('.bp-line');
+      if(ls.length){ ls[ls.length-1].scrollIntoView({block:'center'}); updateDialFocus(); }
+    });
+    saveNow(panelBook);   // 문장은 소중하니 입력 즉시 서버로 — 패널 닫기를 기다리지 않는다
+  } else {
+    d[kind].push(v); panelDirty=true; inp.value=''; renderLists(panelBook);
+    saveNow(panelBook);
+  }
+}
+// 즉시 저장 — 결과를 문장 카운트 옆에 사람이 읽을 수 있게 표시
+function saveNow(book){
+  if(!book) return;
+  const d=bookData[book.id]; if(!d) return;
+  const cnt=document.getElementById('bp-line-count');
+  const base=d.lines.length?d.lines.length+' 문장':'';
+  if(cnt) cnt.textContent=base+' · 저장 중…';
+  saveBook(book.id, d).then(res=>{
+    panelDirty=false;
+    if(!cnt) return;
+    if(res && res.ok){ cnt.textContent=base+' · 새겨짐 ✓'; setTimeout(()=>{ if(cnt) cnt.textContent=base; },1600);
+      if(window._refreshRecentLines) window._refreshRecentLines(); }
+    else if(res && res.reason==='not-logged-in'){ cnt.textContent=base+' · 로그인 필요'; showAuthHint(); }
+    else { cnt.textContent=base+' · 저장 실패(콘솔 확인)'; console.error('saveNow 실패', res && res.error); }
+  });
+}
+// 패널 입력 이벤트 바인딩 — 이벤트 위임(타이밍·순서 무관하게 항상 작동)
+document.addEventListener('click',e=>{
+  const b=(e.target&&e.target.closest)?e.target.closest('.bp-btn'):null;
+  if(b&&b.dataset&&b.dataset.add) addItem(b.dataset.add);
+});
+['music','movie','reading','line'].forEach(kind=>{
+  const inp=document.getElementById('bp-'+kind+'-input');
+  inp.addEventListener('keydown',e=>{
+    e.stopPropagation();
+    if(e.key==='Enter') addItem(kind);
+    else if(e.key==='Escape') inp.blur();
+  });
+});
+document.getElementById('bp-dial').addEventListener('scroll',updateDialFocus);
+
+// ── Supabase 저장/불러오기 + 로그인(magic link) ────────
+// window.sb 는 상단 module script에서 createClient로 만들어 둠 (없으면 null)
+function whenSB(cb){
+  if(typeof window.sb!=='undefined') cb();
+  else window.addEventListener('sb-ready', cb, {once:true});
+}
+
+async function loadBook(bookId){
+  if(!window.sb) return null;
+  try{
+    const { data, error } = await window.sb
+      .from('books_notes').select('music,movie,reading,lines,calligraphy,essay')
+      .eq('book_id', bookId).maybeSingle();
+    if(error){ console.warn('loadBook', error); return null; }
+    if(!data) return {music:[],movie:[],reading:[],lines:[],calligraphy:null,essay:null};
+    return {music:data.music||[], movie:data.movie||[], reading:data.reading||[], lines:data.lines||[], calligraphy:parseCalli(data.calligraphy), essay:parseEssay(data.essay)};
+  }catch(e){ console.warn('loadBook 예외', e); return null; }
+}
+
+async function saveBook(bookId, d){
+  if(!window.sb) return {ok:false, reason:'no-client'};
+  if(!currentUser) return {ok:false, reason:'not-logged-in'};
+  try{
+    const payload={
+      user_id: currentUser.id, book_id: bookId,
+      music:d.music, movie:d.movie||[], reading:d.reading, lines:d.lines,
+      calligraphy:d.calligraphy?JSON.stringify(d.calligraphy):null,
+      essay:d.essay?JSON.stringify(d.essay):null,
+      updated_at: new Date().toISOString()
+    };
+    // .select() 를 붙여야 upsert 결과(실제로 쓰인 행)가 돌아온다.
+    // RLS 가 막으면 error 없이 data 가 빈 배열로 오므로 그것까지 실패로 판정.
+    const { data, error } = await window.sb.from('books_notes')
+      .upsert(payload, { onConflict:'user_id,book_id' })
+      .select('book_id,lines');
+    if(error){ console.error('[saveBook] 에러', {code:error.code, message:error.message, details:error.details, hint:error.hint}); return {ok:false, reason:'error', error}; }
+    if(!data || data.length===0){
+      console.error('[saveBook] 행이 쓰이지 않음 — RLS(WITH CHECK) 가 조용히 막았을 가능성. user_id=', currentUser.id);
+      return {ok:false, reason:'rls-blocked'};
+    }
+    console.log('[saveBook] 저장 성공 — book_id=', bookId, '· lines=', (data[0].lines||[]).length);
+    return {ok:true, data};
+  }catch(e){ console.error('[saveBook] 예외', e); return {ok:false, reason:'error'}; }
+}
+
+// 패널 내용이 바뀐 채로 닫히거나 다른 책으로 넘어갈 때 저장
+function flushPanel(){
+  if(!panelDirty || !panelBook) return;
+  const b=panelBook, d=bookData[b.id];
+  panelDirty=false;
+  if(!d) return;
+  saveBook(b.id, d).then(res=>{
+    if(res && !res.ok){
+      if(res.reason==='not-logged-in') showAuthHint();
+      else if(res.reason==='rls-blocked') console.error('[flushPanel] RLS 차단 — 정책 조건(WITH CHECK)을 확인하세요');
+    }
+  });
+}
+window.flushPanel=flushPanel;
+
+// ── 로그인 UI ─────────────────────────────────────────
+function setUser(u){
+  currentUser=u;
+  const status=document.getElementById('auth-status');
+  const login=document.getElementById('auth-login');
+  const otp=document.getElementById('auth-otp');
+  const msg=document.getElementById('auth-msg');
+  if(u){
+    status.textContent=(u.email||'기록 가능');
+    status.style.display='block'; login.style.display='none';
+    if(otp) otp.classList.remove('show');
+    if(msg) msg.textContent='';
+  } else {
+    status.style.display='none'; login.style.display='flex';
+  }
+  refreshHomeCalliBtn();
+}
+async function initAuth(){
+  if(!window.sb){ document.getElementById('auth-box').style.display='none'; return; }
+  try{
+    const { data:{ session } } = await window.sb.auth.getSession();
+    setUser(session ? session.user : null);
+    window.sb.auth.onAuthStateChange((_e, sess)=> setUser(sess ? sess.user : null));
+  }catch(e){ console.warn('initAuth', e); }
+}
+async function sendMagicLink(){
+  const email=document.getElementById('auth-email').value.trim();
+  const msg=document.getElementById('auth-msg');
+  const otp=document.getElementById('auth-otp');
+  if(!email){ msg.textContent='이메일을 입력하세요'; return; }
+  if(!window.sb){ msg.textContent='연결되지 않았어요'; return; }
+  msg.textContent='코드 보내는 중…';
+  try{
+    const { error } = await window.sb.auth.signInWithOtp({
+      email, options:{ emailRedirectTo: location.origin+location.pathname }
+    });
+    if(error){ msg.textContent='오류: '+error.message; return; }
+    msg.textContent='메일함의 6자리 코드를 입력해주세요 ✉️';
+    otp.classList.add('show');
+    document.getElementById('auth-code').focus();
+  }catch(e){ msg.textContent='오류가 났어요'; }
+}
+async function verifyCode(){
+  const email=document.getElementById('auth-email').value.trim();
+  const code=document.getElementById('auth-code').value.trim();
+  const msg=document.getElementById('auth-msg');
+  if(!code){ msg.textContent='코드를 입력하세요'; return; }
+  if(!window.sb){ msg.textContent='연결되지 않았어요'; return; }
+  msg.textContent='확인 중…';
+  try{
+    const { data, error } = await window.sb.auth.verifyOtp({ email, token: code, type:'email' });
+    if(error){ msg.textContent='오류: '+error.message; return; }
+    document.getElementById('auth-otp').classList.remove('show');
+    document.getElementById('auth-code').value='';
+    setUser(data.user);
+  }catch(e){ msg.textContent='오류가 났어요'; }
+}
+function showAuthHint(){
+  const box=document.getElementById('auth-box');
+  const msg=document.getElementById('auth-msg');
+  if(msg) msg.textContent='저장하려면 로그인하세요';
+  if(box){ box.classList.add('flash'); setTimeout(()=>box.classList.remove('flash'),1600); }
+}
+(function bindAuth(){
+  const send=document.getElementById('auth-send');
+  const email=document.getElementById('auth-email');
+  const verify=document.getElementById('auth-verify');
+  const code=document.getElementById('auth-code');
+  if(send) send.addEventListener('click', sendMagicLink);
+  if(email) email.addEventListener('keydown', e=>{
+    e.stopPropagation();
+    if(e.key==='Enter') sendMagicLink();
+  });
+  if(verify) verify.addEventListener('click', verifyCode);
+  if(code) code.addEventListener('keydown', e=>{
+    e.stopPropagation();
+    if(e.key==='Enter') verifyCode();
+  });
+})();
+whenSB(initAuth);
+whenSB(bumpSite);
+
+// ── 책 검색 — 자동완성 · 초성 · 제안 · 별 반짝임 ──────
+(function(){
+  const CHO=['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+  function toCho(str){
+    let out='';
+    for(const ch of str){
+      const code=ch.charCodeAt(0)-0xAC00;
+      if(code>=0 && code<11172) out+=CHO[Math.floor(code/588)];
+      else out+=ch;
+    }
+    return out;
+  }
+  const isCho=q=>/^[ㄱ-ㅎ\s]+$/.test(q) && q.trim().length>0;
+  function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+  const box=document.getElementById('book-search');
+  const input=document.getElementById('book-search-input');
+  const results=document.getElementById('book-search-results');
+  let activeIndex=-1, current=[];
+
+  function filterBooks(q){
+    q=q.trim();
+    if(!q) return [];
+    const lower=q.toLowerCase();
+    const cho=isCho(q);
+    const qc=q.replace(/\s/g,'');
+    const res=[];
+    for(const b of BOOKS){
+      let hit=false;
+      if(cho){
+        if(toCho(b.title||'').replace(/\s/g,'').includes(qc)) hit=true;
+      } else {
+        if((b.title||'').toLowerCase().includes(lower) ||
+           (b.author||'').toLowerCase().includes(lower) ||
+           (b.subtitle||'').toLowerCase().includes(lower)) hit=true;
+      }
+      if(hit){ res.push(b); if(res.length>=8) break; }
+    }
+    return res;
+  }
+  function suggestBooks(){
+    const pool=BOOKS.slice();
+    for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+    return pool.slice(0,10);
+  }
+
+  function showAddForm(title){
+    const phOpts=PHASES.map(p=>'<option value="'+p.id+'">'+p.id+' \u00b7 '+p.name+'</option>').join('');
+    results.innerHTML='<div class="bs-addform">'
+      +'<div class="bs-af-title">새 별 더하기</div>'
+      +'<input class="bs-af-in" id="bs-af-title" placeholder="제목">'
+      +'<input class="bs-af-in" id="bs-af-author" placeholder="저자">'
+      +'<input class="bs-af-in" id="bs-af-pub" placeholder="출판사">'
+      +'<select class="bs-af-in" id="bs-af-phase">'+phOpts+'</select>'
+      +'<button class="bs-af-btn" id="bs-af-add">\uff0b 별밭에 더하기</button>'
+      +'<div class="bs-af-done" id="bs-af-done"></div>'
+      +'<button class="bs-af-dl" id="bs-af-dl">books.json 내려받기</button>'
+      +'<div class="bs-af-note">내려받은 books.json을 GitHub에 올리면 영구히 반영돼요. 더한 책은 새로고침 뒤 별밭에 나타납니다.</div>'
+      +'</div>';
+    results.classList.add('open');
+    const ti=document.getElementById('bs-af-title'); ti.value=title||'';
+    document.getElementById('bs-af-add').addEventListener('click',()=>{
+      const t=ti.value.trim(), au=document.getElementById('bs-af-author').value.trim(),
+            pu=document.getElementById('bs-af-pub').value.trim(), ph=+document.getElementById('bs-af-phase').value;
+      if(!t){ ti.focus(); return; }
+      const nb=addBook(t,au,pu,ph);
+      if(nb){
+        if(window._refreshRecentBooks) window._refreshRecentBooks();   // 새 별이 목록 맨 위로
+        document.getElementById('bs-af-done').textContent='\u2018'+nb.title+'\u2019 더해졌어요 (#'+nb.id+'). 내려받아 GitHub에 올리면 영구 반영됩니다.';
+        ti.value=''; document.getElementById('bs-af-author').value=''; document.getElementById('bs-af-pub').value=''; ti.focus();
+      }
+    });
+    document.getElementById('bs-af-dl').addEventListener('click',downloadBooksJson);
+    ti.focus();
+  }
+  function render(list,isSuggest){
+    current=list; activeIndex=-1;
+    if(!list.length && !isSuggest){
+      const q0=input.value.trim();
+      results.innerHTML='<div class="bs-empty">그 이름의 별은 아직 없어요</div>'
+        +'<div class="bs-add" id="bs-add-trigger">＋ \u2018'+esc(q0)+'\u2019 새 별로 더하기</div>';
+      results.classList.add('open');
+      const trig=document.getElementById('bs-add-trigger');
+      if(trig) trig.addEventListener('click',()=>showAddForm(q0));
+      return;
+    }
+    let html = isSuggest ? '<div class="bs-hint">이런 별은 어때요</div>' : '';
+    html += list.map((b,i)=>{
+      const meta=(b.author||'')+(b.phase_name?'   ·   '+b.phase_name:'');
+      return '<div class="bs-item" data-i="'+i+'">'
+        +'<div class="bs-item-title">'+esc(b.title)+'</div>'
+        +'<div class="bs-item-meta">'+esc(meta)+'</div></div>';
+    }).join('');
+    results.innerHTML=html;
+    results.classList.add('open');
+    results.querySelectorAll('.bs-item').forEach(el=>{
+      el.addEventListener('click',()=>selectBook(current[+el.dataset.i]));
+    });
+  }
+  function close(){ results.classList.remove('open'); results.innerHTML=''; activeIndex=-1; }
+  window.closeSearch=close;
+
+  function selectBook(book){
+    if(!book) return;
+    input.value=''; close(); input.blur();
+    if(panelBook && panelBook!==book) flushPanel();
+    pinnedBook=book; hoveredBook=book;
+    if(typeof refreshFocus==='function') refreshFocus();
+    // 유성의 곡선 비행 — 그 별로 날아가 도착하면 패널이 열림
+    if(book._p3 && window.flyTo){
+      hideCalli();                       // 떠나는 순간, 떠 있던 천문은 스러진다
+      window.flyTo(book, ()=>openPanel(book));
+    } else {
+      openPanel(book);
+    }
+  }
+  window.selectBook=selectBook;
+
+  function upd(items){
+    items.forEach((el,i)=>el.classList.toggle('active',i===activeIndex));
+    if(activeIndex>=0 && items[activeIndex]) items[activeIndex].scrollIntoView({block:'nearest'});
+  }
+
+  input.addEventListener('input',()=>{
+    const q=input.value;
+    if(!q.trim()){ render(suggestBooks(),true); return; }
+    render(filterBooks(q),false);
+  });
+  input.addEventListener('focus',()=>{ if(!input.value.trim()) render(suggestBooks(),true); });
+  input.addEventListener('keydown',e=>{
+    const items=results.querySelectorAll('.bs-item');
+    if(e.key==='ArrowDown'){ e.preventDefault(); activeIndex=Math.min(items.length-1,activeIndex+1); upd(items); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); activeIndex=Math.max(0,activeIndex-1); upd(items); }
+    else if(e.key==='Enter'){ e.preventDefault();
+      if(activeIndex>=0 && current[activeIndex]) selectBook(current[activeIndex]);
+      else if(current.length) selectBook(current[0]);
+    }
+    else if(e.key==='Escape'){ input.value=''; close(); input.blur(); }
+  });
+  // 바깥 클릭 시 결과 닫기 (검색창 내부 클릭은 유지)
+  document.addEventListener('mousedown',e=>{ if(!box.contains(e.target)) close(); });
+})();
+
+// 대문 천문 — 문은 원자 로고 위 투명한 원. 주인(로그인)에게만 열리고, 손님에겐 아무 일도 일어나지 않음
+(function bindHomeCalli(){
+  var d=document.getElementById('brand-door');
+  if(d) d.addEventListener('click',function(){ if(!currentUser) return; openHomeCalliEditor(); });
+  (function watch(){ syncHomeCalli(); requestAnimationFrame(watch); })();
+})();
+
+// ── 방명록 — 흐르는 헤드라인: 최근 30개의 한 줄이 화면 아래를 뉴스처럼 흐름 ──
+(function guestbook(){
+  var notes=[], paused=false, x=0, segW=0, lastT=0;
+  var SPEED=42;                                   // 흐름 속도(px/초)
+  var ticker=document.getElementById('gb-ticker');
+  var track=document.getElementById('gb-track');
+
+  function esc(t){ return String(t||'').replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+  function render(){
+    if(!track || !ticker) return;
+    if(!notes.length){ ticker.classList.remove('on'); track.innerHTML=''; segW=0; return; }
+    var me=(typeof currentUser!=='undefined' && currentUser);
+    var seg='';
+    notes.forEach(function(n){
+      seg+='<span class="gbt-item" data-id="'+n.id+'">'
+        +(n.nick?('<b>'+esc(n.nick)+'</b><i>\u2014</i>'):'')
+        +esc(n.body)
+        +(me?'<button class="gbt-x" title="삭제">\u00d7</button>':'')
+        +'</span><span class="gbt-star">\u2736</span>';
+    });
+    track.innerHTML='<span class="gbt-seg">'+seg+'</span><span class="gbt-seg">'+seg+'</span>';
+    ticker.classList.add('on');
+    x=0; segW=0;
+    requestAnimationFrame(function(){
+      var sg=track.querySelector('.gbt-seg');
+      segW=sg?sg.getBoundingClientRect().width:0;
+    });
+  }
+  (function step(t){
+    if(!lastT) lastT=t||0;
+    var dt=Math.min(0.1,((t||0)-lastT)/1000); lastT=t||0;
+    if(segW>0 && !paused){
+      x-=SPEED*dt; if(-x>=segW) x+=segW;
+      if(track) track.style.transform='translateX('+x+'px)';
+    }
+    requestAnimationFrame(step);
+  })();
+  if(ticker){
+    ticker.addEventListener('mouseenter',function(){ paused=true; });   // 올리면 멈춰 읽기
+    ticker.addEventListener('mouseleave',function(){ paused=false; });
+    ticker.addEventListener('touchstart',function(){ paused=!paused; },{passive:true});
+    ticker.addEventListener('click',async function(e){
+      var btn=e.target.closest('.gbt-x'); if(!btn) return;
+      var it=btn.closest('.gbt-item'); if(!it) return;
+      try{
+        var r=await window.sb.from('guestbook').update({hidden:true}).eq('id', it.getAttribute('data-id'));
+        if(r.error) throw r.error;
+        load();
+      }catch(err){ alert('삭제 실패: '+(err.message||err)); }
+    });
+  }
+
+  async function load(){
+    if(!window.sb){ setTimeout(load,500); return; }
+    try{
+      var r=await window.sb.from('guestbook')
+        .select('id,nick,body,created_at').eq('hidden',false)
+        .order('created_at',{ascending:false}).limit(30);
+      if(r.error) throw r.error;
+      notes=r.data||[];
+      console.info('[방명록] 흐르는 글', notes.length+'개');
+      render();
+    }catch(e){ console.warn('guestbook', e); }
+  }
+  // 로그인이 바뀌면 ×표 갱신
+  var lastMe=null;
+  setInterval(function(){
+    var me=(typeof currentUser!=='undefined')?!!currentUser:false;
+    if(me!==lastMe){ lastMe=me; render(); }
+  },1500);
+
+  // 쓰기 카드 — 말풍선 단추로 여닫음
+  var btn=document.getElementById('cm-btn'), comp=document.getElementById('gb-compose');
+  if(btn && comp){
+    btn.addEventListener('click',function(){
+      comp.classList.toggle('open');
+      if(comp.classList.contains('open')) setTimeout(function(){
+        var t=document.getElementById('gb-body'); if(t) t.focus(); },80);
+    });
+    document.getElementById('gb-cancel').addEventListener('click',function(){ comp.classList.remove('open'); });
+    var ta=document.getElementById('gb-body'), cnt=document.getElementById('gb-count');
+    ta.addEventListener('input',function(){
+      if(ta.value.length>200) ta.value=ta.value.slice(0,200);
+      cnt.textContent=ta.value.length+' / 200';
+    });
+    document.getElementById('gb-send').addEventListener('click',async function(){
+      var msg=document.getElementById('gb-msg');
+      var body=ta.value.trim();
+      var nick=document.getElementById('gb-nick').value.trim().slice(0,20);
+      if(!body){ msg.textContent='한 글자라도 남겨 주세요.'; return; }
+      if(!window.sb){ msg.textContent='연결이 아직입니다 \u2014 잠시 후 다시.'; return; }
+      msg.textContent='흘려보내는 중\u2026';
+      try{
+        var r=await window.sb.from('guestbook').insert({ body:body, nick:nick||null });
+        if(r.error) throw r.error;
+        ta.value=''; document.getElementById('gb-nick').value=''; cnt.textContent='0 / 200';
+        msg.textContent='';
+        comp.classList.remove('open');
+        await load();                              // 방금 글이 곧장 헤드라인에 합류
+      }catch(e){ msg.textContent='실패: '+(e.message||e); }
+    });
+  }
+
+  load();
+})();
+
+// ── 상단 서랍 다섯 — 선택된 별의 것. 아이콘 재클릭 시 스르륵 닫힘, 별 미선택 시 잠김 ──
+(function bindDrawers(){
+  var body=document.getElementById('bp-body');
+  var strip=document.getElementById('drawer-icons');
+  if(!body || !strip) return;
+  var secOf=function(id){ var el=document.getElementById(id); return el?el.closest('.bp-section'):null; };
+  var SECS={ music:secOf('bp-music-list'), movie:secOf('bp-movie-list'),
+             reading:secOf('bp-reading-list'), lines:document.querySelector('.bp-lines-section'),
+             calli:secOf('bp-calli') };
+  var cur=null;
+  function show(sec){
+    Object.keys(SECS).forEach(function(k){ if(SECS[k]) SECS[k].classList.toggle('active', k===sec); });
+    Array.prototype.forEach.call(strip.querySelectorAll('button'),function(b){
+      b.classList.toggle('on', b.getAttribute('data-sec')===sec);
+    });
+  }
+  function openD(sec){ cur=sec; show(sec); body.classList.add('open'); }
+  function closeD(){ cur=null; show(null); body.classList.remove('open'); }
+  window._drawerClose=closeD;              // 빈 하늘 클릭이 서랍만 접을 수 있게
+  window._drawerOpen=openD;                // 최근문장 목록 클릭 → 도착 시 문장 서랍 자동 펼침용
+  strip.addEventListener('click',function(e){
+    var b=e.target.closest('button'); if(!b) return;
+    if(!panelBook) return;                       // 잠김 — 별을 먼저
+    var s=b.getAttribute('data-sec');
+    if(cur===s) closeD(); else openD(s);
+  });
+  // 별 선택 감시 — 별이 닫히면 서랍도 닫히고 아이콘이 잠김
+  var last=null;
+  (function watch(){
+    var pb=(typeof panelBook!=='undefined')?panelBook:null;
+    if(pb!==last){ last=pb; strip.classList.toggle('locked', !pb);
+      if(!pb){ closeD(); var pn=document.getElementById('essay-pen'); if(pn) pn.classList.remove('pulse'); } }
+    requestAnimationFrame(watch);
+  })();
+})();
+
+window.addEventListener('resize',resize);
+resize();
+loop();
+</script>
+<script>
+// ── 대문: 눈을 뜨다 — 첫 탭이 곧 첫 손짓이라, 하늘과 음악이 함께 옵니다 ──
+(function(){
+  document.body.classList.add('gated');
+  var g=document.getElementById('gate');
+  function openEye(){
+    if(!g || g.classList.contains('gone') || document.body.classList.contains('eye-open')) return;
+    document.body.classList.add('eye-open');
+    setTimeout(function(){
+      g.classList.add('gone');
+      document.body.classList.remove('gated','eye-open');   // 필터 완전 해제 — GPU 원상복귀
+    },3050);
+  }
+  if(g) g.addEventListener('click',openEye);
+  window.addEventListener('keydown',openEye);
+})();
+</script>
+</body>
+</html>
