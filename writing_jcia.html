@@ -214,13 +214,18 @@
   #fabEdit.ghost { background:#fff; border:1px solid rgba(217,119,87,0.4); }
 
   /* ── 云云 소개 ── */
-  #intro { flex:1; display:none; align-items:center; justify-content:center; padding:4vh 6vw; }
+  #intro { flex:1; display:none; position:relative; align-items:flex-start; justify-content:center; padding:7vh 6vw; overflow-y:auto; }
   #intro.visible { display:flex; }
-  .intro-inner { max-width:40rem; text-align:center; }
-  .intro-mark { font-family:'Noto Serif KR',serif; font-size:2.2rem; color:var(--ink); letter-spacing:0.08em; margin-bottom:1.6rem; }
+  .intro-inner { max-width:38rem; width:100%; margin:0 auto; }
+  .intro-mark { font-family:'Noto Serif KR',serif; font-weight:500; font-size:2rem; color:var(--ink); letter-spacing:0.08em; margin:0 0 2.6rem; text-align:center; }
   .intro-mark .intro-bar { color:var(--gray); font-weight:300; margin:0 0.5rem; }
   .intro-mark .intro-ko { font-family:'Gowun Batang',serif; font-size:1.05rem; color:var(--gray); }
-  .intro-body { font-family:'Gowun Batang',serif; font-size:0.95rem; line-height:2.1; color:#4c4c48; word-break:keep-all; white-space:pre-wrap; }
+  .intro-body p { font-family:'Gowun Batang','Noto Serif KR',serif; font-size:0.98rem; line-height:2.15; color:#4c4c48; word-break:keep-all; margin:0 0 1.7rem; text-align:left; }
+  .intro-body p:last-child { margin-bottom:0; }
+  .intro-body .han { font-family:'Noto Serif KR',serif; }
+  /* 나중에 붓 글씨·그림 한 획이 들어올 자리 (지금은 비어 숨김) */
+  #intro-brush { position:absolute; right:4vw; bottom:4vh; max-width:22vw; max-height:40vh; pointer-events:none; opacity:0.9; }
+  #intro-brush:empty { display:none; }
 
   /* ═══════ 芳名錄 ═══════ */
   #guestbook { flex:1; display:none; flex-direction:column; max-width:34rem; margin:0 auto;
@@ -443,9 +448,21 @@
 
     <div id="intro">
       <div class="intro-inner">
-        <div class="intro-mark">云云 <span class="intro-bar">|</span> <span class="intro-ko">어쩌고 저쩌고</span></div>
-        <div class="intro-body" id="introBody">여기에 쓰는 jcia가 무엇인지 적습니다. — 준철씨가 채우는 자리입니다.</div>
+        <div class="intro-mark">云云 <span class="intro-bar">|</span> <span class="intro-ko">운운하다</span></div>
+        <div class="intro-body">
+          <p>제가 앞으로 말하는 동양경전은 유·불·도를 칭합니다. 공자와 부처와 노자를 시작으로 하는 그 후대의 천재들의 말과 글입니다. 천기를 누설하는 내용들이라 할 수 있습니다. 그 우주와 삶을 한번에 관통하는 진리와 지혜가 무궁무진합니다.</p>
+          <p>주역 계사전이라는 글에, 공자는 <span class="han">"書不盡言, 言不盡意"</span>라는 말이 있습니다. 글은 말을 다하지 못하고, 말은 그 뜻을 다하지 못한다는 말입니다. 불교에서는 이를 <span class="han">"不立文字"</span>, 불립문자라 합니다. 불교에서는 한자도 쉽게 씁니다. 도교의 노자는 이를 <span class="han">"道可道非常道"</span>, 도가도비상도라 말합니다.</p>
+          <p>성경책에서는 하나님의 권위에 도전하는 인간들이 바벨탑을 지어 올리다가, 서로 통하지 않게 언어라는 것을 만들어 버렸다 했던가요. 다소 결이 다르긴 하지만, 이 모두는 다 한 가지를 말하고 있습니다. 말이 가진 한계를 말하고 있습니다.</p>
+          <p>말이라는 게, 이렇게 <span class="han">不可思議</span>합니다. 원래 불가사의란, 그 헤아려 생각하는 것이 가능하지 않다는 뜻입니다. 이런 것 같은데, 저런 것도 같고, 딱 잘라 말할 수 없는 그 어떤 것들입니다. 우리 일상에 그런 것들 투성입니다. 세상은 그런 것들을 확실히 하라고 합니다. 확실히 하는 순간, 내 마음과 다름이 확연해집니다. 비슷한 결로 가게 되면 다행이지만, 그렇지 못한 경우가 허다합니다. 속상합니다.</p>
+          <p>일상에서 만나는 <span class="han">言語道斷</span>, 언어도단의 지점이 있습니다. 말의 길이 끊어지는 순간입니다. 거기서부터는 말로 꺼내는 순간, 오해와 갈등이 생깁니다. <span class="han">"葛藤"</span>, 갈등은 칡 갈 자에 등나무 등 자입니다. 칡덩쿨과 등나무덩쿨이 지독하게 얽힌 모습을 말합니다. 풀어낼 수 없을 것 같은 이미지를 형상화한 말입니다. 한쪽을 풀었다 싶으면, 다른 여러 곳이 다시 얽히고설켜 있습니다. 동시에 다 풀어낼 방법이 없어 보입니다.</p>
+          <p>바로 이런 때에, 공자는 측은지심을 이야기하고, 부처는 직지인심이니 이심전심을 말했습니다. 말로 하는 것이 아니라, 마음으로 곧장 직진하여 바라보는 것입니다. 마음으로써 마음을 전하는 것입니다. 여기에는 마음만이 있고, 말은 없습니다. 엉킨 데로 두어도 괜찮습니다.</p>
+          <p>저 엉킨 것을 풀어야만 직성이 풀리는 사람들이 있습니다. 칼로 난도질을 해서 마구 끊어내서라도, 풀어야 한답니다. 그러고 풀고 나니, 온전하게 남은 것이 없습니다.</p>
+          <p>마음을 곧장 바라보라고 수천 년 전부터 주구장창 이야기하는데, 우리는 최선을 다해 기를 쓰고 외면합니다. 경전의 문구가 2500년을 살아남은 이유입니다. 불가사의한 것들 가운데, 그나마 이해하기 쉬운 예일 듯합니다.</p>
+          <p>요즘 서점에 가면, 동양고전에 대한 책들이 넘쳐납니다. 다들 훌륭하고 좋은 책들입니다. 저는 원전의 내용을 직접 들여다보는 경험을 권합니다. 한글이라는 표음문자가, 한문이라는 상형·회의·지사 등의 문자를 풀어놓는 바람에, 그 속에 담긴 마음을 제대로 담아내지 못하는 한계가 있습니다. 언어도단의 지점을 또다시 한글이라는 언어로 이어가는 바람에, 그 진가를 맛보기 어렵습니다. 허기진 혀에 닿는 콩가루 맛. 그것을 말로 표현하다니요.</p>
+          <p>한자라는 다소 높은 장벽이 있습니다. 그 한자의 한 자, 한 자, 사전을 찾아 읽어가고, 이렇게 해석하고, 저렇게 넣어보고, 나만의 언어로 해석해보는 시간과 그 과정, 그 자체가 마음을 바로 바라보겠다는 다짐의 실천입니다.</p>
+        </div>
       </div>
+      <div id="intro-brush" aria-hidden="true"></div>
     </div>
 
     <div id="guestbook">
@@ -618,7 +635,7 @@ gate.addEventListener('click', openEye);
 window.addEventListener('keydown', openEye);
 
 /* ── 독 + 피시아이 ── */
-const DOCK_ITEMS=[{h:'云云',e:'어쩌고 저쩌고'},...CATEGORIES,{h:'芳名錄',e:'방명록'}];
+const DOCK_ITEMS=[{h:'云云',e:'운운하다'},...CATEGORIES,{h:'芳名錄',e:'방명록'}];
 const isCoarse=window.matchMedia('(pointer:coarse)').matches;
 const prefersReduced=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 
