@@ -216,6 +216,8 @@
   /* ── 云云 소개 ── */
   #intro { flex:1; display:none; position:relative; align-items:flex-start; justify-content:center; padding:7vh 6vw; overflow-y:auto; }
   #intro.visible { display:flex; }
+  @keyframes introFade { 0%{opacity:0; filter:blur(12px);} 100%{opacity:1; filter:blur(0);} }
+  #intro.visible .intro-inner { animation:introFade 1.9s cubic-bezier(.4,0,.4,1) forwards; }
   .intro-inner { max-width:38rem; width:100%; margin:0 auto; }
   .intro-mark { font-family:'Noto Serif KR',serif; font-weight:500; font-size:2rem; color:var(--ink); letter-spacing:0.08em; margin:0 0 2.6rem; text-align:center; }
   .intro-mark .intro-bar { color:var(--gray); font-weight:300; margin:0 0.5rem; }
@@ -267,6 +269,7 @@
     .gate-lid,.gate-enter,#gate-lash{ animation:none !important; }
     body.gated #hall{ filter:none; }
     .work-appear{ animation:none; }
+    #intro.visible .intro-inner{ animation:none; }
     .rotate-glyph{ animation:none; transform:rotate(-90deg); }
   }
   /* ── 작품 이미지 (편집기 산출 PNG) ── */
