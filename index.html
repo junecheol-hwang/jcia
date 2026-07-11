@@ -426,7 +426,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   display:flex;align-items:center;justify-content:center;cursor:pointer;
   color:var(--orange-worn);position:relative;
   transform-origin:bottom center;will-change:transform;
-  transition:transform 0.16s cubic-bezier(.2,.8,.3,1.2),border-color 0.25s,background 0.25s,color 0.25s;
+  transition:transform 0.16s cubic-bezier(.2,.8,.3,1),border-color 0.25s,background 0.25s,color 0.25s;
 }
 .dock-app:hover{border-color:var(--orange-faded);background:rgba(30,34,46,0.85);color:var(--orange-pale);}
 .dock-app svg{width:22px;height:22px;display:block;pointer-events:none;}
@@ -512,6 +512,21 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   transform:translateY(-10px);transition:transform 0.26s ease;
 }
 #book-search.open #book-search-wrap{transform:translateY(0);}
+/* 검색창 문패 — 팔레트 바로 위, 우측 끝. 여기가 어느 우주인지 조용히 일러준다 */
+#bs-brand{
+  display:flex;align-items:center;justify-content:flex-end;gap:7px;
+  margin:0 0.4rem 0.62rem 0;
+  pointer-events:none;user-select:none;
+}
+#bs-brand svg{
+  width:20px;height:20px;flex:none;
+  filter:drop-shadow(0 0 6px rgba(217,119,87,0.38));
+}
+#bs-brand span{
+  font-family:'Cardo','Song Myung',serif;font-weight:400;
+  font-size:0.78rem;letter-spacing:0.22em;color:var(--orange-pale);opacity:0.85;
+  text-transform:lowercase;
+}
 #book-search-box{
   display:flex;align-items:center;gap:12px;
   background:rgba(8,11,20,0.92);
@@ -789,6 +804,9 @@ body.eye-open #gate-plate{opacity:0;}
   #book-search{padding-top:15vh;}
   #book-search-wrap{width:92vw;}
   #book-search-input{font-size:16px;}             /* iOS 자동 확대 방지 */
+  #bs-brand{margin-bottom:0.5rem;}
+  #bs-brand svg{width:17px;height:17px;}
+  #bs-brand span{font-size:0.7rem;letter-spacing:0.2em;}
 
   /* 상단 서랍 */
   #bp-body{width:100vw;border-radius:0 0 14px 14px;
@@ -903,6 +921,16 @@ body.eye-open #gate-plate{opacity:0;}
 <!-- 책 검색 — Ctrl+S로 화면 중앙에 떠오르는 팔레트 -->
 <div id="book-search">
   <div id="book-search-wrap">
+    <!-- 팔레트 문패 — 순청자 인장 + studio jcia -->
+    <div id="bs-brand">
+      <svg viewBox="0 0 240 240" aria-hidden="true">
+        <rect x="14" y="14" width="212" height="212" rx="40" fill="#C25E3F"/>
+        <circle cx="120" cy="120" r="60" fill="none" stroke="#FFFFFF" stroke-width="6" opacity="0.95"/>
+        <circle cx="120" cy="60" r="14" fill="#FFFFFF"/><circle cx="120" cy="180" r="14" fill="#FFFFFF"/>
+        <circle cx="120" cy="120" r="18" fill="#FFFFFF"/><circle cx="120" cy="120" r="8" fill="#C25E3F"/>
+      </svg>
+      <span>studio jcia</span>
+    </div>
     <div id="book-search-box">
       <svg id="book-search-icon" viewBox="0 0 24 24" fill="none" stroke="rgba(200,197,190,0.85)" stroke-width="1.6">
         <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/>
@@ -1059,6 +1087,9 @@ body.eye-open #gate-plate{opacity:0;}
 
 <!-- 아이맥 도크 — 배경음악 · 방명록 · 로그인 (마우스를 올리면 부풀었다 줄어든다) -->
 <div id="jcia-dock">
+  <button class="dock-app" id="dock-search" data-app="search" data-tip="책 찾기" aria-label="책 검색">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+  </button>
   <button class="dock-app" id="dock-music" data-app="music" data-tip="별밭의 노래" aria-label="배경음악">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>
   </button>
@@ -3566,9 +3597,11 @@ whenSB(bumpSite);
     if(g && !g.classList.contains('gone')) return;    // 대문이 먼저 — 눈을 뜨기 전엔 검색을 열지 않는다
     overlay.classList.add('open'); input.value='';
     setTimeout(function(){ input.focus(); render(suggestBooks(),true); },30);
+    if(window._dockSync) window._dockSync();
   }
   function closeModal(){
     overlay.classList.remove('open'); input.value=''; close(); input.blur();
+    if(window._dockSync) window._dockSync();
   }
   window.openBookSearch=openModal; window.closeBookSearch=closeModal;
   // Ctrl+S(⌘S) — 브라우저 '페이지 저장'을 막고 책 검색 팔레트를 여닫는다
@@ -3767,11 +3800,13 @@ whenSB(bumpSite);
   var jukebox=document.getElementById('jukebox');
   var gbComp=document.getElementById('gb-compose');
   var authBox=document.getElementById('auth-box');
+  var bsPal=document.getElementById('book-search');
 
   function isOpen(app){
-    return app==='music' ? !!(jukebox&&jukebox.classList.contains('open'))
-         : app==='guest' ? !!(gbComp&&gbComp.classList.contains('open'))
-         : app==='auth'  ? !!(authBox&&authBox.classList.contains('open')) : false;
+    return app==='music'  ? !!(jukebox&&jukebox.classList.contains('open'))
+         : app==='guest'  ? !!(gbComp&&gbComp.classList.contains('open'))
+         : app==='auth'   ? !!(authBox&&authBox.classList.contains('open'))
+         : app==='search' ? !!(bsPal&&bsPal.classList.contains('open')) : false;
   }
   function syncActive(){
     apps.forEach(function(b){ b.classList.toggle('active-app', isOpen(b.getAttribute('data-app'))); });
@@ -3781,13 +3816,15 @@ whenSB(bumpSite);
     if(jukebox) jukebox.classList.remove('open');
     if(gbComp) gbComp.classList.remove('open');
     if(authBox) authBox.classList.remove('open');
+    if(bsPal && bsPal.classList.contains('open') && window.closeBookSearch) window.closeBookSearch();
     syncActive();
   }
   function toggle(app){
     var was=isOpen(app);
     closeAll();
     if(!was){
-      if(app==='music' && jukebox) jukebox.classList.add('open');
+      if(app==='search'){ if(window.openBookSearch) window.openBookSearch(); }
+      else if(app==='music' && jukebox) jukebox.classList.add('open');
       else if(app==='guest' && gbComp){ gbComp.classList.add('open');
         setTimeout(function(){ var t=document.getElementById('gb-body'); if(t) t.focus(); },90); }
       else if(app==='auth' && authBox){ authBox.classList.add('open');
@@ -3803,11 +3840,12 @@ whenSB(bumpSite);
     if(jukebox&&jukebox.contains(e.target)) return;
     if(gbComp&&gbComp.contains(e.target)) return;
     if(authBox&&authBox.contains(e.target)) return;
+    if(bsPal&&bsPal.contains(e.target)) return;   // 검색 팔레트는 스스로 닫는다
     closeAll();
   });
 
-  // 확대(풍선) — 커서에 가까울수록 크게, 이웃도 살짝 부푼다
-  var MAX=1.5, SPREAD=68;
+  // 확대(풍선) — 커서에 가까울수록 크게, 이웃도 살짝 부푼다 (2026.07 · 과장을 덜어냄)
+  var MAX=1.20, SPREAD=56;
   function reset(){ apps.forEach(function(b){ b.style.transform='scale(1) translateY(0)'; }); }
   dock.addEventListener('mousemove',function(e){
     apps.forEach(function(b){
