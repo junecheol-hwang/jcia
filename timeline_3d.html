@@ -436,22 +436,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
   width:3px;height:3px;border-radius:50%;background:var(--orange-pale);
   box-shadow:0 0 6px rgba(217,169,110,0.9);
 }
-.dock-app::before{
-  content:attr(data-tip);position:absolute;bottom:calc(100% + 12px);left:50%;transform:translateX(-50%);
-  white-space:nowrap;font-family:'Cardo','Song Myung',serif;font-size:0.72rem;letter-spacing:0.08em;
-  color:var(--orange-pale);background:rgba(6,9,18,0.9);padding:3px 10px;border-radius:9px;
-  opacity:0;pointer-events:none;transition:opacity 0.2s;
-}
-.dock-app:hover::before{opacity:1;}
 /* 로그인 자물쇠 — 잠김(회색) / 열림(주황) */
 #dock-auth .lock-open{display:none;}
 #dock-auth.signed{color:var(--orange-pale);border-color:rgba(217,169,110,0.55);}
 #dock-auth.signed .lock-shut{display:none;}
 #dock-auth.signed .lock-open{display:block;}
 
-/* 옛 주크박스·방명록 단추는 도크로 대체 — 껍데기만 유지 */
+/* 옛 주크박스 단추는 도크로 대체 — 껍데기만 유지 */
 #jb-toggle{display:none;}
-#cm-btn{display:none;}
 #jukebox{position:fixed;left:0;top:0;width:0;height:0;z-index:70;}
 #jb-card{position:fixed;left:50%;bottom:5.8rem;top:auto;
   transform:translateX(-50%) translateY(10px);
@@ -669,14 +661,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02050a;user-select:
 .bs-af-note{font-size:0.63rem;color:var(--gray-dark);line-height:1.6;}
 
 /* ── 방명록 — 낯선 이의 별 ── */
-#cm-btn{position:fixed;left:calc(50% + 8px);bottom:calc(40% - 3.6rem);   /* ♪ 옆 */z-index:30;
-  width:30px;height:30px;border-radius:50%;
-  background:transparent;border:0.5px solid rgba(110,108,102,0.45);
-  color:var(--orange-worn);cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  transition:border-color 0.25s,color 0.25s;-webkit-tap-highlight-color:transparent;}
-#cm-btn:hover{border-color:var(--orange-faded);color:var(--orange-pale);}
-#cm-btn svg{width:15px;height:15px;}
 #gb-compose{position:fixed;left:50%;bottom:5.8rem;top:auto;z-index:72;width:min(322px,92vw);box-sizing:border-box;
   background:rgba(6,9,18,0.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   border:0.5px solid rgba(217,169,110,0.28);border-radius:16px;
@@ -993,13 +977,7 @@ body.eye-open #gate-plate{opacity:0;}
 <!-- 대문 천문 — 편집판 (문은 상단 로고에 숨어 있음) -->
 <div id="home-calli-edit"></div>
 
-<!-- 방명록 — 흐르는 헤드라인: 댓글 단추(♪ 옆)로 남기고, 화면 아래를 뉴스처럼 흐름 -->
-<button id="cm-btn" title="흔적 남기기">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M4 5h16v11H9l-5 3.5V16z"/>
-    <path d="M8 9.5h8M8 12.5h5"/>
-  </svg>
-</button>
+<!-- 방명록 — 도크의 흔적 아이콘으로 여닫는다 -->
 <div id="gb-compose">
   <div class="gb-title">흔적 | 痕迹</div>
   <textarea id="gb-body" maxlength="200" placeholder="짧은 글 한 줄 — 이 별밭에 흔적으로 남습니다 (200자)"></textarea>
@@ -2316,6 +2294,7 @@ function handleClick(mx,my){
 
 function checkHover(mx,my){
   if(isDragging) return;
+  if(window._nav && window._nav.flying) return;   // 비행 중엔 호버 픽 금지 — 스쳐가는 별에 목적별을 뺏기지 않게
   // 오른쪽 패널·검색창·게이지 등 UI 위에서는 그 아래 별 호버를 막음
   const el=document.elementFromPoint(mx,my);
   if(el && el.id!=='tl-canvas'){
@@ -3716,17 +3695,13 @@ whenSB(bumpSite);
     if(me!==lastMe){ lastMe=me; render(); }
   },1500);
 
-  // 쓰기 카드 — 말풍선 단추로 여닫음
-  var btn=document.getElementById('cm-btn'), comp=document.getElementById('gb-compose');
-  if(btn && comp){
-    btn.addEventListener('click',function(){
-      comp.classList.toggle('open');
-      if(comp.classList.contains('open')) setTimeout(function(){
-        var t=document.getElementById('gb-body'); if(t) t.focus(); },80);
-    });
-    document.getElementById('gb-cancel').addEventListener('click',function(){ comp.classList.remove('open'); });
+  // 쓰기 카드 — 도크 흔적 아이콘으로 여닫음 (중앙 단추는 제거됨)
+  var comp=document.getElementById('gb-compose');
+  if(comp){
+    var cancelB=document.getElementById('gb-cancel');
+    if(cancelB) cancelB.addEventListener('click',function(){ comp.classList.remove('open'); });
     var ta=document.getElementById('gb-body'), cnt=document.getElementById('gb-count');
-    ta.addEventListener('input',function(){
+    if(ta) ta.addEventListener('input',function(){
       if(ta.value.length>200) ta.value=ta.value.slice(0,200);
       cnt.textContent=ta.value.length+' / 200';
     });
