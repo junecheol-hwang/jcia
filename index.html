@@ -3390,9 +3390,7 @@ async function sendMagicLink(){
   if(!window.sb){ msg.textContent='연결되지 않았어요'; return; }
   msg.textContent='코드 보내는 중…';
   try{
-    const { error } = await window.sb.auth.signInWithOtp({
-      email, options:{ emailRedirectTo: location.origin+location.pathname }
-    });
+    const { error } = await window.sb.auth.signInWithOtp({ email });
     if(error){ msg.textContent='오류: '+error.message; return; }
     msg.textContent='메일함의 6자리 코드를 입력해주세요 ✉️';
     otp.classList.add('show');
