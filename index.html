@@ -13,8 +13,8 @@
 <link rel="icon" type="image/png" href="/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="도반의 여정">
-<title>Timeline — 도반의 여정</title>
+<meta name="apple-mobile-web-app-title" content="studio jcia">
+<title>studio jcia</title>
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Song+Myung&family=Cardo:ital@0;1&family=Noto+Serif+KR:wght@400;500&family=Cormorant:ital,wght@0,400;0,600;1,400&family=EB+Garamond:wght@400;500&family=Unbounded:wght@400&display=swap" rel="stylesheet">
 <script type="importmap">
   { "imports": {
@@ -3089,7 +3089,7 @@ async function exportUniverse(){
   var clean=BOOKS.map(function(b){
     var o={}; for(var k in b){ if(k.charAt(0)!=='_') o[k]=b[k]; } return o;
   });
-  var out={ app:'jcia — 도반의 여정',
+  var out={ app:'studio jcia',
             exported_at:new Date().toISOString(),
             meta:{ total:clean.length },
             phases:(booksData && booksData.phases)||null,
