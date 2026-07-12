@@ -30,14 +30,13 @@
 
       ─────────────────────────────────────────────────────
 
-      여기까지 소스를 열어보신 분께.
+      여기까지 소스를 열어보신 분이라면,
+      당신은 이 우주가, 나의 움벨트가 어떻게 지어졌는지
+      궁금한 사람입니다.
 
-      당신은 이 우주가 어떻게 지어졌는지 궁금한 사람입니다.
-      그렇다면 훔치지 마시고, 물어보십시오.
-      기꺼이 이야기 나누겠습니다. 그러라고 열어둔 문입니다.
+      기꺼이 이야기 나누겠습니다.
 
-      비옥한 빈 땅은 파는 것이 아니라 빌려주는 것입니다.
-      당신의 별밭을 짓고 싶으시면 — studiojcia.com
+                                            — studiojcia.com
 
       ─────────────────────────────────────────────────────
 
@@ -2485,7 +2484,16 @@ function parseId3(buf){
           return { name:f.name, title:m.title, artist:m.artist,
                    url:window.sb.storage.from('jukebox').getPublicUrl(f.name).data.publicUrl };
         });
-      if(tracks.length && first) playAt(0,false);          // 목록만 준비 — 소리는 첫 손짓 뒤
+      // 첫 곡은 아리아 — 골드베르크는 아리아에서 나와 아리아로 돌아온다.
+      // 파일명에 'aria'가 있는 첫 곡을 찾고, 없으면 목록의 처음부터.
+      // (da capo는 뒤에 오므로, 앞에서부터 찾으면 자연히 여는 아리아가 잡힌다)
+      if(tracks.length && first){
+        var start=0;
+        for(var i=0;i<tracks.length;i++){
+          if(/aria/i.test(tracks[i].name)){ start=i; break; }
+        }
+        playAt(start,false);                                // 목록만 준비 — 소리는 첫 손짓 뒤
+      }
       if(!tracks.length){ $('jb-title').textContent='별밭의 노래'; $('jb-artist').textContent='아직 곡이 없어요'; }
     }catch(e){ console.warn('jukebox list', e); }
   }
