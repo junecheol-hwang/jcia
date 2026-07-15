@@ -35,9 +35,7 @@
   @keyframes turnPhone { 0%,25%{transform:rotate(0);} 55%,80%{transform:rotate(-90deg);} 100%{transform:rotate(-90deg);} }
   .rotate-title { font-family:'Song Myung','Noto Serif KR',serif; font-size:0.95rem; letter-spacing:0.4em; text-indent:0.4em; }
   .rotate-text { font-size:0.85rem; color:var(--gray); line-height:2; word-break:keep-all; }
-  @media (orientation:portrait) and (pointer:coarse) {
-    #rotateNotice{display:flex;} #gate,#hall{display:none !important;}
-  }
+  /* 세로 폰에서도 같은 얼굴로 열린다 — 회전 강제는 걷어냄 (rotateNotice는 잠들어 있음) */
 
   /* ═══════ 대문: 눈을 뜨다 — 읽는 jcia의 눈, 낮 버전 ═══════ */
   body.gated #hall { filter:blur(10px) brightness(1.01); }
@@ -106,40 +104,82 @@
 
   /* ═══════ 전시실 ═══════ */
   #hall { position:fixed; inset:0; display:flex; flex-direction:column; }
-
-  /* 우상단 — 인장 + 쓰는 jcia + 로그인 + 혜성 (읽는 jcia와 동일 배치) */
-  /* 좌측 기둥 — 위: 인장+이름 / 가운데: 독 / 아래: 로그인+혜성 */
-  #side { width:15rem; flex:none; display:flex; flex-direction:column;
-    padding:1.5rem 0 1.4rem 2.2rem; min-height:0; }
-  #brand { display:flex; align-items:center; gap:9px; cursor:pointer;
-    flex:none; margin-bottom:2rem; }
-  #brand-mark { width:26px; height:26px; }
-  #brand-name { font-family:'Song Myung','Noto Serif KR',serif; font-size:0.92rem; letter-spacing:0.06em; }
-  #auth-box { margin-top:auto; flex:none; display:flex; flex-direction:column;
-    align-items:flex-start; gap:5px; padding-top:1.2rem; }
-  #auth-email { width:172px; background:transparent;
-    border:0.5px solid rgba(20,20,20,0.22); border-radius:3px; padding:4px 8px;
-    font-family:'Gowun Batang',serif; font-size:0.7rem; color:var(--ink); outline:none; }
-  #auth-email::placeholder{ color:rgba(20,20,20,0.35); }
-  #auth-email:focus{ border-color:rgba(217,119,87,0.6); }
-  .comet { font-family:'Gowun Batang',serif; font-size:0.66rem; color:var(--gray); letter-spacing:0.08em; }
-  .comet b { color:var(--ink); font-weight:700; }
-
   .hall-body { flex:1; display:flex; min-height:0; }
 
-  /* 독 — 좌측, 피시아이 */
-  #dock { flex:1; min-height:0; display:flex; flex-direction:column; justify-content:flex-start;
-    gap:0.35rem; overflow-y:auto; overflow-x:hidden; padding-right:0.5rem; }
-  .dock-item { font-family:'Noto Serif KR',serif; font-weight:600; font-size:0.92rem;
-    letter-spacing:0.15em; color:var(--gray); cursor:pointer; user-select:none;
-    padding:0.28rem 0; transform-origin:left center;
-    width:max-content; max-width:100%;
-    transition:transform .18s ease-out, color .25s ease; white-space:nowrap; }
-  .dock-item .dock-bar{ opacity:0.35; font-weight:300; }
-  .dock-item .dock-eum{ font-family:'Gowun Batang',serif; font-weight:400; font-size:0.8em; opacity:0.8; letter-spacing:0.1em; }
-  .dock-item:hover{ color:var(--ink); }
-  .dock-item.active{ color:var(--ink); }
-  .dock-item.active::before{ content:'●'; color:var(--seal); font-size:0.45rem; margin-right:0.55rem; vertical-align:middle; }
+  /* ═══════ 다크 모드 — 먹빛 전시실 ═══════ */
+  body.dark { --white:#141414; --paper:#1B1B1A; --ink:#EDEDEA; --gray:#8F8F8A; }
+  body.dark .hall-stage { background:radial-gradient(closest-side at 50% 46%, #191918 55%, #121211 100%); }
+  body.dark #intro { background:var(--white); }
+  body.dark .scroll-frame { border-color:rgba(255,255,255,0.1); background:var(--white); }
+  body.dark #editor { background:#191918; border-left-color:rgba(255,255,255,0.08); }
+  body, .hall-stage, #intro { transition:background .6s ease, color .6s ease; }
+
+  /* ═══════ 하단 독 — 아래에서 떠오르는 둥근 인장들 ═══════ */
+  #dock-wrap { position:fixed; left:0; right:0; bottom:0; z-index:130;
+    display:flex; justify-content:center; pointer-events:none;
+    padding:0 8px calc(14px + env(safe-area-inset-bottom,0)); }
+  #dock { pointer-events:auto; display:flex; align-items:flex-end; gap:7px;
+    background:rgba(253,252,249,0.82); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    border:0.5px solid rgba(0,0,0,0.1); border-radius:26px; padding:9px 13px;
+    max-width:96vw; overflow-x:auto; overflow-y:hidden; scrollbar-width:none;
+    transform:translateY(0); transition:transform .55s cubic-bezier(.4,0,.2,1), opacity .4s ease; }
+  #dock::-webkit-scrollbar{ display:none; }
+  body.dark #dock { background:rgba(24,24,23,0.82); border-color:rgba(255,255,255,0.1); }
+  #dock-wrap.hidden #dock { transform:translateY(130%); opacity:0; }
+  .dock-item { flex:none; width:42px; height:42px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; user-select:none;
+    font-family:'Noto Serif KR',serif; font-weight:600; font-size:1.05rem; color:var(--gray);
+    border:1px solid rgba(20,20,20,0.16); background:transparent; position:relative;
+    transform-origin:bottom center; transition:transform .18s ease-out, color .25s, border-color .25s; }
+  body.dark .dock-item { border-color:rgba(255,255,255,0.16); }
+  .dock-item:hover { color:var(--ink); border-color:var(--seal); }
+  .dock-item.active { color:var(--seal); border-color:var(--seal); }
+  .dock-item.util { font-size:0.95rem; font-weight:400; }
+  .dock-sep { flex:none; width:1px; height:26px; align-self:center;
+    background:rgba(20,20,20,0.12); margin:0 3px; }
+  body.dark .dock-sep { background:rgba(255,255,255,0.12); }
+  /* 데스크톱 호버 라벨 */
+  .dock-item::after { content:attr(data-label); position:absolute; bottom:calc(100% + 10px); left:50%;
+    transform:translateX(-50%); white-space:nowrap; pointer-events:none; opacity:0;
+    font-family:'Noto Serif KR',serif; font-weight:500; font-size:0.72rem; letter-spacing:0.1em;
+    color:var(--ink); background:rgba(253,252,249,0.92); border:0.5px solid rgba(0,0,0,0.1);
+    border-radius:14px; padding:4px 11px; transition:opacity .2s ease; }
+  body.dark .dock-item::after { background:rgba(24,24,23,0.92); border-color:rgba(255,255,255,0.12); }
+  @media (hover:hover){ .dock-item:hover::after { opacity:1; } }
+  /* 독 다시 부르는 손잡이 */
+  #dock-handle { position:fixed; left:50%; bottom:0; transform:translateX(-50%); z-index:129;
+    width:120px; height:26px; display:flex; align-items:flex-end; justify-content:center;
+    padding-bottom:7px; cursor:pointer; opacity:0; transition:opacity .4s ease; pointer-events:none; }
+  #dock-wrap.hidden ~ #dock-handle, body #dock-handle.show { opacity:1; pointer-events:auto; }
+  #dock-handle span { display:block; width:44px; height:3px; border-radius:2px;
+    background:rgba(20,20,20,0.22); animation:gateBreath 3s ease-in-out infinite; }
+  body.dark #dock-handle span { background:rgba(255,255,255,0.25); }
+
+  /* 폰 터치 라벨 — 화면에 투명하게 떠올랐다 사라지는 "한자 | 한글" */
+  #dock-label { position:fixed; left:50%; bottom:110px; transform:translateX(-50%); z-index:131;
+    pointer-events:none; opacity:0; font-family:'Noto Serif KR',serif; font-weight:500;
+    font-size:1.15rem; letter-spacing:0.14em; color:var(--ink); white-space:nowrap;
+    text-shadow:0 1px 8px rgba(255,255,255,0.5); transition:opacity .35s ease; }
+  body.dark #dock-label { text-shadow:0 1px 8px rgba(0,0,0,0.6); }
+  #dock-label.show { opacity:0.92; }
+  #dock-label .bar { opacity:0.35; font-weight:300; margin:0 0.45em; }
+
+  /* 로그인 팝오버 — 독의 入 인장에서 피어남 */
+  #auth-pop { position:fixed; left:50%; bottom:calc(80px + env(safe-area-inset-bottom,0)); transform:translateX(-50%) translateY(8px);
+    z-index:132; background:rgba(253,252,249,0.97); border:0.5px solid rgba(0,0,0,0.12);
+    border-radius:16px; padding:16px 18px; width:min(300px,86vw);
+    display:flex; flex-direction:column; gap:8px; opacity:0; pointer-events:none;
+    transition:opacity .3s ease, transform .3s ease; box-shadow:0 8px 30px rgba(0,0,0,0.1); }
+  body.dark #auth-pop { background:rgba(24,24,23,0.97); border-color:rgba(255,255,255,0.12); }
+  #auth-pop.open { opacity:1; pointer-events:auto; transform:translateX(-50%) translateY(0); }
+  #auth-email, #auth-code { width:100%; box-sizing:border-box; background:transparent;
+    border:0.5px solid rgba(20,20,20,0.22); border-radius:8px; padding:8px 11px;
+    font-family:'Gowun Batang',serif; font-size:0.82rem; color:var(--ink); outline:none; }
+  body.dark #auth-email, body.dark #auth-code { border-color:rgba(255,255,255,0.2); }
+  #auth-email::placeholder, #auth-code::placeholder { color:rgba(128,128,124,0.6); }
+  #auth-email:focus, #auth-code:focus { border-color:rgba(217,119,87,0.6); }
+  .comet { font-family:'Gowun Batang',serif; font-size:0.66rem; color:var(--gray); letter-spacing:0.08em; text-align:center; }
+  .comet b { color:var(--ink); font-weight:700; }
 
   /* 무대 — 아주 옅은 집중 조명 */
   .hall-stage { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -153,6 +193,11 @@
     0%{opacity:0; filter:blur(14px);} 60%{opacity:0.9; filter:blur(2px);} 100%{opacity:1; filter:blur(0);}
   }
   .work.fading { opacity:0; filter:blur(10px); transition:opacity .55s ease, filter .55s ease; }
+  /* 손으로 민 방향으로 스며 들어온다 */
+  @keyframes slideInkL { 0%{opacity:0; filter:blur(12px); transform:translateX(9vw);} 100%{opacity:1; filter:blur(0); transform:translateX(0);} }
+  @keyframes slideInkR { 0%{opacity:0; filter:blur(12px); transform:translateX(-9vw);} 100%{opacity:1; filter:blur(0); transform:translateX(0);} }
+  .work.slide-left  { animation:slideInkL 1.1s cubic-bezier(.3,0,.2,1) forwards; }
+  .work.slide-right { animation:slideInkR 1.1s cubic-bezier(.3,0,.2,1) forwards; }
 
   /* 화폭 — 세로 족자 / 가로 횡권, 둘 다 작품 위·제발 아래 중앙 */
   .scroll-frame { position:relative; display:flex; align-items:center; justify-content:center;
@@ -205,7 +250,7 @@
   }
 
   /* ── 주인 액션 (우측 하단) ── */
-  #owner-fab { position:fixed; right:22px; bottom:22px; z-index:110; display:flex; flex-direction:column; gap:12px; }
+  #owner-fab { position:fixed; right:18px; bottom:calc(86px + env(safe-area-inset-bottom,0)); z-index:110; display:flex; flex-direction:column; gap:12px; }
   .fab-btn { width:52px; height:52px; border-radius:50%; border:none; cursor:pointer;
     display:flex; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(0,0,0,0.13); transition:transform .2s, box-shadow .2s; }
   .fab-btn:hover{ transform:translateY(-2px); box-shadow:0 6px 22px rgba(0,0,0,0.2); }
@@ -336,7 +381,7 @@
   .ed-note{ font-size:0.68rem; color:var(--gray); margin-top:12px; line-height:1.7; }
 
   /* ── 로그인 (매직링크) ── */
-  #auth-box.flash{ animation:authFlash 1.6s ease; }
+  #auth-pop.flash{ animation:authFlash 1.6s ease; }
   @keyframes authFlash{ 0%,100%{background:none;} 30%{background:rgba(217,119,87,0.12);} }
   #auth-status{ display:none; font-size:0.72rem; color:var(--seal); margin-bottom:7px; word-break:break-all; line-height:1.4; }
   #auth-login{ display:flex; gap:5px; align-items:center; }
@@ -346,10 +391,10 @@
   #auth-code{ flex:1; min-width:0; background:transparent; border:0.5px solid rgba(20,20,20,0.18);
     border-radius:6px; padding:6px 9px; font-family:'Gowun Batang',serif; font-size:0.8rem; color:var(--ink); }
   #auth-code:focus{ border-color:rgba(217,119,87,0.6); outline:none; }
-  #auth-box button{ font-family:'Noto Serif KR',serif; font-size:0.72rem; padding:6px 11px;
+  #auth-pop button{ font-family:'Noto Serif KR',serif; font-size:0.72rem; padding:6px 11px;
     border:0.5px solid var(--seal); border-radius:6px; background:rgba(217,119,87,0.08);
     color:var(--seal); cursor:pointer; white-space:nowrap; flex:none; }
-  #auth-box button:hover{ background:rgba(217,119,87,0.16); }
+  #auth-pop button:hover{ background:rgba(217,119,87,0.16); }
   #auth-msg{ font-size:0.68rem; color:var(--gray); margin-top:6px; line-height:1.5; min-height:0.9rem; }
 
   /* ── 편집판 입력란 (제목/읽기/괘/단상) ── */
@@ -401,31 +446,6 @@
 <!-- ═══════ 전시실 ═══════ -->
 <div id="hall">
   <div class="hall-body">
-  <div id="side">
-  <div id="brand">
-    <svg id="brand-mark" viewBox="0 0 240 240" aria-hidden="true">
-      <rect x="14" y="14" width="212" height="212" rx="40" fill="#C25E3F"/>
-      <circle cx="120" cy="120" r="60" fill="none" stroke="#FFFFFF" stroke-width="6" opacity="0.95"/>
-      <circle cx="120" cy="60" r="14" fill="#FFFFFF"/><circle cx="120" cy="180" r="14" fill="#FFFFFF"/>
-      <circle cx="120" cy="120" r="18" fill="#FFFFFF"/><circle cx="120" cy="120" r="8" fill="#C25E3F"/>
-    </svg>
-    <span id="brand-name">쓰는 jcia</span>
-  </div>
-  <nav id="dock" aria-label="분류"></nav>
-  <div id="auth-box">
-    <div id="auth-status"></div>
-    <div id="auth-login">
-      <input id="auth-email" type="email" placeholder="이메일로 로그인" autocomplete="email" spellcheck="false">
-      <button id="auth-send">코드</button>
-    </div>
-    <div id="auth-otp">
-      <input id="auth-code" type="text" inputmode="numeric" placeholder="6자리 코드" maxlength="6" autocomplete="one-time-code">
-      <button id="auth-verify">확인</button>
-    </div>
-    <div id="auth-msg"></div>
-    <div class="comet">혜성&nbsp;<b id="comet-n">61</b></div>
-  </div>
-  </div><!-- /#side -->
 
     <div class="hall-stage" id="stage">
       <button class="nav-arrow prev" id="prevBtn" aria-label="이전 작품">‹</button>
@@ -484,6 +504,26 @@
       <div class="gb-list" id="gbList"></div>
     </div>
   </div>
+</div>
+
+<!-- ── 하단 독 — 아래에서 떠오르는 인장들 ── -->
+<div id="dock-wrap"><nav id="dock" aria-label="분류"></nav></div>
+<div id="dock-handle" aria-label="메뉴 열기"><span></span></div>
+<div id="dock-label" aria-hidden="true"></div>
+
+<!-- ── 로그인 팝오버 (독의 入 인장) ── -->
+<div id="auth-pop">
+  <div id="auth-status"></div>
+  <div id="auth-login">
+    <input id="auth-email" type="email" placeholder="이메일로 로그인" autocomplete="email" spellcheck="false">
+    <button id="auth-send">코드</button>
+  </div>
+  <div id="auth-otp">
+    <input id="auth-code" type="text" inputmode="numeric" placeholder="6자리 코드" maxlength="6" autocomplete="one-time-code">
+    <button id="auth-verify">확인</button>
+  </div>
+  <div id="auth-msg"></div>
+  <div class="comet">혜성&nbsp;<b id="comet-n">61</b></div>
 </div>
 
 <!-- ── 주인 전용 액션 (우측 하단) ── -->
@@ -579,32 +619,8 @@ const CATEGORIES = [
   {h:'詩經',e:'시경'},{h:'餘白',e:'여백'}
 ];
 /* orient: 사진 비율에 따라 portrait(족자)/landscape(횡권) — 실제 버전은 업로드 시 자동 판정 */
-const WORKS = {
-  '易':[{char:'易',title:'바꿀 역',orient:'portrait',likes:3,
-    thought:'生生之謂易. 낳고 낳는 것을 일컬어 역이라 한다. 이 전시장의 문패이자 첫 작품.'}],
-  '中庸':[{char:'誠',title:'정성 성',orient:'portrait',likes:1,
-    thought:'誠者 天之道也. 정성은 하늘의 길이고, 정성되려는 것은 사람의 길이다.'}],
-  '論語':[{char:'仁',title:'어질 인',orient:'portrait',likes:2,
-    thought:'공자는 인을 한 번도 같은 말로 정의하지 않았다. 묻는 사람마다 다른 답을 주었다. 그것이 이미 인이다.'},
-   {char:'恕',title:'용서 서',orient:'portrait',likes:0,
-    thought:'평생 지닐 한 글자를 묻자 공자는 서(恕)라 답했다.'}],
-  '孟子':[{char:'浩',title:'넓을 호',orient:'portrait',likes:1,
-    thought:'호연지기(浩然之氣). 곧음으로 기르면 하늘과 땅 사이에 가득 찬다.'}],
-  '般若心經':[{char:'空',title:'빌 공',orient:'portrait',likes:4,
-    thought:'色卽是空 空卽是色. 비어 있음은 없음이 아니다. 모든 것이 드나들 수 있는 자리다.'}],
-  '金剛經':[{char:'如',title:'같을 여',orient:'portrait',likes:2,
-    thought:'如如. 오는 것도 없고 가는 것도 없어 여래(如來)라 한다.'}],
-  '道德經':[{char:'道',title:'길 도',orient:'portrait',likes:0,
-    thought:''}],
-  '石濤畵論':[{char:'一畫',title:'일획론',orient:'landscape',likes:5,
-    thought:'석도는 말했다 — 모든 그림은 한 획에서 시작된다. 만 획이 이 한 획의 자손이다. (가로 작품은 이렇게 횡권으로 걸립니다)'}],
-  '詩經':[{char:'思',title:'생각 사',orient:'portrait',likes:1,
-    thought:'詩三百 一言以蔽之 曰思無邪.'}],
-  '餘白':[{char:'遊',title:'놀 유',orient:'portrait',likes:2,
-    thought:'어느 고전에도 속하지 않을 자유. 여백은 언제나 필요하다.'},
-   {char:'靜',title:'고요할 정',orient:'portrait',likes:0,
-    thought:'흰 벽에 홀로 걸린 글자 하나가 고요를 대신 말한다.'}]
-};
+/* 벽은 비워 둔다 — 실제 작품은 Supabase gallery_works에서만 걸린다 */
+const WORKS = { '易':[], '中庸':[], '論語':[], '孟子':[], '般若心經':[], '金剛經':[], '道德經':[], '石濤畵論':[], '詩經':[], '餘白':[] };
 
 let guestbookEntries = [
   { name:'지나가던 별', date:'2026.07.01', body:'흰 벽에 글자 하나. 오래 서 있다 갑니다.', pw:'0000',
@@ -655,17 +671,60 @@ function renderDock(){
     dockEl.appendChild(it);
   });
 }
+/* ── 하단 독 — 경전 첫 글자를 딴 둥근 인장 ── */
+const dockLabelEl=$('dock-label');
+let labelTimer=null;
+function flashLabel(item){
+  dockLabelEl.innerHTML='';
+  const hj=document.createElement('span'); hj.textContent=item.h;
+  const bar=document.createElement('span'); bar.className='bar'; bar.textContent='|';
+  const eum=document.createElement('span'); eum.textContent=item.e;
+  dockLabelEl.append(hj,bar,eum);
+  dockLabelEl.classList.add('show');
+  clearTimeout(labelTimer);
+  labelTimer=setTimeout(()=>dockLabelEl.classList.remove('show'),1400);
+}
+function renderDock(){
+  dockEl.innerHTML='';
+  DOCK_ITEMS.forEach(item=>{
+    const it=document.createElement('div');
+    it.className='dock-item'+(item.h===currentCat?' active':'');
+    it.textContent=item.h[0];                      /* 경전 첫 글자 인장 */
+    it.setAttribute('data-label',item.h+' | '+item.e);
+    it.addEventListener('click',()=>{
+      if(isCoarse) flashLabel(item);
+      selectCategory(item.h);
+    });
+    dockEl.appendChild(it);
+  });
+  /* 구분선 + 도구 인장: 入(로그인) · ◐(먹빛/종이빛) */
+  const sep=document.createElement('div'); sep.className='dock-sep'; dockEl.appendChild(sep);
+  const login=document.createElement('div');
+  login.className='dock-item util'+(currentUser?' active':''); login.id='dock-login';
+  login.textContent='入';
+  login.setAttribute('data-label', currentUser ? (currentUser.email||'접속됨') : '入 | 로그인');
+  login.addEventListener('click',e=>{ e.stopPropagation(); $('auth-pop').classList.toggle('open'); });
+  dockEl.appendChild(login);
+  const theme=document.createElement('div');
+  theme.className='dock-item util'; theme.textContent='◐';
+  theme.setAttribute('data-label', document.body.classList.contains('dark')?'◐ | 종이빛':'◐ | 먹빛');
+  theme.addEventListener('click',()=>{
+    document.body.classList.toggle('dark');
+    try{ localStorage.setItem('jcia_theme', document.body.classList.contains('dark')?'dark':'light'); }catch(e){}
+    renderDock();
+  });
+  dockEl.appendChild(theme);
+}
+try{ if(localStorage.getItem('jcia_theme')==='dark') document.body.classList.add('dark'); }catch(e){}
+
+/* 데스크톱 — 가로 피시아이 */
 if(!isCoarse&&!prefersReduced){
-  const MAX=0.38, RANGE=110;
+  const MAX=0.34, RANGE=90;
   dockEl.addEventListener('mousemove',e=>{
-    const limit=dockEl.clientWidth-4;   /* 프레임 안쪽 한계 */
     dockEl.querySelectorAll('.dock-item').forEach(it=>{
       const r=it.getBoundingClientRect();
-      const d=Math.abs(e.clientY-(r.top+r.height/2));
-      let s=1+MAX*Math.max(0,1-d/RANGE);
-      /* 항목별 상한 — 자기 폭이 프레임을 넘기 직전까지만 부푼다 */
-      const allowed=limit/it.offsetWidth;
-      if(allowed>1) s=Math.min(s,allowed); else s=1;
+      const d=Math.abs(e.clientX-(r.left+r.width/2));
+      const s=1+MAX*Math.max(0,1-d/RANGE);
       it.style.transform=`scale(${s.toFixed(3)})`;
     });
   });
@@ -674,9 +733,17 @@ if(!isCoarse&&!prefersReduced){
   });
 }
 
+/* 독 내리고 올리기 */
+function hideDock(){ $('dock-wrap').classList.add('hidden'); $('dock-handle').classList.add('show'); }
+function showDock(){ $('dock-wrap').classList.remove('hidden'); $('dock-handle').classList.remove('show'); }
+$('dock-handle').addEventListener('click',showDock);
+/* 데스크톱: 화면 바닥에 마우스가 닿으면 독이 떠오른다 */
+if(!isCoarse){ document.addEventListener('mousemove',e=>{ if(e.clientY>window.innerHeight-24) showDock(); }); }
+
 function selectCategory(name){
   currentCat=name; renderDock();
   const intro=$('intro');
+  $('auth-pop').classList.remove('open');
   if(name==='云云'){
     stageEl.style.display='none'; gbEl.classList.remove('visible'); intro.classList.add('visible');
   } else if(name==='芳名錄'){
@@ -686,11 +753,20 @@ function selectCategory(name){
     intro.classList.remove('visible'); gbEl.classList.remove('visible'); stageEl.style.display='flex';
     workIdx=0; renderWork(true);
   }
+  hideDock();   /* 고른 뒤 독은 물러난다 */
 }
 
 /* ── 작품 — 스밈으로 등장 ── */
-function renderWork(appear){
-  const list=WORKS[currentCat]||[]; if(!list.length) return;
+function renderWork(appear,slideDir){
+  const list=WORKS[currentCat]||[];
+  if(!list.length){    /* 빈 분류 — 아직 걸린 작품이 없다 */
+    imgEl.style.display='none'; charEl.style.display=''; charEl.textContent='';
+    frameEl.className='scroll-frame portrait';
+    titleEl.textContent=''; readingEl.textContent=''; chapterEl.textContent='';
+    thoughtEl.textContent='아직 이 벽에는 걸린 작품이 없습니다.';
+    counterEl.textContent=''; heartBtn.textContent='♡'; heartBtn.classList.remove('liked'); heartCount.textContent='';
+    return;
+  }
   const w=list[workIdx];
   const orient=w.orient||'portrait';
   workEl.className='work '+orient;
@@ -710,7 +786,10 @@ function renderWork(appear){
   heartBtn.textContent=likedSet.has(key)?'♥':'♡';
   heartBtn.classList.toggle('liked',likedSet.has(key));
   heartCount.textContent=w.likes>0?w.likes:'';
-  if(appear){ workEl.classList.remove('work-appear'); void workEl.offsetWidth; workEl.classList.add('work-appear'); }
+  if(appear){
+    workEl.classList.remove('work-appear','slide-left','slide-right'); void workEl.offsetWidth;
+    workEl.classList.add(slideDir===1?'slide-left':slideDir===-1?'slide-right':'work-appear');
+  }
 }
 function go(dir){
   const list=WORKS[currentCat]||[]; if(list.length<2) return;
@@ -718,7 +797,7 @@ function go(dir){
   setTimeout(()=>{
     workIdx=(workIdx+dir+list.length)%list.length;
     workEl.classList.remove('fading');
-    renderWork(true);
+    renderWork(true,dir);   /* 미는 방향으로 스며 들어온다 */
   },550);
 }
 $('prevBtn').addEventListener('click',()=>go(-1));
@@ -729,10 +808,20 @@ document.addEventListener('keydown',e=>{
   if(e.key==='ArrowLeft') go(-1);
   if(e.key==='ArrowRight') go(1);
 });
+/* 폰 — 손으로 밀어 넘기기 */
+(function(){
+  let sx=0, sy=0;
+  stageEl.addEventListener('touchstart',e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; },{passive:true});
+  stageEl.addEventListener('touchend',e=>{
+    const t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy;
+    if(Math.abs(dx)>56 && Math.abs(dx)>Math.abs(dy)*1.4){ go(dx<0?1:-1); }
+  },{passive:true});
+})();
 
 /* ── 마음 ── */
 heartBtn.addEventListener('click',()=>{
-  const w=WORKS[currentCat][workIdx], key=currentCat+workIdx;
+  const list=WORKS[currentCat]||[]; if(!list.length) return;
+  const w=list[workIdx], key=currentCat+workIdx;
   if(likedSet.has(key)){likedSet.delete(key); w.likes=Math.max(0,w.likes-1);}
   else {likedSet.add(key); w.likes+=1;}
   renderWork(false);
@@ -812,12 +901,14 @@ function setUser(u){
     status.textContent=(u.email||'기록 가능')+' · 접속됨';
     status.style.display='block'; login.style.display='none';
     if(otp) otp.classList.remove('show'); if(msg) msg.textContent='';
+    setTimeout(()=>$('auth-pop').classList.remove('open'), 900);
   } else {
     status.style.display='none'; login.style.display='flex';
   }
+  if(typeof renderDock==='function' && dockEl) renderDock();
 }
 async function initAuth(){
-  if(!window.sb){ const b=$('auth-box'); if(b) b.style.opacity='0.5'; return; }
+  if(!window.sb){ const b=$('auth-pop'); if(b) b.style.opacity='0.5'; return; }
   try{
     const { data:{ session } } = await window.sb.auth.getSession();
     setUser(session ? session.user : null);
@@ -847,7 +938,7 @@ async function verifyCode(){
     $('auth-otp').classList.remove('show'); $('auth-code').value=''; setUser(data.user);
   }catch(e){ msg.textContent='오류가 났어요'; }
 }
-function showAuthHint(){ const box=$('auth-box'), msg=$('auth-msg'); if(msg) msg.textContent='올리려면 먼저 로그인하세요'; if(box){ box.classList.add('flash'); setTimeout(()=>box.classList.remove('flash'),1600); } }
+function showAuthHint(){ const pop=$('auth-pop'), msg=$('auth-msg'); if(msg) msg.textContent='올리려면 먼저 로그인하세요'; if(pop){ showDock(); pop.classList.add('open','flash'); setTimeout(()=>pop.classList.remove('flash'),1600); } }
 (function bindAuth(){
   const send=$('auth-send'), email=$('auth-email'), verify=$('auth-verify'), code=$('auth-code');
   if(send) send.addEventListener('click', sendMagicLink);
@@ -1129,8 +1220,15 @@ async function bumpVisit(){
   }catch(e){ console.warn('visit',e); }
 }
 
+/* 팝오버 바깥을 누르면 닫힌다 */
+document.addEventListener('click',e=>{
+  const pop=$('auth-pop');
+  if(pop.classList.contains('open') && !pop.contains(e.target) && e.target.id!=='dock-login') pop.classList.remove('open');
+});
+
 /* ── 시작 ── */
 selectCategory('云云');
+showDock();   /* 첫 화면에서는 독이 아래에서 떠올라 있는다 */
 whenSB(loadWorks);
 whenSB(bumpVisit);
 </script>
