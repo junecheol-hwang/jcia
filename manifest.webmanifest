@@ -1,8 +1,8 @@
 {
-  "name": "Timeline — 도반의 여정",
-  "short_name": "도반의 여정",
+  "name": "studio jcia",
+  "short_name": "studio jcia",
   "description": "485권의 책이 별이 된 하늘 — 읽고, 쓰고, 흔적을 남기는 별밭",
-  "start_url": "/timeline_3d.html",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#060912",
