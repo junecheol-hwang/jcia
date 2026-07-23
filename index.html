@@ -1519,8 +1519,22 @@ ${summary.join("\n")}
         .upload(path, blob, { upsert: true, contentType: "image/jpeg", cacheControl: "0" });
       if (error) throw error;
       freshBlobs.set(path, blob);
-      const { data: sg } = await sb.storage.from("gotgan").createSignedUrl(path, 3600);
-      img.src = (sg && sg.signedUrl ? sg.signedUrl : img.src.split("#")[0]) + "#r" + Date.now();
+      // 작은 사본도 같은 각도로 다시 뜬다
+      let thumbUrl = null;
+      try {
+        const M = 400, kk = Math.max(c.width, c.height) > M ? M / Math.max(c.width, c.height) : 1;
+        const t = document.createElement("canvas");
+        t.width = Math.round(c.width * kk); t.height = Math.round(c.height * kk);
+        t.getContext("2d").drawImage(c, 0, 0, t.width, t.height);
+        const tb = await new Promise((r) => t.toBlob(r, "image/jpeg", 0.72));
+        if (tb) {
+          await sb.storage.from("gotgan").upload("thumbs/" + path, tb, { upsert: true, contentType: "image/jpeg", cacheControl: "0" });
+          const { data: tg } = await sb.storage.from("gotgan").createSignedUrl("thumbs/" + path, 3600);
+          if (tg && tg.signedUrl) thumbUrl = tg.signedUrl;
+        }
+      } catch { }
+      const { data: sg } = thumbUrl ? { data: null } : await sb.storage.from("gotgan").createSignedUrl(path, 3600);
+      img.src = (thumbUrl || (sg && sg.signedUrl) || img.src.split("#")[0]) + "#r" + Date.now();
       showToast("돌려 눕혔다 — 책에서도 이 각도다");
     } catch (e) {
       showToast("돌리지 못했다 — " + (e.message || e));
@@ -1556,8 +1570,18 @@ ${summary.join("\n")}
       const photoPaths = media.filter((m) => m.kind === "photo" && m.storage_path).map((m) => m.storage_path);
       const signedMap = {};
       if (photoPaths.length) {
-        const { data: signed } = await sb.storage.from("gotgan").createSignedUrls(photoPaths, 3600);
-        (signed || []).forEach((sg) => { if (sg.signedUrl) signedMap[sg.path] = sg.signedUrl; });
+        // 작은 사본을 먼저 청한다 — 오가는 무게를 여덟 자리 덜기 위해
+        const { data: th } = await sb.storage.from("gotgan")
+          .createSignedUrls(photoPaths.map((p) => "thumbs/" + p), 3600);
+        (th || []).forEach((sg) => {
+          if (sg.signedUrl && sg.path) signedMap[String(sg.path).replace(/^thumbs\//, "")] = sg.signedUrl;
+        });
+        // 사본이 아직 없는 것만 원본으로
+        const rest = photoPaths.filter((p) => !signedMap[p]);
+        if (rest.length) {
+          const { data: signed } = await sb.storage.from("gotgan").createSignedUrls(rest, 3600);
+          (signed || []).forEach((sg) => { if (sg.signedUrl) signedMap[sg.path] = sg.signedUrl; });
+        }
       }
 
     if (!append) { list.innerHTML = ""; tcDayEls = []; lastDay = null; }
