@@ -1529,7 +1529,7 @@ ${summary.join("\n")}
     turning = false;
   }
 
-  const SHALLOW = 60;   // 얕은 시추 — 최근 60편을 먼저 보인다
+  const SHALLOW = 10;   // 얕은 시추 — 최근 10편을 먼저 보인다
   let tcRun = 0;        // 시추 회차 — 새 시추가 시작되면 옛 시추는 물러난다
   let lastDay = null;
   // ── 사초를 화면에 눕힌다 — 얕은 시추분을 먼저, 깊은 것은 뒤이어 이어 붙인다 ──
@@ -1717,7 +1717,8 @@ ${summary.join("\n")}
         deeper.textContent = "더 깊이 시추하는 중\u2026";
         list.appendChild(deeper);
         (async () => {
-          const STEP = 300;
+          await new Promise((r) => setTimeout(r, 250));   // 첫 그림이 앉은 뒤에 출발
+          const STEP = 60;
           let all = rows.slice();
           for (let from = SHALLOW; ; from += STEP) {
             if (mine !== tcRun) return;                 // 새 시추가 시작되면 조용히 물러난다
@@ -1733,6 +1734,7 @@ ${summary.join("\n")}
             all = all.concat(data);
             drawCore(all);
             if (data.length < STEP) break;
+            await new Promise((r) => setTimeout(r, 40));   // 화면에 숨을 돌려준다
           }
           if (mine === tcRun) { deeper.remove(); requestAnimationFrame(paintLens); }
         })();
