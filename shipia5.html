@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>shipia — 부분과 전체 · 배</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&family=Noto+Sans+KR:wght@300;400;500&family=Unbounded:wght@400;700&family=Bebas+Neue&family=Orbitron:wght@600&family=Nanum+Brush+Script&family=Playfair+Display:wght@600&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+  /* ── shipia 3D 제1판 · bikia의 밤무대. 이번엔 원판 바닥이 바다가 된다 ── */
+  :root{
+    --ink:#0b0c0e; --paper:#e9e5dc; --paper-dim:#9a958b; --brass:#b99a5a; --rule:#2c3036; --panel:#16181c;
+    --seal-jun:#cf6a55; --seal-jeon:#b99a5a; --seal-chu:#8fa3b8; --seal-mun:#9aa0ab;
+    --serif:'Noto Serif KR','Apple SD Gothic Neo','Nanum Myeongjo',serif;
+    --sans:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:radial-gradient(ellipse at 50% 45%, #232a34 0%, #14171c 55%, #0a0b0e 100%);color:var(--paper);font-family:var(--sans);font-weight:300;overflow:hidden}
+  #stage{position:fixed;inset:0;cursor:grab}
+  canvas{display:block}
+  button{font-family:inherit}
+  :focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;animation:none !important} }
+
+  /* 상단 표제 — 해부도의 판 제목 */
+  #title{position:fixed;left:28px;top:24px;z-index:6;pointer-events:none}
+  #title h1{font-family:'Unbounded',var(--sans);font-weight:700;font-size:22px;letter-spacing:.02em;transform:scaleX(.86);transform-origin:left}
+  #title p{font-size:12px;color:var(--paper-dim);margin-top:6px;letter-spacing:.06em}
+  #edition{display:inline-block;margin-top:10px;padding:4px 9px;border:1px solid var(--brass);color:var(--brass);font-size:11px;letter-spacing:.08em;border-radius:2px}
+
+  /* 선단 스위치 — 표제 아래 */
+  #fleet{position:fixed;left:28px;top:118px;z-index:6;display:flex;flex-direction:column;gap:6px}
+  #fleet .sec{font-size:11px;color:var(--paper-dim);letter-spacing:.14em;margin:6px 0 2px}
+  .shipbtn{all:unset;cursor:pointer;display:flex;align-items:baseline;gap:9px;padding:6px 11px 6px 8px;font-size:13.5px;color:var(--paper);
+    background:rgba(20,22,26,.85);border:1px solid #33373f;border-radius:3px;transition:border-color .2s,background .2s}
+  .shipbtn i{width:14px;height:2px;background:#55595f;transform:translateY(-3px);transition:all .2s}
+  .shipbtn small{color:var(--paper-dim);font-size:11px}
+  .shipbtn:hover,.shipbtn.on{border-color:var(--brass);background:rgba(20,22,26,.97)}
+  .shipbtn.on i{width:22px;background:var(--brass)}
+  .shipbtn.wait{opacity:.42;cursor:default}
+  .shipbtn.wait:hover{border-color:#33373f;background:rgba(20,22,26,.85)}
+
+  /* 계통 범례 — 왼쪽 하단, 세로로 */
+  #legend{position:fixed;left:28px;bottom:28px;z-index:6;display:flex;flex-direction:column;gap:6px}
+  #legend .sec{font-size:11px;color:var(--paper-dim);letter-spacing:.14em;margin-bottom:2px}
+  #legend button{all:unset;cursor:pointer;font-size:13px;font-weight:400;color:var(--paper);display:flex;align-items:center;gap:10px;
+    padding:5px 12px 5px 8px;background:rgba(20,22,26,.85);border:1px solid #3a3e46;border-radius:3px;transition:all .2s}
+  #legend button .cnt{color:var(--paper-dim);font-size:11px}
+  #legend button i{width:18px;height:2px;background:#55595f;display:inline-block;transition:all .2s}
+  #legend button.on,#legend button:hover{color:#fff;border-color:var(--brass);background:rgba(20,22,26,.97)}
+  #legend button.on i{width:28px;background:var(--brass)}
+
+  /* 낙인 HUD — 우상 */
+  #hud{position:fixed;right:28px;top:28px;width:360px;z-index:6;background:rgba(18,20,24,.88);backdrop-filter:blur(8px);border:1px solid var(--rule);padding:13px 18px;font-variant-numeric:tabular-nums}
+  #hud .h-ship{font-family:var(--serif);font-weight:600;font-size:16px}
+  #hud .h-dim{font-size:12px;color:var(--paper-dim);margin-top:4px;line-height:1.7}
+  #hud .h-stamp{font-size:11.5px;margin-top:6px;line-height:1.7}
+  #hud .h-hover{font-size:12.5px;color:var(--brass);margin-top:8px;min-height:18px}
+  #hud .h-tools{margin-top:8px;display:flex;gap:6px}
+  #hud .h-tools button{all:unset;cursor:pointer;font-size:11px;color:var(--paper-dim);border:1px solid #3a3e46;border-radius:2px;padding:3px 8px}
+  #hud .h-tools button.on,#hud .h-tools button:hover{color:var(--paper);border-color:var(--brass)}
+
+  /* 이름표 — 3D 위에 뜨는 얇은 글씨 */
+  #labels{position:fixed;inset:0;pointer-events:none;z-index:4}
+  .lbl{position:absolute;transform:translate(-50%,-100%);font-size:11px;color:#cfcabf;background:rgba(12,13,16,.55);padding:2px 6px;border-radius:2px;white-space:nowrap;letter-spacing:.03em}
+  .lbl::after{content:'';position:absolute;left:50%;bottom:-6px;width:1px;height:6px;background:#8a857b}
+
+  /* 설명 패널 — 박물관 표찰 */
+  #panel{position:fixed;right:28px;top:190px;bottom:28px;width:360px;z-index:7;background:var(--panel);border:1px solid var(--rule);
+    display:flex;flex-direction:column;overflow:hidden;transform:translateX(12px);opacity:0;pointer-events:none;transition:transform .3s,opacity .3s}
+  #panel.show{transform:none;opacity:1;pointer-events:auto}
+  #ptabs{display:flex;border-bottom:1px solid var(--rule)}
+  #ptabs button{all:unset;cursor:pointer;flex:1;text-align:center;padding:10px 0;font-size:12px;color:var(--paper-dim);border-bottom:2px solid transparent}
+  #ptabs button.on{color:var(--paper);border-bottom-color:var(--brass)}
+  #pclose{all:unset;cursor:pointer;padding:10px 12px;color:var(--paper-dim);font-size:13px}
+  #pclose:hover{color:var(--paper)}
+  #pbody{flex:1;overflow-y:auto;padding:16px 18px 20px;font-size:13.5px;line-height:1.75}
+  #pfoot{padding:10px 16px;border-top:1px solid var(--rule);display:flex;align-items:center;gap:8px}
+  #pfoot button{all:unset;cursor:pointer;font-size:12px;color:var(--paper);border:1px solid #3a3e46;border-radius:3px;padding:5px 10px}
+  #pfoot button:hover{border-color:var(--brass)}
+  #pfoot span{font-size:11px;color:var(--paper-dim);margin-left:auto}
+
+  /* 표찰 안의 글 — v1 카드 문법 */
+  .coord{font-size:11.5px;color:var(--paper-dim);letter-spacing:.05em;margin-bottom:8px}
+  .card-title{font-family:var(--serif);font-weight:600;font-size:21px;line-height:1.3}
+  .card-term{font-size:12px;color:var(--brass);margin-top:4px}
+  .prose{font-family:var(--serif);font-size:14px;line-height:1.85;margin-top:12px}
+  .blocktitle{font-size:11.5px;color:var(--paper-dim);letter-spacing:.12em;margin:20px 0 6px}
+  .col{background:rgba(18,20,24,.72);border:1px solid var(--rule);border-radius:3px;padding:11px 12px;margin-top:8px}
+  .col h4{font-size:11.5px;color:var(--paper-dim);letter-spacing:.1em;font-weight:400;margin-bottom:7px}
+  .col ul,.plainlist{list-style:none}
+  .col li,.plainlist li{font-size:13px;line-height:1.7;margin-bottom:7px;padding-left:11px;position:relative}
+  .col li::before,.plainlist li::before{content:'';position:absolute;left:0;top:.7em;width:5px;height:1px;background:var(--paper-dim)}
+  .plainlist{margin-top:6px}
+  .drawer{border:1px solid var(--rule);border-radius:3px;margin-top:8px;background:rgba(18,20,24,.6)}
+  .drawer>.dhead{cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:9px 12px;font-size:13px;user-select:none}
+  .drawer>.dhead .dchar{font-family:var(--serif);font-size:14px;color:var(--brass);margin-right:8px}
+  .drawer>.dhead .arrow{color:var(--paper-dim);font-size:11px}
+  .dbody{display:none;padding:2px 12px 11px;font-size:13px;line-height:1.75}
+  .drawer.open .dbody{display:block}
+  .dedit{all:unset;cursor:pointer;font-size:11px;color:var(--paper-dim);border:1px solid #3a3e46;border-radius:2px;padding:1px 6px;margin-left:7px}
+  .dedit:hover{color:var(--paper);border-color:var(--brass)}
+  textarea.raw{width:100%;min-height:100px;background:#101216;color:var(--paper);border:1px solid var(--brass);border-radius:3px;font-family:var(--sans);font-size:12.5px;line-height:1.7;padding:9px;resize:vertical}
+  .verify{border-left:2px solid var(--brass);padding:9px 12px;margin-top:18px;background:rgba(185,154,90,.06);font-size:13px;line-height:1.75}
+  .verify b{font-weight:500;color:var(--brass)}
+  .doors li{color:var(--paper-dim)}
+  .framecard{border:1px dashed #3a3e46;border-radius:3px;padding:13px 14px;margin-top:12px;color:var(--paper-dim);font-size:13px;line-height:1.7}
+  .framecard b{color:var(--paper);font-family:var(--serif);font-weight:600;font-size:14px}
+  .spec-row{display:flex;gap:10px;border-bottom:1px solid rgba(44,48,54,.7);padding:8px 2px;font-size:13px;line-height:1.7}
+  .spec-row .k{flex:0 0 110px;color:var(--paper-dim)}
+  .cardlink{all:unset;cursor:pointer;color:var(--brass);border-bottom:1px solid rgba(185,154,90,.4)}
+  .cardlink:hover{border-bottom-color:var(--brass)}
+  .src{display:flex;gap:10px;font-size:12.5px;line-height:1.65;padding:6px 4px;border-radius:3px;color:#cfcabf}
+  .src .no{flex:none;color:var(--brass);font-variant-numeric:tabular-nums;width:20px;text-align:right}
+  .src.hl{background:rgba(185,154,90,.14);outline:1px solid rgba(185,154,90,.5)}
+
+  /* 도장 · 꼬리표 */
+  .seal{display:inline-flex;align-items:center;cursor:pointer;font-family:var(--serif);font-size:11px;padding:0 5px;margin:0 2px;border-radius:2px;border:1px solid;transform:translateY(-1px);line-height:1.55;white-space:nowrap}
+  .seal sup{font-size:9px;margin-left:2px}
+  .seal.s準{color:var(--seal-jun);border-color:var(--seal-jun);background:rgba(207,106,85,.10)}
+  .seal.s典{color:var(--seal-jeon);border-color:var(--seal-jeon);background:rgba(185,154,90,.10)}
+  .seal.s推{color:var(--seal-chu);border-color:var(--seal-chu);background:rgba(143,163,184,.10)}
+  .seal.s聞{color:var(--seal-mun);border-color:var(--seal-mun);background:rgba(154,160,171,.10)}
+  .ptag{display:inline-block;font-size:10.5px;color:#c9c4b8;border:1px solid #4a4e56;border-radius:2px;padding:0 4px;margin:0 2px;transform:translateY(-1px)}
+  .rtag{display:inline-block;font-size:10.5px;border-radius:2px;padding:1px 6px;margin-right:8px;border:1px solid}
+  .rtag.keep{color:var(--paper-dim);border-color:#3a3e46}.rtag.mod{color:var(--brass);border-color:var(--brass)}.rtag.new{color:var(--seal-jun);border-color:var(--seal-jun)}
+  #pop{position:fixed;z-index:50;max-width:300px;background:#101216;border:1px solid var(--brass);border-radius:3px;padding:10px 13px;font-size:12.5px;line-height:1.7;display:none;box-shadow:0 8px 30px rgba(0,0,0,.55)}
+  #pop .pk{color:var(--brass);font-family:var(--serif);margin-right:6px}
+
+  /* 튜닝 손잡이 · 계기판 */
+  .trow{display:flex;align-items:center;gap:8px;margin:6px 0}
+  .trow .tk{flex:0 0 78px;font-size:12px;color:var(--paper-dim)}
+  .trow input[type=range]{flex:1;accent-color:var(--brass);min-width:0}
+  .trow select{background:#101216;color:var(--paper);border:1px solid #3a3e46;border-radius:2px;font-size:12px;padding:2px 4px}
+  .trow .tval{flex:0 0 66px;font-size:12px;text-align:right;font-variant-numeric:tabular-nums;color:var(--brass)}
+  .tstats{margin-top:12px;border-top:1px solid var(--rule)}
+  .tstats>div{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:7px 0;border-bottom:1px solid rgba(44,48,54,.7)}
+  .tstats em{font-style:normal;font-size:11.5px;color:var(--paper-dim);line-height:1.5}
+  .tstats b{font-family:var(--serif);font-size:15px;font-weight:600;color:var(--paper);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tstats .surplus b{color:var(--seal-chu)} .tstats .deficit b{color:var(--seal-jun)}
+  .lbl.dyn{color:var(--paper);border:1px solid rgba(185,154,90,.55);background:rgba(12,13,16,.75)}
+  .lbl.dyn::after{background:var(--brass)}
+  .swatches{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:6px}
+  .swatches button{all:unset;cursor:pointer;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;height:26px;border:1px solid var(--rule);overflow:hidden;box-sizing:border-box}
+  .swatches button span{display:block}
+  .swatches button.on{outline:2px solid var(--brass);outline-offset:1px}
+  .swatches.pat button{display:block;height:auto;aspect-ratio:1}
+  .swatches .thumb{width:100%;height:100%;display:block}
+  .trow input[type=text]{flex:1;min-width:0;background:#101216;color:var(--paper);border:1px solid #3a3e46;border-radius:2px;font-size:12px;padding:4px 6px}
+  /* 접기 손잡이 — 좌우 가장자리 */
+  .foldtab{position:fixed;top:50%;transform:translateY(-50%);z-index:9;background:rgba(18,20,24,.92);color:var(--paper-dim);border:1px solid var(--rule);
+    font-size:11px;letter-spacing:.12em;padding:12px 6px;cursor:pointer;writing-mode:vertical-rl;text-orientation:mixed}
+  .foldtab:hover{color:var(--paper);border-color:var(--brass)}
+  .foldtab.right{right:0;border-right:none;border-radius:3px 0 0 3px}
+  .foldtab.left{left:0;border-left:none;border-radius:0 3px 3px 0}
+  #hud,#title,#fleet,#legend{transition:transform .3s,opacity .3s}
+  body.fold-r #hud,body.fold-r #panel{transform:translateX(112%) !important;opacity:0 !important;pointer-events:none !important}
+  body.fold-l #title,body.fold-l #fleet,body.fold-l #legend{transform:translateX(-112%);opacity:0;pointer-events:none}
+  /* 안내 */
+  #hint{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);z-index:5;font-size:12px;color:var(--paper-dim);letter-spacing:.06em;transition:opacity .6s;pointer-events:none}
+  #hint.off{opacity:0}
+
+  @media (max-width:980px){
+    #hud{width:min(300px,60vw);right:14px;top:14px;padding:10px 12px}
+    #panel{right:0;left:0;top:auto;bottom:0;width:auto;height:58vh;border-radius:6px 6px 0 0;transform:translateY(20px)}
+    #panel.show{transform:none}
+    #title{left:14px;top:14px}
+    #fleet{left:14px;top:104px}
+    #legend{left:14px;bottom:14px}
+    #legend button{padding:4px 9px 4px 7px;font-size:12px}
+    #hint{bottom:12px}
+  }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="labels"></div>
+
+<div id="title">
+  <h1>shipia</h1>
+  <p>부분과 전체 · 배 — 선단을 갈아 끼우며 결정을 본다</p>
+  <span id="edition"></span>
+</div>
+
+<div id="fleet"><div class="sec">선단</div></div>
+
+<div id="legend"><div class="sec">계통 8+1</div></div>
+
+<div id="hud">
+  <div class="h-ship" id="h-ship"></div>
+  <div class="h-dim" id="h-dim"></div>
+  <div class="h-stamp" id="h-stamp"></div>
+  <div class="h-hover" id="h-hover"></div>
+  <div class="h-tools">
+    <button id="t-labels" class="on">이름표</button>
+    <button id="t-center" title="시점 되돌리기 (0)">중심</button>
+    <button id="t-xray">속 보기</button>
+    <button id="t-tune">튜닝</button>
+    <button id="t-lock" style="display:none">갑문</button>
+    <button id="t-cards">카드</button>
+    <button id="t-ledger">장부</button>
+  </div>
+</div>
+
+<aside id="panel">
+  <nav id="ptabs"><button data-tab="part" class="on">부품</button><button data-tab="card">카드</button><button data-tab="ledger">장부</button><button data-tab="tune">튜닝</button><button id="pclose" title="닫기">×</button></nav>
+  <div id="pbody"></div>
+  <div id="pfoot"><button id="btn-export">내보내기</button><button id="btn-import">가져오기</button><span id="note-count"></span></div>
+</aside>
+
+<button class="foldtab right" id="fold-r" title="우측 표찰 접기/펼치기">표찰 접기</button>
+<button class="foldtab left" id="fold-l" title="좌측 선단 접기/펼치기">선단 접기</button>
+<div id="hint">드래그로 돌리고 · 오른 단추나 Shift로 옮기고 · 휠로 당기고 · 부품을 누르십시오</div>
+<div id="pop" role="dialog"></div>
+<input type="file" id="file-import" accept="application/json" hidden>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ─────────────────────────────────────────────────────────────
+   shipia — DATA 블록. v1의 자료를 그대로 이식했습니다. 여기만 고치면 됩니다.
+
+   · 도장 문법:  {準|서명}  {典|장부번호(쉼표 구분)}  {推|사유}  {聞|출처}
+   · 생산 꼬리표: 〔기〕〔선〕〔전〕〔각〕
+   · 서랍(物·化·數·哲)은 표찰에서 ✎로 고쳐 쓸 수 있고, '내보내기'가 shipia-notes.json 으로 담습니다.
+     영구히 박으려면 그 JSON의 내용을 아래 CARDS 에 옮겨 적으십시오.
+   · GEO — 3D의 치수. 주요 치수는 典, 곡면과 배치는 推. 화면 우상단 낙인이 이것을 늘 밝힙니다.
+   ───────────────────────────────────────────────────────────── */
+
+const META = {
+  edition: '2026년 9월 발주 기준',
+  motto: '확인 못 한 것을 확인했다고 말하지 않는다',
+};
+
+const SOURCES = [
+  {no:1,  t:'MAN Energy Solutions — LNG선 최적화 FGSS 기술자료: 주기관 공급 300 bar·45℃, 발전기용 6 bar. 고압 경로는 다단 BOG 압축기 또는 고압펌프+기화기(PVU).'},
+  {no:2,  t:'WinGD — 저압 X-DF 연료가스 공급 6~16 bar. 고압 압축기 스키드 중량 최대 6배, LNG선 추진계 자본비 최대 40% 차이 주장(제조사 간 공방 속 주장값임을 명기).'},
+  {no:3,  t:'MAN Energy Solutions — ME-GI 메탄 슬립 0.2~0.28 g/kWh 보증(25~100% 부하).'},
+  {no:4,  t:'WinGD — X-DF 2.x + on-engine iCER: 슬립 1.0~1.2 g/kWh(1세대 2.0~2.5에서 반감).'},
+  {no:5,  t:'업계 보도 종합 — 추진효율 계보: 증기터빈 30% 미만 → DFDE 40%대 → 2행정 이중연료 50% 수준(제조사 측 값, 시운전 실측 아님).'},
+  {no:6,  t:'MAN Energy Solutions — 저압형 ME-GA 단종 발표. 사유: 2027년으로 예상되는 IMO 메탄 슬립 규제.'},
+  {no:7,  t:'EMSA THETIS-MRV — 2024 보고연도 공개판 v238(2026-09-04 생성), 14,159척. 2026-09-05 직접 내려받아 열람. 공개 API로 2018~2025년분 재조회 가능.'},
+  {no:8,  t:'한화오션·한화엔진 (2025-02) — 174,000 m³ LNG선 2척분 MAN B&W 5G70ME-GI Mk10.5 주기관 4기 발주, EGRBP 통합.'},
+  {no:9,  t:'QatarEnergy 프로그램 보도 — 신조 25척에 WinGD X-DF 엔진 50기(on-engine iCER 사양), 174k급 포함. 최신 인도선 X-DF 2.1 탑재.'},
+  {no:10, t:'Riviera·Portnews (2026-05) — KSS라인, HD현대중공업에 90,000 m³ LPG 이중연료 VLGC 3척 발주(계약 2026-04-30). 구·신 파나마 갑문 겸용 설계. BGN 2척 7년·Gyxis 1척 5년 용선, 2029 인도.'},
+  {no:11, t:'Capital Gas — 88,000 m³ VLAC 2척 @ KSOE(암모니아 적재율 탱크 용량의 98%, 2027 하반기 인도). 인도 실증: Naftomar Gaz Ronin 93k(2026-02 인도, MAN 6G60ME-C10.5-LGIP, 암모니아 추진은 개조 전제의 레디).'},
+  {no:12, t:'Evergreen 발주 공시 — 2025-02: 24,000 TEU LNG 이중연료 11척(한화오션 6 + GSI 5, 척당 2.65~2.95억 달러, 2028~ 인도). 2026-04: 한화오션 6척 추가(축발전기·공기윤활 포함, 400 m × 61.5 m).'},
+  {no:13, t:'CMA CGM Notre Dame·Seine 인도 보도(2026) — 세계 첫 24k TEU급 LNG 이중연료. GTT Mark III 멤브레인 연료탱크 18,600 m³, 1회 벙커링 약 2만 해리. 주기관 WinGD 12X92DF-2.0 + iCER. 동형 10척 2026~2028.'},
+  {no:14, t:'Sogestran·Titan — 6,000 m³ LNG 벙커링선 @ CIMC SOE. 2026-06 의향서, 2026-08 본계약, 2026-09-01 장기 용선 발표.'},
+  {no:15, t:'Seatrium·Karpowership (2026-03) — LNG 운반선 Karadeniz의 FSRU 개조 계약(재기화 최대 600 mmscfd), 2026 3분기 착수. 동 조선소 FSRU·FSU 개조 실적 23건째.'},
+  {no:16, t:'HD현대중공업 — 204,000 m³ FSRU 신조(GTT NO96 GW, 2027 4분기 인도, 싱가포르 배치 약 연 500만 톤 재기화). 카드 일곱의 반대편 기둥.'},
+  {no:17, t:'Kulitsa & Baker(2018) 외 FSRU 문헌 — 재응축기는 송출 흐름이 있어야 작동. 저송출·무송출 시 잉여 BOG는 GCU·스팀덤프 소각 = 상업적 이득 없는 화물 손실.'},
+  {no:18, t:'LNG 인수기지 BOG 처리 문헌 — 최소 송출이 재응축의 최악 조건. 재응축되지 못한 BOG는 HP 압축기로 가압하여 송출 계통으로.'},
+  {no:19, t:'강제기화기 문헌·특허 — FBOG는 자연증발 부족분의 보충. 부스팅 펌프로 가압 공급, 출구온도는 이슬점 위(압축기 액적 보호). 강제 기화는 무거운 성분(C2+)을 조성 그대로 동반 — 자연증발과 화학이 다름.'},
+  {no:20, t:'물성표(임계온도 등) — 출전 확정 예정. 확정 전까지 본문 해당 수치는 推 도장.'},
+
+  {no:21, t:'LNT Marine(Gastech 2022) — 175k LNG선 표준 설계표: Loa 294.8 / Lpp 290.0 / B 45.8 / D 26.5 / T 11.5(구조 12.5) m, DWT 80,500, 배수량 112,433 t, 화물창 4, 19.5 kn에 약 2×10,830 kW, 이중연료 주기관 2×13,000 kW, 보조기관 2×3,680/2×2,770 kW, 선원 36, BOR 0.07%/day. 멤브레인 약 174k가 업계 표준.'},
+  {no:22, t:'DSIC 175,000 m³ LNG선 착공 보도(2026-07) — 전장 299.7 / 폭 46 / 깊이 26.2 / 설계흘수 11.5 m, 19.5 kn.'},
+  {no:23, t:'S&P Global Platts 방법론(2026-06) — 표준선 174,000 m³, 적재 BOR 0.12%/day, 공선 0.09%/day, 항내는 적재의 25%, 적재 가능 용적 98.5%.'},
+  {no:24, t:'Burckhardt Compression Laby-GI 기술자료 — ME-GI용 300 bar 표준 패키지 4/5/6LP250V: 1,500~2,300 kW, 3,100~5,700 kg/h, 치수 11.5 × 7 × 5.5 m. FSRU/FSU용 30~110 bar. 용도 목록에 \'Minimum send-out on FSRU\' 명시.'},
+  {no:25, t:'Riviera(Laby-GI 개발기) — LNG선당 2대, 각각 BOG 100% 처리로 이중화, 각 주기관이 50%씩 소비. 갑판 탑재 기계실의 제한된 공간을 감안한 치수. 흡입 −160℃·대기압에서 150~300 bar까지 5단 압축. 6기통이 수직 크랭크케이스 위에 얹힌 단일 케이싱; 1~3단은 복동 라비린스 밀봉, 4~5단은 고압 공정가스용 단동 설계 — 단마다 그 압력·온도에 맞는 밀봉을 쓴다.'},
+  {no:26, t:'Riviera·BV — CMA CGM Jacques Saadé: 18,600 m³ 단일 멤브레인 탱크, 폭 52 m, 거주구 아래 배치, 화물 약 300 TEU 감소. 대부분의 LNG 연료선은 탱크 둘 — 단일 대형 탱크는 별도 구조·슬로싱 평가.'},
+  {no:27, t:'Baird Maritime — Energia Grandeur(HD현대삼호, 2026-01 인도): 전장 230 / 폭 32.25 / 하기흘수 12 m, DWT 56,192, 88,000 m³, MAN 6G60ME-C10-LGIP-HPSCR, LPG·암모니아 겸용. 88이라는 숫자의 선체.'},
+  {no:28, t:'SNAME 4,000 m³ LNG 벙커링선 설계 사례 — L 90 / B 20 / T 5.5 / D 10 m, GT 약 5,000. 비교: Gas Agility 18,600 m³ = 136 × 25 m, 17,645 GT.'},
+  {no:29, t:'EMSA MRV 2024(직접 열람) — Coral Methane(7,500 m³급 소형 LNG선) 등재: 연료 2,955 t, CO₂ 7,975 t, 항해 4,284 h, 198 kg/nm. 기의 \'장부 밖\' 추정에 대한 반증 — 정정 대기.'},
+  {no:30, t:'Armateurs de France·Wikipedia — Jacques Saadé급: 선원 26, 프로펠러 직경 10 m, 63,840 kW; 400 × 61.3 × 33.5 m, 220,000 DWT.'},
+  {no:31, t:'MAN Energy Solutions — ME-LGIP: 저압 공급 계통. 연료 공급압 50 ± 2 bar·25~55 ℃(45 ℃ 제어)에서 LPG는 액체로 남아 탱크에서 엔진까지 재래식 펌프로 가압; 분사압 500~600 bar는 엔진의 연료 부스터 밸브(FBIV)가 만든다. 메탄을 기체로 넣는 ME-GI와 정반대.'},
+  {no:32, t:'파나마운하청(ACP) 규정·공개 자료 — 구갑문 물길 폭 33.53 m·길이 304.8 m. 통과 허용 최대 폭 32.31 m·전장 294.13 m·열대담수 흘수 12.04 m. 아메리카 다리 아래 공기흘수 57.91 m. 신갑문 366 × 49(→51.25) × 15.2 m.'},
+  {no:33, t:'HD현대중공업 88k 파나맥스 폭 VLGC 설계 소개 — 세계 최대 파나맥스 폭 VLGC, LPG 이중연료 주기관과 축발전기, 합계 900 m³의 갑판 탱크 둘(프로판·부탄 등급 전환용).'},
+];
+
+const SYSTEMS = [
+  {id:'hull', num:'1', en:'Hull Structure', ko:'선체 구조',
+   def:'배를 배이게 하는 뼈대. 종강도, 이중선각, 탱크를 업는 구조.〔각〕',
+   cross:'가스선은 탱크를 어떻게 업는가를 묻고, 컨테이너선은 갑판을 다 뚫고도 어떻게 안 비틀리는가(토션 박스)를 묻는다. 88이라는 숫자의 비밀 — 구갑문의 폭 — 이 여기 산다.'},
+  {id:'ccs', num:'2', en:'Cargo Containment System', ko:'화물 격납 설비',
+   def:'화물을 가두는 보온병. GTT 멤브레인, IMO 독립형 Type A/B/C.',
+   cross:'멤브레인(갑·을), 완전냉동 Type A 프리즘(병·정), 그리고 무에서는 셀가이드·래싱으로 모습을 바꾼다 — 화물이 스스로 상자니 배는 선반만 준비한다.'},
+  {id:'chs', num:'3', en:'Cargo Handling System', ko:'화물 취급 설비',
+   def:'카고 펌프, 매니폴드, ESD, 하역. 화물을 넣고 빼는 모든 손.〔선〕',
+   cross:'정의 "암모니아 98%"가 이 계통의 결정 카드다.'},
+  {id:'bog', num:'4', en:'BOG Management System', ko:'증발가스 처리',
+   def:'이 앱의 주제 계통. 새어드는 열만큼 끓는 것을 어디로 보내는가.',
+   cross:'일곱 척의 답이 다섯 동사다 — 카드 아홉.'},
+  {id:'fgss', num:'5', en:'Fuel Gas Supply System', ko:'연료가스 공급 계통',
+   def:'탱크에서 엔진까지, 연료의 길. 갈림의 무대.〔기〕',
+   cross:'연료탱크 운전압 Type B 1.06 bara / Type C 1.7 bara {準|준철 2026-09-05} 가 이 계통의 머릿돌. 고압(300 bar)과 저압(6~16 bar)이 여기서 갈린다 {典|1,2}.'},
+  {id:'prop', num:'6', en:'Propulsion & Main Machinery', ko:'추진 · 주기관',
+   def:'주기관, 축, 프로펠러. ME-GI · X-DF · LGIP가 사는 집.〔기〕',
+   cross:'분사의 시점(디젤사이클이냐 오토사이클이냐)이 이 집의 족보를 가른다 — 카드 하나.'},
+  {id:'elec', num:'7', en:'Electric Power & Automation', ko:'전력 · 자동화',
+   def:'발전, 배전, 통합자동화(IAS).〔전〕',
+   cross:'축발전기가 요즘 발주의 단골이 되었다(카드 여섯) — 무의 신조에도, 도리안의 VLGC에도 실린다 {典|12}.'},
+  {id:'safe', num:'8', en:'Safety System', ko:'안전 설비',
+   def:'가스검지(F&G), ESD, 벤트 마스트, 살수, 방폭 구역(Zone).',
+   cross:'300 bar 배관은 이중관과 구역 구분을 데리고 온다 — 압축기 사양서 귀퉁이의 Zone 1 이 이 계통과 잇닿아 있다 {聞|준철}. 정(암모니아)에서 무게가 가장 실린다.'},
+  {id:'rules', num:'+1', en:'Rules & Regulations', ko:'규칙 — 보이지 않는 계통',
+   def:'어느 도면에도 없지만 모든 도면을 그리는 힘. IMO·선급·EEXI·CII.',
+   cross:'가스를 화물로 나르는 배(갑~정, 경)는 IGC Code가, 가스를 연료로 쓰는 배(무)는 IGF Code가 다스린다. 그리고 규칙이 정해지기 전에 30년을 정해야 한다 — IMO 넷제로 프레임워크는 채택이 미뤄진 채(2025-10 연기, 재개 2026-11 예정으로 알려짐), 선주들은 오늘 서명한다.'},
+];
+
+const SHIPS = [
+  {id:'gap', ho:'갑', name:'174K LNGC — ME-GI', hull:'174k 멤브레인 선체(을과 공유)',
+   anchors:['한화오션 174,000 m³ 2척분 — MAN B&W 5G70ME-GI Mk10.5 주기관 4기, EGRBP 통합, 제작 한화엔진(2025-02) {典|8}'],
+   twin:'을과 같은 선체·같은 화물창. 다른 것은 오직 추진과 연료의 길 — 변인 통제의 배.',
+   ans:{ ccs:'GTT 멤브레인 {推|급의 통례, 닻 발표문은 형식 미명시}',
+         bog:'태운다 — 남으면 GCU가 마저 태운다.',
+         fgss:'HP FGSS. 주기관 공급 300 bar·45℃ {典|1}. 다단 압축기 또는 고압펌프+기화기(PVU)의 두 갈래 {典|1}. 여섯 배 무게의 스키드는 결국 〔기〕〔선〕의 공수로 청구된다 {典|2}.',
+         prop:'디젤사이클 2행정. 슬립 0.2~0.28 g/kWh 보증 {典|3}.',
+         safe:'고압 이중관, 환기·검지, Zone 구분 {聞|준철}.',
+         rules:'IGC. 화물이 곧 연료인 배.'}},
+  {id:'eul', ho:'을', name:'174K LNGC — X-DF', hull:'174k 멤브레인 선체(갑과 공유)',
+   anchors:['QatarEnergy 프로그램 — 신조 25척에 X-DF 50기, on-engine iCER, 174k급 포함 {典|9}'],
+   twin:'갑과 같은 선체. 갈림은 단 하나 — 몇 bar로 넣는가.',
+   ans:{ ccs:'GTT 멤브레인 {推|급의 통례}',
+         bog:'태운다 — 오토사이클은 흡기에 미리 섞는다.',
+         fgss:'LP FGSS. 6~16 bar 공급 {典|2}. 압축기가 가볍고 계통이 단순하다 {典|2}.',
+         prop:'오토사이클 2행정 + iCER. 슬립 1.0~1.2 g/kWh {典|4}.',
+         rules:'IGC.'}},
+  {id:'byeong', ho:'병', name:'VLGC — LPG 이중연료', hull:'구파나맥스 폭 VLGC/VLAC 선체(정과 공유) — 명목 88,000 m³ {準|준철 2026-09-05}, 실발주는 88~93k를 오간다 {典|10,11}',
+   anchors:['KSS라인 90,000 m³ 3척 @ HD현대중공업(2026-04-30 계약) — LPG 이중연료, 구·신 파나마 겸용, 2029 인도 {典|10}'],
+   twin:'정과 같은 선체. 갈림은 "암모니아를 받아들일 것인가".',
+   ans:{ ccs:'완전냉동 Type A 프리즘 탱크, −42℃ 언저리 {推|IGC 통례, 출전 확정 예정}',
+         chs:'프로판·부탄 하역 계통.〔선〕',
+         bog:'되돌린다 — 20 bar 언저리로 눌러 해수로 응축 {推|포화압 계산, 출전 예정}. 이제는 태우는 법도 배웠다.',
+         prop:'LPG 이중연료 {典|10}. 세부 형식(LGIP 등)은 확정 대기 {推|급의 통례}.',
+         rules:'IGC.'}},
+  {id:'jeong', ho:'정', name:'VLAC — 암모니아 레디', hull:'구파나맥스 폭 VLGC/VLAC 선체(병과 공유)',
+   anchors:['Capital Gas 88,000 m³ 2척 @ KSOE — 암모니아 적재율 98%, 2027 하반기 인도 {典|11}',
+            '인도 실증: Naftomar Gaz Ronin 93k(2026-02) — LPG 이중연료(LGIP) + 암모니아 추진은 개조 전제의 레디 {典|11}'],
+   twin:'병과 같은 선체. 화물 겸용 + LPG 연료 + 암모니아 레디 — 지금 인도되는 배의 표준형.',
+   ans:{ ccs:'암모니아 적재율 98% 설계 {典|11}. 강재·밀도·독성이 카드 셋의 값.',
+         chs:'프로판/암모니아 겸용 하역 — 겸용의 실무가 여기 산다.〔선〕',
+         bog:'되돌린다 — 암모니아는 눌러 담기 가장 쉬운 화물(카드 둘).',
+         prop:'LPG 이중연료 + 암모니아 레디(개조 전제) {典|11}.',
+         safe:'암모니아 독성 — 검지·살수·비상차단의 무게가 가장 실리는 배.',
+         rules:'IGC.'}},
+  {id:'mu', ho:'무', name:'24K TEU — LNG 이중연료', hull:'24k TEU 초대형 컨테이너 선체 — 400 m × 61.5 m {典|12}',
+   anchors:['Evergreen 24,000 TEU LNG 이중연료 — 2025-02 11척(한화오션 6 + GSI 5) + 2026-04 한화오션 6척 추가, 축발전기·공기윤활 {典|12}',
+            '급의 개척자: CMA CGM Notre Dame(세계 첫 24k LNG DF, 2026 인도, 동형 10척) {典|13}'],
+   ans:{ hull:'갑판을 크게 뚫은 배 — 비틀림을 토션 박스가 받는다.〔각〕',
+         ccs:'셀가이드·래싱 — 화물이 스스로 상자니 배는 선반이다.',
+         bog:'다스린다 — 화물이 아니라 연료탱크의 끓음. 압력 관리가 본령.',
+         fgss:'연료탱크: 급의 통례는 GTT Mark III 멤브레인 18,600 m³, 1회 벙커링 약 2만 해리 {典|13}. 에버그린 사양은 공표 대기 {推|급의 통례}. "이 배는 탱크를 중심으로 지어졌다" — 카드 다섯.',
+         prop:'급의 통례는 저압 X-DF 계열 + iCER {典|13}. 에버그린 사양 공표 대기 {推|}.',
+         elec:'축발전기 + 공기윤활 {典|12}.〔전〕',
+         rules:'IGF — 일곱 척 중 유일한 IGF의 배. 준철의 연료탱크 규칙(B 1.06 / C 1.7)이 서 있는 법전이 이쪽이다 {準|준철 2026-09-05}.'}},
+  {id:'gi', ho:'기', name:'LNGBV 6,000 m³ — 바다의 주유소', hull:'6,000 m³ 벙커링 선체',
+   anchors:['Sogestran 6,000 m³ @ CIMC SOE — 2026-08 본계약, 2026-09-01 Titan 장기 용선 발표 {典|14}'],
+   twin:'무가 목마르니 기가 태어났다 — 이중연료 추세의 보급선.',
+   ans:{ ccs:'가압형 Type C {推|소형선 통례, 닻 사양으로 확정 예정} — 준철의 1.7 bara 규칙이 화물탱크 급으로 주연이 되는 배 {準|준철 2026-09-05}.',
+         chs:'선대선(STS) 이송 — 매니폴드와 호스의 배.〔선〕',
+         bog:'참는다 — 압력용기는 끓은 만큼 압력이 오르도록 얼마간 버텨 준다(카드 여덟).',
+         rules:'MRV 장부 밖 추정 — 적용 톤수 미달 {推|규정 조문 확정 예정}. 떠 있는 배 칸은 다른 샘을 파야 한다.'}},
+  {id:'gyeong', ho:'경', name:'FSRU 개조 — 배가 항구가 되다', hull:'개조 모선: 기존 LNG 운반선',
+   anchors:['Seatrium × Karpowership — LNG 운반선 Karadeniz를 재기화 최대 600 mmscfd FSRU로 개조(2026-03 계약, 3분기 착수, 조선소 개조 실적 23건째) {典|15}',
+            '반대편 기둥: HD현대 204,000 m³ FSRU 신조(NO96 GW, 2027 4분기, 싱가포르) {典|16} — 카드 일곱'],
+   twin:'일곱 중 유일하게 항해가 본업이 아닌 배. "떠 있는 배"와 "주문되는 배"가 한 선체 안에서 만난다 — 전생이 남의 배가 아니라 같은 배다.',
+   retro:{hull:'유지', ccs:'유지', chs:'개조', bog:'개조', fgss:'개조', prop:'강등', elec:'개조', safe:'개조', rules:'유지'},
+   ans:{ hull:'모선의 뼈대가 그대로 둘째 생을 산다.',
+         ccs:'모선의 멤브레인 화물창이 저장탱크가 된다.',
+         bog:'버리지 않게 되었다 — 재응축기가 깨어 있을 땐 끓음을 액체로 되돌려 상품에 섞고 {典|17}, 송출이 바닥나 재응축기가 굶는 밤에는 MSO 압축기가 그것을 상품 압력까지 눌러 내보낸다 {典|18}{聞|준철: MSO = Minimum Send-Out}. 예전 배들이 태워 버리던 것을.',
+         fgss:'강제기화(FBOG) 공급 구성은 열린 문 {推|펌프 가압 + 이슬점 보호로 읽힘, 근거 강} {典|19}.',
+         prop:'주기관이 조연으로 물러난다 — 재기화 트레인이 주기관 자리를 차지한다.〔기〕',
+         rules:'IGC 쪽. 계류선의 MRV 취급은 미확인 — 열린 문.'}},
+];
+
+const CARDS = [
+ {id:'c1', num:'하나', title:'331이냐 13이냐', term:'HP FGSS vs LP FGSS',
+  coord:'Fuel Gas Supply System × Propulsion', ships:['gap','eul'],
+  intro:`같은 선체, 같은 화물창, 같은 항로. 다른 것은 단 하나 — 탱크에서 나온 기체를 몇 bar로 엔진에 넣는가. 그리고 그 답을 정하는 것은 분사의 시점이다. 디젤사이클(ME-GI)은 피스톤이 공기를 다 누른 꼭대기에서 가스를 뿜는다. 실린더 안이 이미 수백 bar이니, 그걸 이기고 들어가려면 300 bar급이 필요하다 {典|1}. 오토사이클(X-DF)은 피스톤이 내려가는 초입, 낮은 압력의 흡기에 가스를 미리 섞는다. 그래서 16 bar 아래면 충분하다 {典|2}. 언제 넣느냐가 얼마로 넣느냐를 정하고, 얼마로 넣느냐가 배 한 척의 기계 목록을 정한다.`,
+  floating:[
+   '계보: 증기터빈(추진효율 30% 미만) → DFDE(40%대) → 2행정 이중연료(50% 수준) {典|5}',
+   'MRV 2024 장부: LNG선 355척, 연료 중앙값 연 5,602 t {典|7}',
+   '메탄 지문 — Vladimir Rusanov(DFDE 계열): 연료 24,645 t에 메탄 754 t ≈ 3.1%. Cheikh El Mokrani(증기): 연료 15,142 t에 메탄 0 {典|7}. 오토는 흘리고, 보일러는 다 태운다.'],
+  ordered:[
+   '갑 — 5G70ME-GI Mk10.5 + EGRBP {典|8}. 공급 300 bar·45℃ {典|1}, 슬립 0.2~0.28 g/kWh 보증 {典|3}. FGSS는 다단 압축기 또는 PVU {典|1}.',
+   '을 — X-DF 2.1 + on-engine iCER {典|9}. 공급 6~16 bar {典|2}, 슬립 1.0~1.2 — 1세대의 절반 {典|4}.'],
+  why:`값을 치르는 방식이 다르다. 고압의 값은 쇳값이다 — 압축기 스키드 중량 최대 여섯 배, 추진계 자본비 최대 40% 높다는 추산 {典|2} (이해당사자 공방 속 숫자임을 명기한다). 그리고 쇳값만이 아니다 — 300 bar 배관은 이중관과 방폭 구역을 데리고 오고 {聞|준철}, 그 무게와 길이는 〔기〕〔선〕의 공수로 청구된다. 저압의 값은 흘리는 메탄이다 — MAN은 2027년으로 내다본 IMO 메탄 규제를 이유로 자사의 저압형(ME-GA)을 단종했다 {典|6}. 한쪽은 지금 강철로 내고, 한쪽은 나중에 대기로 낸다.`,
+  drawers:{
+   phys:`압축의 품삯은 온도와 압축비가 정한다 — 등온 근사로 일 ∝ T·ln(P₂/P₁). 탱크압 1.06 bar에서 출발하면 ln(300/1.06) 대 ln(16/1.06) ≈ 2.1배: 같은 기체를 두 배의 품으로 밀어 올리는 것이 고압의 길이다 {推|등온 근사, 다단 중간냉각 미반영}. 그리고 예혼합의 저주 — 미리 섞은 혼합기는 고르게 타지만 실린더 벽 틈새에 숨은 몫이 불길을 피해 살아 나간다. 그게 슬립이다. 확산연소는 다 태우는 대신 뜨거운 불꽃이 질소를 태워 NOx를 남긴다. 완전히 공짜인 연소는 없다.`,
+   chem:`메탄은 이산화탄소보다 훨씬 센 온실기체다 {推|GWP 수치는 출전 확정 예정, 장부 20}. 그래서 "가스를 태워 CO₂를 줄였다"는 문장은 슬립을 빼고는 완성되지 않는다. iCER는 배기 일부를 되돌려 흡기의 산소를 낮추고 연소를 다스리는 화학적 고삐이고 {典|4}, 갑의 EGRBP도 같은 과(科)의 답이다 {典|8}.`,
+   math:`슬립의 산수. 가스 소비 ~170 g/kWh로 잡으면 {推|가정} 보증 슬립 0.2~0.28은 태우는 가스의 ~0.15%, 을의 1.0~1.2는 ~0.6%, 중속 오토(DFDE)의 문헌 범위는 2~5%. 검산 — Rusanov의 장부값 754/24,645 = 3.1%, 범위 안에 떨어진다 {典|7}{推|계산}. 모형이 장부를 맞히면 모형을 믿어도 된다.`,
+   phil:`이중연료는 약속이 아니라 선택권이다 — 23k TEU의 기함이 2024년 한 해 연료 2.3만 t을 때고 메탄을 거의 남기지 않았다. 가스 대신 기름을 골랐다는 뜻으로 읽힌다 {典|7}{推|근거 강}. 선택권의 값을 치른 배도 결국 시장가격 앞에서 고른다. 그리고 — 슬립을 g/kWh로 보증한다는 것은 물리를 계약서에 넣는 일이다. 공학이 법률이 되는 순간이 여기 있다.`},
+  verify:`예측 — 갑·을 실선이 인도되어 MRV 장부에 오르면(2028~), 메탄 지문은 갑 ~0.15%, 을 ~0.6% 부근일 것이다 {推|계산}. 대조 — 장부는 매년 6월 갱신된다 {典|7}. 맞으면 이 카드는 검증 도장을 받는다.`,
+  doors:['FBOG 공급 구성 {聞|대기}','GWP 출전(장부 20) 확정','갑·을 실선의 장부 등재 대조(2028~)']},
+
+ {id:'c2', num:'둘', title:'태우느냐 되돌리느냐', term:'Reliquefaction vs Consumption',
+  coord:'BOG Management × CCS', ships:['byeong','jeong','gap','eul'],
+  intro:`모든 물질에는 임계온도가 있다 — 그보다 뜨거우면 아무리 눌러도 액체가 되지 않는 선. 프로판은 약 +97℃, 암모니아는 약 +132℃, 메탄은 −83℃다 {推|물성표, 장부 20 확정 예정}. 바닷물은 늘 상온 언저리니, 프로판과 암모니아는 눌러서 바닷물로 식히면 도로 액체가 된다. 메탄은 안 된다 — 지구의 어느 바다도 −83℃보다 차갑지 않으니까. 끓어 나온 기체를 되돌릴 수 있는 화물과 없는 화물. 이 한 줄이 두 선단의 운명을 갈랐다.`,
+  floating:[
+   'LPG선 — 압축기로 눌러 해수 응축기로 되돌리는 재액화가 표준. 프로판이면 20 bar가 채 안 되는 압력이면 족하다 {推|포화압 계산, 출전 예정}.',
+   'LNG선 — 끓는 것을 연료로 삼는 길로 갔다. MRV 2024 장부에서 355척 중 330척이 0 아닌 메탄을 신고한 것이 그 흔적 {典|7}.',
+   'LNG 재액화가 불가능한 건 아니다 — 다만 질소 냉동 사이클의 극저온 플랜트가 필요해, 압축기 한 대의 일과는 품이 다르다 {推|}.'],
+  ordered:[
+   '병·정 — 주기관이 LPG 이중연료가 되면서 {典|10,11}, 되돌리는 배가 태우는 법도 배웠다. 이제 끓음 앞에서 갑·을에게 없는 것을 갖는다: 선택지.'],
+  why:`우열이 아니라 품의 문제다. 되돌리는 값이 싼 화물(LPG·NH₃)은 되돌리고, 되돌리는 값이 비싼 화물(LNG)은 태운다. 각자 자기한테 싼 길로 갔을 뿐인데, 30년 뒤 한쪽의 기벽이 업계의 표준이 되었다.`,
+  drawers:{
+   phys:`임계온도란 분자를 붙드는 인력이 열운동에게 지는 온도다. 인력이 약한 분자일수록 낮은 온도에서 이미 진다 — 그래서 어떤 기체는 눌러 담을 수 있고 어떤 기체는 차갑게 모셔야만 한다.`,
+   chem:`메탄은 작고 대칭이라 분자끼리 당길 거리가 없다(반데르발스뿐). 암모니아는 수소결합으로 서로를 꽉 붙든다 — 그래서 +132℃까지도 액체가 될 수 있는, 눌러 담기 제일 쉬운 화물이다. 암모니아가 차세대 연료 후보로 오른 이유 중 하나가 이 화학이다.`,
+   math:`재액화에 필요한 압력은 포화압 곡선이 정한다 — 응축 온도를 정하면 압력이 따라온다. 갈림의 셈: 프로판 재액화는 수십 bar·상온 설비, 메탄 재액화는 −160℃ 냉동 플랜트. 자릿수가 다른 투자다 {推|}.`,
+   phil:`기술의 선택은 종종 우열이 아니라 품삯이 정한다. 그리고 약점의 반전 — 되돌릴 수 없다는 LNG의 결함이 "태우는 배"라는 발명을 낳았고, 그 발명이 지금 발주 판의 표준이 되었다. 결함은 때로 방향이 된다.`},
+  verify:`예측 — 병·정(LPG 연료)이 인도되어 장부에 오르면 CH₄ 지문은 거의 0에 머물 것이다: 프로판 연소는 메탄을 낳지 않는다 {推|}. 대조 — 2029년 이후 MRV {典|7}. 곁대조는 지금도 가능 — 장부의 Gas carrier 중 CH₄/연료 비율이 30 kg/t급으로 튀는 배들은 실은 LNG선의 오분류로 읽힌다 {典|7}{推|근거 강}. 지문이 장부의 오타까지 잡아낸다.`,
+  doors:['임계온도·포화압 출전(장부 20) 확정','병·정 실선의 장부 등재 대조(2029~)']},
+
+ {id:'c3', num:'셋', title:'암모니아의 값', term:'Ammonia Capability', coord:'CCS · CHS · Safety', ships:['byeong','jeong'], frame:true,
+  preview:'적재율 98%, 강재, 밀도, 독성 — "레디"라는 말의 실물 {典|11}. 화학 서랍이 독성을 맡는다.'},
+ {id:'c4', num:'넷', title:'88이라는 숫자', term:'Old-Panamax Beam', coord:'Hull Structure', ships:['byeong','jeong'], frame:true,
+  preview:'제약은 용적이 아니라 폭 — 구갑문의 폭이라는 자물쇠 안에서 84 → 88 → 90 → 93으로 용적이 자란다 {典|10,11}.'},
+ {id:'c5', num:'다섯', title:'탱크를 어디에', term:'Fuel Tank Arrangement', coord:'Hull × FGSS', ships:['mu'], frame:true,
+  preview:'"이 배는 탱크를 중심으로 지어졌다" {典|13}. 잃어버린 컨테이너 칸의 공간 문제 — 3D가 제값 할 자리.'},
+ {id:'c6', num:'여섯', title:'축발전기', term:'Shaft Generator', coord:'Electric Power', ships:['mu','byeong'], frame:true,
+  preview:'주기관의 싼 동력으로 전기를 만들어 발전기 가동을 줄이는 셈법 {典|12}.'},
+ {id:'c7', num:'일곱', title:'신조냐 개조냐', term:'Newbuild vs Conversion', coord:'경 전 계통', ships:['gyeong'], frame:true,
+  preview:'개조 12~18개월 대 신조 2~3년 {典|15,16}. 계통마다 유지 · 개조 · 신설의 조서가 남는다.'},
+ {id:'c8', num:'여덟', title:'가둘 수 있는 탱크', term:'Type C & Pressure Accumulation', coord:'CCS × BOG', ships:['gi'], frame:true,
+  preview:'Type C만이 끓음을 얼마간 참는다(압력 축적) — 소형선이 전부 그리로 가는 이유 {推|통례}. 준철의 1.7 bara가 주연이 되는 자리 {準|준철 2026-09-05}.'},
+
+ {id:'c9', num:'아홉', title:'끓음의 다섯 동사', term:'BOG Management — 표제 카드', coord:'BOG Management × 일곱 척 전부',
+  ships:['gap','eul','byeong','jeong','mu','gi','gyeong'],
+  intro:`모든 단열은 진다. 아무리 두꺼운 보온병도 열을 조금씩 들이고, 들어온 열만큼 화물은 끓는다. 그러니 극저온 화물선의 정체성을 묻는 가장 짧은 질문은 이것이다 — 네 끓음을 어디로 보내느냐. 일곱 척이 다섯 가지로 답한다.`,
+  floating:[
+   '갑·을은 태운다 — 되돌릴 수 없으니(카드 둘) 주기관의 연료로 삼고, 남으면 GCU가 마저 태운다.',
+   '병·정은 되돌린다 — 눌러서 바닷물로 식히면 그만이니까. 이제는 태우는 법도 배웠지만.',
+   '무는 다스린다 — 화물이 아니라 연료탱크의 끓음이라 양이 작고, 압력 관리가 본령이다.',
+   '기는 참는다 — Type C 압력용기는 끓은 만큼 압력이 오르도록 얼마간 버텨 준다 {推|통례, 닻 사양 확정 예정}.',
+   '경은 판다 — 재응축기가 깨어 있을 땐 끓음을 되돌려 상품에 섞고 {典|17}, 송출이 바닥난 밤에는 MSO 압축기가 그것을 상품 압력까지 눌러 내보낸다 {典|18}{聞|준철: MSO = Minimum Send-Out}.'],
+  ordered:[],
+  why:`같은 물리(새는 열), 같은 분자인데 답이 다섯인 이유는 배마다 끓음의 뜻이 다르기 때문이다. 갑·을에게 끓음은 연료비 절감이고, 병·정에게는 화물 손실이고, 무에게는 압력 골칫거리, 기에게는 잠시 참을 일, 경에게는 매출이다.`,
+  drawers:{
+   phys:`끓음의 속도는 단열이 정하고(BOR — 하루 0.1% 안팎의 세계 {推|통용값, 출전 예정}), 끓음의 운명은 계통이 정한다. 열역학은 공통이고 설계만 다르다.`,
+   chem:`자연 증발은 편식한다 — 끓기 쉬운 것(메탄·질소)부터 날아가니 남는 화물은 서서히 무거워진다(에이징). 강제 기화는 조성 그대로 뽑아낸다 {典|19}. 같은 탱크에서 나온 두 기체가 화학적으로 다른 이유다.`,
+   math:`새는 열 → 증발량의 셈은 기화열 나눗셈 하나다: 들어온 열을 기화열로 나누면 시간당 끓는 질량. 계기판(유체정역학 옆의 둘째 계기)의 뼈대 공식이 될 수 있다 {推|다음 관문}.`,
+   phil:`골칫거리와 상품은 같은 분자다 — 이름을 바꾸는 것은 분자가 아니라 다루는 손이다. 그리고 완벽한 봉인은 없다는 사실을 받아들인 설계가, 봉인을 꿈꾼 설계보다 멀리 간다.`},
+  verify:`대조 가능 — 갑·을 계열의 동사("태운다")는 장부의 메탄 신고(330/355척)로 이미 확인됨 {典|7}. 장부 밖 — 기: MRV 적용 톤수 미달 추정 {推|규정 조문 확정 예정}. 미확인 — 경: 계류선의 MRV 취급(열린 문). 이 두 공백은 공백으로 명기한다.`,
+  doors:['기의 떠 있는 배 칸 — MRV 밖의 샘 찾기','경의 MRV 취급 확인','BOR 통용값 출전']},
+];
+
+
+const GEO = {
+  ship:'174k LNGC',
+  loa:295, lpp:290, beam:46, depth:26.5, draft:11.5,           // {典|21,22} 급 표준 제원(설계표·DSIC 실선 평균)
+  dimsSrc:'{典|21,22}',
+  tanks:[[70,110],[24,66],[-22,20],[-66,-26]],                 // 화물창 넷의 x 구간 [m] — 개수 典, 길이 배분은 推
+  trunk:[-96,114], trunkRise:3, trunkWidth:36,                 // 트렁크 데크 — 형상 推
+  house:{x:[-94,-72], w:28, h:9},                              // 갑판 기계실(압축기 방) — 갑판 탑재는 典(25), 위치·크기는 推
+  skid:{l:11.5, w:7, h:5.5, n:2, src:'{典|24,25}'},            // Laby-GI 300 bar 표준 패키지 — 치수 典
+  lpSkid:{l:7, w:4.5, h:3.5, n:2, stamp:'{推|치수 미확정 — WinGD의 상대 주장(중량 1/6)뿐. 점선은 정직의 표시}'},
+  accom:{x:[-128,-96], w:34, h:22}, funnel:{x:[-140,-132], w:8, top:46},
+  engines:{n:2, kw:13000, x:[-126,-104], z:7, src:'{典|21}'},  // 쌍축 2기 — 典(21: 2×13,000 kW)
+  person:1.8,
+  shape:'{推|급의 통례 — 곡면·배치는 도면 없이 세움}'
+};
+
+/* ───────────────────────── 글 렌더러 (v1 상속) ───────────────────────── */
+const $=(s,el=document)=>el.querySelector(s), $$=(s,el=document)=>[...el.querySelectorAll(s)];
+const pop=$('#pop'), pbody=$('#pbody'), panel=$('#panel');
+let notes={};
+const SEAL_DESC={'準':'설계 결정','典':'공개 출전','推':'추정','聞':'현업 증언'};
+function fmt(t){
+  if(!t) return '';
+  return t.replace(/\{(準|典|推|聞)\|([^}]*)\}/g,(m,k,v)=>{
+     if(k==='典'){ const nums=v.split(',').map(s=>s.trim()).filter(Boolean);
+       return '<button class="seal s典" data-k="典" data-v="'+nums.join(',')+'">典<sup>'+nums.join('·')+'</sup></button>'; }
+     return '<button class="seal s'+k+'" data-k="'+k+'" data-v="'+v.replace(/"/g,'&quot;')+'">'+k+'</button>';
+   }).replace(/〔(각|선|기|전)〕/g,'<span class="ptag">$1</span>');
+}
+function sealBind(root){
+  $$('.seal[data-k]',root).forEach(b=>{ b.addEventListener('click',e=>{ e.stopPropagation(); const k=b.dataset.k,v=b.dataset.v; if(k==='典') highlightSources(v.split(',')); showPop(b,k,v); }); });
+}
+function showPop(anchor,k,v){
+  let body; if(k==='典') body='장부 '+v.split(',').join(', ')+'번 — 표찰의 장부 탭에서 밝혀 두었습니다.';
+  else if(k==='準') body='서명: '+v; else if(k==='推') body=v?('사유: '+v):'사유 미기재 — 확정 대기'; else body='출처: '+v;
+  pop.innerHTML='<span class="pk">'+k+' · '+SEAL_DESC[k]+'</span>'+body;
+  const r=anchor.getBoundingClientRect(); pop.style.display='block';
+  const pw=Math.min(300,window.innerWidth-24);
+  pop.style.left=Math.min(Math.max(10,r.left),window.innerWidth-pw-12)+'px'; pop.style.top=(r.bottom+8)+'px';
+}
+document.addEventListener('click',e=>{ if(!e.target.closest('.seal')&&!e.target.closest('#pop')) pop.style.display='none'; });
+function highlightSources(nums){
+  openPanel('ledger');
+  $$('#pbody .src').forEach(el=>el.classList.remove('hl'));
+  let first=null; nums.forEach(n=>{ const el=$('#src-'+n.trim()); if(el){ el.classList.add('hl'); first=first||el; } });
+  if(first) first.scrollIntoView({block:'center',behavior:'smooth'});
+}
+const DRAWER_NAMES={phys:['物','물리'],chem:['化','화학'],math:['數','수학'],phil:['哲','철학']};
+function shipHos(ids){ return ids.map(id=>SHIPS.find(s=>s.id===id).ho).join('·'); }
+
+function cardHTML(c){
+  if(c.frame){
+    return '<div class="coord">'+c.coord+' — '+shipHos(c.ships)+'</div><div class="card-title">카드 '+c.num+' · '+c.title+'</div><div class="card-term">'+c.term+'</div>'+
+      '<div class="framecard"><b>빈 틀 — 채워질 자리</b><br>'+fmt(c.preview)+'</div>';
+  }
+  let h='<div class="coord">카드 '+c.num+' — '+c.coord+' · '+shipHos(c.ships)+'</div><div class="card-title">'+c.title+'</div><div class="card-term">'+c.term+'</div>'+
+    '<p class="prose">'+fmt(c.intro)+'</p>'+
+    '<div class="col"><h4>떠 있는 배</h4><ul>'+c.floating.map(x=>'<li>'+fmt(x)+'</li>').join('')+'</ul></div>'+
+    '<div class="col"><h4>주문되는 배</h4><ul>'+(c.ordered.length?c.ordered.map(x=>'<li>'+fmt(x)+'</li>').join(''):'<li>일곱 척 전부 — 선단에서 각 배의 답을 본다.</li>')+'</ul></div>'+
+    '<div class="blocktitle">왜 갈리나</div><p class="prose" style="margin-top:4px">'+fmt(c.why)+'</p><div class="blocktitle">서랍 넷</div>';
+  for(const key of ['phys','chem','math','phil']){
+    const [ch,ko]=DRAWER_NAMES[key]; const txt=notes[c.id+'.'+key] ?? c.drawers[key];
+    h+='<div class="drawer" data-card="'+c.id+'" data-drawer="'+key+'"><div class="dhead" role="button" tabindex="0" aria-expanded="false"><span><span class="dchar">'+ch+'</span>'+ko+
+       '<button class="dedit" title="원문(도장 문법)으로 고쳐쓰기">✎</button></span><span class="arrow">▾</span></div><div class="dbody"><div class="rendered">'+fmt(txt)+'</div></div></div>';
+  }
+  h+='<div class="verify"><b>검산 꼬리</b> — '+fmt(c.verify)+'</div><div class="blocktitle">열린 문</div><ul class="plainlist doors">'+c.doors.map(d=>'<li>'+fmt(d)+'</li>').join('')+'</ul>';
+  return h;
+}
+function bindDrawers(root){
+  $$('.drawer',root).forEach(dr=>{
+    const head=$('.dhead',dr);
+    const toggle=()=>{ dr.classList.toggle('open'); const open=dr.classList.contains('open'); $('.arrow',head).textContent=open?'▴':'▾'; head.setAttribute('aria-expanded',open?'true':'false'); };
+    head.addEventListener('click',e=>{ if(e.target.closest('.dedit')) return; toggle(); });
+    head.addEventListener('keydown',e=>{ if(e.target.closest('.dedit')) return; if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); } });
+    $('.dedit',dr).addEventListener('click',e=>{
+      e.stopPropagation(); dr.classList.add('open');
+      const key=dr.dataset.card+'.'+dr.dataset.drawer; const card=CARDS.find(x=>x.id===dr.dataset.card);
+      const cur=notes[key] ?? card.drawers[dr.dataset.drawer]; const body=$('.dbody',dr); body.innerHTML='';
+      const ta=document.createElement('textarea'); ta.className='raw'; ta.value=cur; body.appendChild(ta); ta.focus();
+      ta.addEventListener('blur',()=>{ const v=ta.value.trim(); const orig=card.drawers[dr.dataset.drawer];
+        if(v && v!==orig) notes[key]=v; else delete notes[key];
+        body.innerHTML='<div class="rendered">'+fmt(notes[key] ?? orig)+'</div>'; sealBind(body); updateNoteCount(); });
+    });
+  });
+}
+function updateNoteCount(){ const n=Object.keys(notes).length; $('#note-count').textContent=n?('덧쓴 서랍 '+n):''; }
+
+/* ───────────────────────── 표찰 ───────────────────────── */
+let ptab='part', lastPart=null, lastCard='c1';
+function openPanel(tab){ ptab=tab||ptab; document.body.classList.remove('fold-r'); $('#fold-r').textContent='표찰 접기'; panel.classList.add('show'); $$('#ptabs button[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===ptab)); fillPanel(); }
+function fillPanel(){
+  if(ptab==='ledger'){
+    pbody.innerHTML='<div class="coord">장부 — SOURCES · 본문의 典 도장이 이 번호를 가리킨다</div>'+SOURCES.map(s=>'<div class="src" id="src-'+s.no+'"><span class="no">'+s.no+'</span><span>'+s.t+'</span></div>').join('');
+  } else if(ptab==='tune'){
+    pbody.innerHTML=tuneHTML(); bindTune();
+  } else if(ptab==='card'){
+    const c=CARDS.find(x=>x.id===lastCard);
+    pbody.innerHTML='<div class="coord" style="display:flex;flex-wrap:wrap;gap:6px 10px;margin-bottom:12px">'+CARDS.map(x=>'<button class="cardlink" data-go="'+x.id+'" style="'+(x.id===c.id?'color:var(--paper)':'')+'">'+x.num+'</button>').join('')+'</div>'+cardHTML(c);
+    $$('.cardlink',pbody).forEach(b=>b.onclick=()=>{ lastCard=b.dataset.go; fillPanel(); pbody.scrollTop=0; });
+    bindDrawers(pbody);
+  } else {
+    pbody.innerHTML=lastPart?partHTML(lastPart):'<div class="coord">부품</div><p class="prose">배의 어느 부품이든 눌러 보십시오. 그 부품이 속한 계통과 이 배의 답, 그리고 관련 카드가 여기 뜹니다.</p><p class="prose" style="font-size:13px;color:#cfcabf">'+fmt(GEO.shape)+' · 주요 치수 '+fmt(GEO.dimsSrc)+'</p>';
+    $$('.cardlink',pbody).forEach(b=>b.onclick=()=>{ lastCard=b.dataset.go; openPanel('card'); pbody.scrollTop=0; });
+  }
+  sealBind(pbody); pbody.scrollTop=0;
+}
+function partHTML(p){
+  const sy=SYSTEMS.find(s=>s.id===p.sys); const ship=SHIPS.find(s=>s.id===curShip);
+  let h='<div class="coord">'+ship.ho+' · '+ship.name+' — 계통 '+sy.num+' '+sy.en+'</div><div class="card-title" style="font-size:19px">'+(typeof p.name==='function'?p.name():p.name)+'</div>';
+  const nt=typeof p.note==='function'?p.note():p.note; if(nt) h+='<p class="prose" style="margin-top:8px;font-size:13.5px">'+fmt(nt)+'</p>';
+  h+='<div class="blocktitle">'+sy.ko+'</div><p class="prose" style="margin-top:4px;font-size:13.5px">'+fmt(sy.def)+'</p><p class="prose" style="font-size:13.5px">'+fmt(sy.cross)+'</p>';
+  const a=ship.ans[sy.id]; if(a) h+='<div class="blocktitle">이 배의 답</div><p class="prose" style="margin-top:4px;font-size:13.5px">'+fmt(a)+'</p>';
+  if(['fgss','bog','prop','elec','ccs'].includes(sy.id)) h+='<div class="blocktitle">계통도 — 어떻게 이어지나 ('+ship.ho+')</div>'+fgssSVG(curShip);
+  const rel=CARDS.filter(c=>c.ships.includes(curShip)&&(c.coord.toLowerCase().includes(sy.en.split(' ')[0].toLowerCase())||c.coord.includes(sy.id.toUpperCase())||c.coord.includes(sy.ko)));
+  if(rel.length) h+='<div class="blocktitle">관련 카드</div><p class="prose" style="margin-top:4px;font-size:13.5px">'+rel.map(c=>'<button class="cardlink" data-go="'+c.id+'">카드 '+c.num+' · '+c.title+'</button>').join(' &nbsp; ')+'</p>';
+  return h;
+}
+$$('#ptabs button[data-tab]').forEach(b=>b.onclick=()=>openPanel(b.dataset.tab));
+$('#pclose').onclick=()=>panel.classList.remove('show');
+$('#t-cards').onclick=()=>openPanel('card');
+$('#t-ledger').onclick=()=>openPanel('ledger');
+$('#btn-export').onclick=()=>{ const s=JSON.stringify({app:'shipia 3D v1',edition:META.edition,exported:new Date().toISOString(),notes},null,2);
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([s],{type:'application/json'})); a.download='shipia-notes.json'; a.click(); if(navigator.clipboard) navigator.clipboard.writeText(s).catch(()=>{}); };
+$('#btn-import').onclick=()=>$('#file-import').click();
+$('#file-import').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader();
+  r.onload=()=>{ try{ const j=JSON.parse(r.result); if(j&&j.notes){ notes=j.notes; fillPanel(); updateNoteCount(); } }catch(err){ alert('JSON을 읽지 못했습니다: '+err.message); } }; r.readAsText(f); e.target.value=''; });
+
+/* ───────────────────────── 3D 무대 (제2판) ───────────────────────── */
+const el=$('#stage');
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2)); renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap; renderer.outputEncoding=THREE.sRGBEncoding;
+el.appendChild(renderer.domElement);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(35, innerWidth/innerHeight, 1, 20000);   // m 장면 — far=500 교훈
+scene.add(camera);
+const spot=new THREE.SpotLight(0xfff3e0, 1.9, 5000, Math.PI/6, 0.5, 0.6);
+spot.position.set(260, 900, 420); spot.target.position.set(0,0,0); scene.add(spot, spot.target);
+spot.castShadow=true; spot.shadow.mapSize.set(2048,2048); spot.shadow.bias=-0.0005; spot.shadow.radius=8;
+spot.shadow.camera.near=100; spot.shadow.camera.far=3000;
+const head=new THREE.SpotLight(0xffffff, 0.35, 8000, Math.PI/5, 0.6, 0.3);
+head.position.set(0,0,0); camera.add(head); head.target.position.set(0,-40,-800); camera.add(head.target);
+scene.add(new THREE.HemisphereLight(0x3a4250, 0x0a0b0e, 0.6));
+scene.add(new THREE.AmbientLight(0xffffff, 0.08));
+const seaAlpha=(()=>{ const c=document.createElement('canvas'); c.width=c.height=512; const g=c.getContext('2d');
+  const gr=g.createRadialGradient(256,256,90,256,256,256); gr.addColorStop(0,'#fff'); gr.addColorStop(0.6,'#fff'); gr.addColorStop(1,'#000');
+  g.fillStyle=gr; g.fillRect(0,0,512,512); return new THREE.CanvasTexture(c); })();
+const sea=new THREE.Mesh(new THREE.CircleGeometry(900,120), new THREE.MeshStandardMaterial({color:0x18202b, roughness:0.35, metalness:0.15, transparent:true, opacity:0.72, alphaMap:seaAlpha, depthWrite:false}));
+sea.rotation.x=-Math.PI/2; sea.receiveShadow=true; scene.add(sea);
+const catcher=new THREE.Mesh(new THREE.CircleGeometry(900,120), new THREE.ShadowMaterial({opacity:0.28})); catcher.rotation.x=-Math.PI/2; catcher.position.y=0.02; catcher.receiveShadow=true; scene.add(catcher);
+
+const SYS_COLOR={hull:0xd9d4c7,ccs:0xb99a5a,chs:0x9fb3b0,bog:0xcf6a55,fgss:0xe0b070,prop:0xbfc7d2,elec:0x8fa3b8,safe:0xc9c4b8,rules:0x9aa0ab};
+const mat=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c, roughness:0.62, metalness:0.12, flatShading:true, transparent:true, opacity:1, side:THREE.DoubleSide},o));
+const M={
+  hull:new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.55, metalness:0.1, flatShading:true, transparent:true, opacity:1, side:THREE.DoubleSide}),
+  anti:mat(0x6b3a2e,{roughness:0.7}), trunk:mat(0xc9c4b8), deck:mat(0xbdb8ab), accom:mat(0xe6e2d8), window:mat(0x1e2228,{roughness:0.3,metalness:0.3}),
+  funnel:mat(0x2b2e34,{metalness:0.3}), house:mat(0xbfc7d2,{opacity:0.36, depthWrite:false}), room:mat(0x3a4048,{opacity:0.16, depthWrite:false}),
+  tank:mat(0xb99a5a,{opacity:0.55, metalness:0.5, roughness:0.35, depthWrite:false}), skid:mat(0xb99a5a,{metalness:0.75, roughness:0.35}),
+  engine:mat(0x2d2f34,{metalness:0.45, roughness:0.5}), head:mat(0x4a4d55,{metalness:0.5}), steel:mat(0xb8bcc2,{metalness:0.85, roughness:0.3}),
+  bronze:mat(0x8b6f3e,{metalness:0.8, roughness:0.4}), gen:mat(0x6f7480,{metalness:0.5}), alt:mat(0x9aa0ab,{metalness:0.6}), paper:mat(0xe9e5dc),
+  mast:mat(0x9a958b,{metalness:0.4}), rail:mat(0x8a857b), boat:mat(0xc98c4a,{roughness:0.5}), gcu:mat(0x5c6068,{metalness:0.4}), prs:mat(0x9fc0d8,{metalness:0.3,roughness:0.4}),
+  cont1:mat(0x7d4a3a,{roughness:0.75}), cont2:mat(0x4e6272,{roughness:0.75}), cont3:mat(0xb5a785,{roughness:0.75}), cont4:mat(0x4a5a45,{roughness:0.75}), contHold:mat(0x55595f,{roughness:0.75, opacity:0.9}),
+  grate:mat(0x8f8a80,{metalness:0.45, roughness:0.55, opacity:0.62}), vessel:mat(0xc9c4b8,{metalness:0.55, roughness:0.35}), motorM:mat(0x6f7480,{metalness:0.55, roughness:0.42}),
+  pipeV:mat(0xa9a49a,{metalness:0.5,roughness:0.45}), pipeLP:mat(0x8fa3b8,{metalness:0.4,roughness:0.4}), pipeHP:mat(0xcf6a55,{metalness:0.4,roughness:0.4}),
+  pipeHPouter:mat(0xcf6a55,{opacity:0.26, depthWrite:false}), pipeRet:mat(0x7fb0c8,{metalness:0.4,roughness:0.4}), pipeLiq:mat(0xe0b070,{metalness:0.5}),
+};
+
+/* ── 튜닝: 손잡이와 상수. 주요 치수의 기본값은 典 21·22, 물성·소비율은 推 ── */
+/* ── 선단의 선체 넷: 갑·을(LNGC) · 병·정(VLGC/VLAC) · 무(컨테이너) · 기(벙커링). 경은 모선 치수 대기 ── */
+const HULLTYPE={gap:'lngc', eul:'lngc', byeong:'vlgc', jeong:'vlgc', mu:'box', gi:'bv', gyeong:null};
+const TUNES={
+  lngc:{loa:295, beam:46,    depth:26.5, draft:11.5, tanks:4, bor:0.12, speed:19.5, skids:2, skidCap:5000},   // {典|21,22}
+  vlgc:{loa:230, beam:32.25, depth:25,   draft:12,   tanks:4, bor:0.15, speed:16.5, skids:2, skidCap:5000},   // {典|27} 깊이·BOR·속도 推
+  box: {loa:400, beam:61.3,  depth:33.5, draft:14.5, tanks:1, bor:0.15, speed:22,   skids:2, skidCap:5000},   // {典|26,30} 속도 推
+  bv:  {loa:116, beam:20,    depth:9.5,  draft:5.6,  tanks:2, bor:0.20, speed:12,   skids:1, skidCap:3100},   // {推|典 28 보간}
+};
+const TUNE_DEFS=JSON.parse(JSON.stringify(TUNES));
+const GEO_KEYS=['loa','beam','depth','draft','tanks','bor','speed','skids','skidCap'];
+const RANGES={
+  lngc:{loa:[240,345,1], beam:[40,54,0.5],   depth:[24,30,0.5], draft:[9,13,0.1],    tanks:[3,5,1], bor:[0.06,0.15,0.005], speed:[10,21,0.5], skids:[1,3,1]},
+  vlgc:{loa:[200,250,1], beam:[28,38,0.25],  depth:[20,28,0.5], draft:[10,13,0.1],   tanks:[3,5,1], bor:[0.08,0.25,0.01],  speed:[10,18,0.5]},
+  box: {loa:[330,420,1], beam:[48,64,0.5],   depth:[28,36,0.5], draft:[12,16.5,0.1], tanks:[1,2,1], bor:[0.08,0.25,0.01],  speed:[14,24,0.5]},
+  bv:  {loa:[90,140,1],  beam:[16,24,0.5],   depth:[8,12,0.25], draft:[4.5,7,0.1],   tanks:[1,3,1], bor:[0.1,0.35,0.01],   speed:[8,15,0.5]},
+};
+const GEOS={
+  lngc:{dimsSrc:'{典|21,22}', shape:'{推|급의 통례 — 곡면·배치는 도면 없이 세움}', title:'표준선(典 21·22)', c:{rho:0.45, cb:0.72, sgc:0.140, hotel:2500, sgcGen:0.165, pRef:21660, vRef:19.5, calib:1.03}},
+  vlgc:{dimsSrc:'{典|27} · 깊이 {推|용적 역산}', shape:'{推|Type A 넷·재액화·펌프 스키드는 통례 모식}', title:'88k 실선(典 27) · 깊이 推', c:{rho:0.58, cb:0.78, sgc:0.150, hotel:1200, sgcGen:0.165, pRef:12000, vRef:16.5, calib:1.02}},
+  box: {dimsSrc:'{典|26,30}', shape:'{推|섬 둘·베이 배치는 급의 통례}', title:'24k TEU급(典 26·30)', c:{rho:0.45, cb:0.72, sgc:0.140, hotel:4000, sgcGen:0.165, pRef:63840, vRef:22, calib:0.995}},
+  bv:  {dimsSrc:'{推|4,000~18,600 m³ 사례 사이 보간 — 典 28}', shape:'{推|Type C 둘·전기추진은 통례}', title:'6,000 m³급(推 보간)', c:{rho:0.45, cb:0.75, sgc:0.160, hotel:600, sgcGen:0.165, pRef:2200, vRef:12, calib:1.08}},
+};
+const LIV={palette:0, pattern:'solid', hullText:'STUDIO JCIA', shipName:'', font:'Unbounded'};
+let curType='lngc', TUNE=TUNES.lngc, TUNE_DEF=TUNE_DEFS.lngc, showLock=false;
+
+let PARTS=[], HULLFAM=[], LABELS=[], DYN=[], shipGroup=null, house=null, LAY={};
+let curShip='gap', curSys=null, xray=false;
+function part(mesh, info){ mesh.userData=Object.assign({ship:'both'},info); mesh.castShadow=true; mesh.receiveShadow=true; mesh.material=mesh.material.clone(); mesh.userData.baseOp=mesh.material.opacity; PARTS.push(mesh); shipGroup.add(mesh); return mesh; }
+function line(pts, color, info, dashed=true){ const g=new THREE.BufferGeometry().setFromPoints(pts.map(p=>new THREE.Vector3(...p)));
+  const l=new THREE.Line(g, dashed?new THREE.LineDashedMaterial({color, dashSize:1.6, gapSize:1.0, transparent:true, opacity:0.95}):new THREE.LineBasicMaterial({color, transparent:true, opacity:0.95}));
+  l.computeLineDistances(); l.userData=Object.assign({ship:'both', isLine:true, baseOp:0.95},info); PARTS.push(l); shipGroup.add(l); return l; }
+const box=(l,h,w,x,y,z,m)=>{ const g=new THREE.Mesh(new THREE.BoxGeometry(l,h,w), m); g.position.set(x,y,z); return g; };
+const cyl=(r1,r2,h,x,y,z,m,seg=14)=>{ const g=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,seg), m); g.position.set(x,y,z); return g; };
+function tube(points, r, m, info){ const c=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p))); c.curveType='centripetal'; return part(new THREE.Mesh(new THREE.TubeGeometry(c, Math.max(24,points.length*12), r, 10, false), m), info); }
+const dashedBox=(l,h,w,x,y,z,color,info)=>{ const g=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(l,h,w)), new THREE.LineDashedMaterial({color, dashSize:1.2, gapSize:0.7, transparent:true, opacity:0.95})); g.computeLineDistances(); g.position.set(x,y,z); g.userData=Object.assign({ship:'both', isLine:true, baseOp:0.95},info); PARTS.push(g); shipGroup.add(g); return g; };
+
+// 선체 로프트 — 좌우 반쪽을 따로 짓는다 (도장 글자가 양현에서 바르게 읽히도록). 곡면은 推
+function hullHalfGeometry(L,hB,T,Dk,side,bowLen=52.5,sternLen=57.5){
+  const N=80, bowS=L/2-bowLen, sternS=-L/2+sternLen;
+  const half=(x)=>{
+    let hb=hB, keel=-T, deck=Dk;
+    if(x>bowS){ const t=(x-bowS)/(L/2-bowS); hb=hB*Math.pow(Math.max(0,1-Math.pow(t,2.6)),0.9); const u=Math.max(0,(t-0.5)/0.5); keel=-T+(T-2.5)*Math.pow(u,1.6); deck=Dk+3.2*t*t; }
+    else if(x<sternS){ const t=(sternS-x)/(L/2+sternS); hb=hB*(1-0.40*Math.pow(t,1.7)); deck=Dk+1.4*t; }
+    const kLen=Math.min(26,sternLen*0.45), sternK=-L/2+kLen; if(x<sternK){ const tk=(sternK-x)/kLen; keel=-T+(T+1.2)*Math.pow(tk,0.45); }
+    hb=Math.max(hb,0.7);
+    const r=Math.min(4.5, hb*0.55, Math.max(0.2,(deck-keel)*0.35)), pts=[];
+    const nb=4,na=6,ns=6,nd=4;
+    for(let i=0;i<=nb;i++) pts.push([keel,(hb-r)*i/nb]);
+    for(let i=1;i<=na;i++){ const a=-Math.PI/2+(Math.PI/2)*i/na; pts.push([keel+r+r*Math.sin(a), hb-r+r*Math.cos(a)]); }
+    for(let i=1;i<=ns;i++) pts.push([keel+r+(deck-keel-r)*i/ns, hb]);
+    for(let i=1;i<=nd;i++){ const z=hb*(1-i/nd); pts.push([deck+0.5*(1-Math.pow(z/hb,2)), z]); }
+    return pts;
+  };
+  const pos=[], uv=[], idx=[]; let K=0;
+  const U=(xn)=> side>0 ? 0.5*xn : 0.5+0.5*(1-xn);
+  for(let i=0;i<=N;i++){ const x=-L/2+L*i/N, h=half(x); K=h.length; h.forEach(p=>{ pos.push(x,p[0],p[1]*side); uv.push(U(i/N),(p[0]+14)/40); }); }
+  for(let s=0;s<N;s++) for(let k=0;k<K-1;k++){ const a=s*K+k, b=s*K+k+1, c=(s+1)*K+k, d=(s+1)*K+k+1; idx.push(a,c,b, b,c,d); }
+  [[0,-L/2],[N,L/2]].forEach(([s,x])=>{ let cy=0; for(let k=0;k<K;k++) cy+=pos[(s*K+k)*3+1]; cy/=K; const ci=pos.length/3; pos.push(x,cy,0); uv.push(U(s/N),(cy+14)/40); for(let k=0;k<K-1;k++) idx.push(ci, s*K+k, s*K+k+1); });
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2)); g.setIndex(idx); g.computeVertexNormals(); return g;
+}
+/* ── 선체 도장: 팔레트·무늬·글자 (bikia 튜닝 문법 상속) ── */
+const PALETTES = [
+  {name:'종이와 놋쇠',   base:'#d9d4c7', accent:'#17181b', rim:'#6b3a2e', text:'#b99a5a'},
+  {name:'백자 먹',       base:'#ebe7df', accent:'#1c1c1e', rim:'#17181b', text:'#1c1c1e'},
+  {name:'먹과 주사',     base:'#141416', accent:'#b8332a', rim:'#141416', text:'#b8332a'},
+  {name:'청자',          base:'#6f9a8f', accent:'#2f4d46', rim:'#1e2b28', text:'#d8e5df'},
+  {name:'녹(綠)과 금',   base:'#1f3b2e', accent:'#b99a5a', rim:'#1f3b2e', text:'#b99a5a'},
+  {name:'Cinelli 80s 블루', base:'#1c3a8a', accent:'#e8e4dc', rim:'#101828', text:'#e8e4dc'},
+  {name:'황토',          base:'#c89a62', accent:'#4a2e1a', rim:'#3a2416', text:'#f3e6d0'},
+  {name:'쪽빛',          base:'#1a2f5a', accent:'#8aa6d6', rim:'#0f1a33', text:'#c9d6f0'},
+  {name:'벚꽃 먹',       base:'#f3dfe3', accent:'#3a2a30', rim:'#3a2a30', text:'#3a2a30'},
+  {name:'은과 흑연',     base:'#b9bcc2', accent:'#3b3e44', rim:'#25272b', text:'#25272b'},
+  {name:'트랙 오렌지',   base:'#e25a1c', accent:'#111111', rim:'#111111', text:'#111111'},
+  {name:'올리브 카키',   base:'#6b6b45', accent:'#2c2c1e', rim:'#2c2c1e', text:'#d8d6b4'},
+  {name:'와인',          base:'#5a1e2a', accent:'#caa36b', rim:'#2c1016', text:'#caa36b'},
+  {name:'LNG 백색·청',   base:'#f2f2ee', accent:'#173a6b', rim:'#7a2a1f', text:'#173a6b'},
+  {name:'해군 회색',     base:'#7c8590', accent:'#1a1c20', rim:'#6b3a2e', text:'#e9e5dc'},
+  {name:'선급 흑색',     base:'#1d1f24', accent:'#b9bcc2', rim:'#6b3a2e', text:'#e9e5dc'},
+];
+const PATTERNS = [
+  ['solid','단색'],['fade','페이드(선미→선수)'],['fadev','페이드(세로)'],['stripe','시어 줄무늬'],['pinstripe','핀스트라이프'],
+  ['checker','체커'],['dots','물방울'],['hex','육각'],['grid','격자'],['halftone','하프톤'],['brushed','헤어라인'],
+  ['weave','직조'],['camo','카모'],['ink','먹 번짐'],['splatter','튀김'],['flake','메탈 플레이크'],['holo','홀로'],
+];
+const FONTS = [['Unbounded','Unbounded'],['Bebas Neue','Bebas'],['Orbitron','Orbitron'],['Space Mono','Mono'],['Playfair Display','Playfair'],['Noto Serif KR','명조'],['Noto Sans KR','고딕'],['Nanum Brush Script','붓']];
+const PAL=()=>PALETTES[LIV.palette];
+function paintTile(S, pattern, c1, c2){
+  const c=document.createElement('canvas'); c.width=c.height=S; const g=c.getContext('2d');
+  g.fillStyle=c1; g.fillRect(0,0,S,S);
+  let seed=11; const rnd=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; };
+  const u=S/160;
+  switch(pattern){
+    case 'checker': { const n=4, k=S/n; g.fillStyle=c2; for(let i=0;i<n;i++) for(let j=0;j<n;j++) if((i+j)%2) g.fillRect(i*k,j*k,k,k); break; }
+    case 'dots': { const n=6, k=S/n; g.fillStyle=c2; for(let i=0;i<n;i++) for(let j=0;j<n;j++){ g.beginPath(); g.arc(i*k+k/2,j*k+k/2,k*0.22,0,Math.PI*2); g.fill(); } break; }
+    case 'hex': { const r=S/6, h=r*Math.sqrt(3); g.strokeStyle=c2; g.lineWidth=1.6*u;
+      for(let row=-1;row<7;row++) for(let col=-1;col<7;col++){ const x=col*1.5*r, y=row*h+(col%2?h/2:0); g.beginPath(); for(let k=0;k<6;k++){ const a=Math.PI/3*k; const px=x+r*Math.cos(a), py=y+r*Math.sin(a); k?g.lineTo(px,py):g.moveTo(px,py); } g.closePath(); g.stroke(); } break; }
+    case 'grid': { g.strokeStyle=c2; g.lineWidth=1.2*u; const k=S/5; for(let i=0;i<=5;i++){ g.beginPath(); g.moveTo(i*k,0); g.lineTo(i*k,S); g.moveTo(0,i*k); g.lineTo(S,i*k); g.stroke(); } break; }
+    case 'halftone': { const n=8, k=S/n; g.fillStyle=c2; for(let i=0;i<n;i++) for(let j=0;j<n;j++){ const rr=k*0.5*(0.15+0.85*(i/n)); g.beginPath(); g.arc(i*k+k/2,j*k+k/2,rr,0,Math.PI*2); g.fill(); } break; }
+    case 'brushed': { for(let y=0;y<S;y+=2){ g.fillStyle=(rnd()<0.5?c2:c1); g.globalAlpha=0.10+rnd()*0.12; g.fillRect(0,y,S,1); } g.globalAlpha=1; break; }
+    case 'weave': { const k=S/8; for(let i=0;i<8;i++) for(let j=0;j<8;j++){ g.fillStyle=((i+j)%2)?c2:c1; g.globalAlpha=0.55; g.fillRect(i*k,j*k,k,k); g.globalAlpha=0.25; g.fillStyle='#000'; g.fillRect(i*k,j*k+((i+j)%2?0:k/2),k,1); } g.globalAlpha=1; break; }
+    case 'camo': { for(let i=0;i<26;i++){ g.fillStyle=i%3?c2:c1; g.globalAlpha=0.7; g.beginPath(); const x=rnd()*S,y=rnd()*S; g.moveTo(x,y); for(let k=0;k<6;k++) g.lineTo(x+(rnd()-0.5)*S*0.5,y+(rnd()-0.5)*S*0.5); g.closePath(); g.fill(); } g.globalAlpha=1; break; }
+    case 'ink': { for(let i=0;i<10;i++){ const x=rnd()*S,y=rnd()*S,r=(20+rnd()*60)*u; const gr=g.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,c2); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=gr; g.globalAlpha=0.8; g.fillRect(0,0,S,S); } g.globalAlpha=1; break; }
+    case 'splatter': { g.fillStyle=c2; for(let i=0;i<90;i++){ g.beginPath(); g.arc(rnd()*S,rnd()*S,(0.6+rnd()*3.2)*u,0,Math.PI*2); g.fill(); } break; }
+    case 'flake': { for(let i=0;i<420;i++){ g.fillStyle=rnd()<0.6?c2:'#ffffff'; g.globalAlpha=0.35+rnd()*0.5; g.fillRect(rnd()*S,rnd()*S,1.2*u,1.2*u); } g.globalAlpha=1; break; }
+    case 'holo': { const gr=g.createLinearGradient(0,0,S,S); ['#ff6b6b','#ffd166','#06d6a0','#4cc9f0','#b892ff','#ff6b6b'].forEach((h,i,a)=>gr.addColorStop(i/(a.length-1),h)); g.fillStyle=gr; g.globalAlpha=0.55; g.fillRect(0,0,S,S); g.globalAlpha=1; break; }
+  }
+  return c;
+}
+let liveryTex=null, hullMeshes=[], bulbMesh=null;
+function paintHull(){
+  const W=2048,H=512, c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d');
+  const P=PAL(), Dk=TUNE.depth-TUNE.draft, Y=(y)=>Math.round((1-(y+14)/40)*H);
+  g.fillStyle=P.rim; g.fillRect(0,0,W,H);                                     // 물 아래: 방오
+  const topRow=0, botRow=Y(1.7), tile=paintTile(160,LIV.pattern,P.base,P.accent);
+  for(const side of ['s','p']){
+    const x0=side==='s'?0:W/2, w=W/2, um=(xn)=>side==='s'?x0+w*xn:x0+w*(1-xn);
+    g.save(); g.beginPath(); g.rect(x0,topRow,w,botRow-topRow); g.clip();
+    g.fillStyle=P.base; g.fillRect(x0,topRow,w,botRow-topRow);
+    switch(LIV.pattern){
+      case 'solid': break;
+      case 'fade': { const gr=g.createLinearGradient(um(0),0,um(1),0); gr.addColorStop(0,P.base); gr.addColorStop(1,P.accent); g.fillStyle=gr; g.fillRect(x0,topRow,w,botRow-topRow); break; }
+      case 'fadev': { const gr=g.createLinearGradient(0,Y(Dk+3),0,Y(1.7)); gr.addColorStop(0,P.base); gr.addColorStop(1,P.accent); g.fillStyle=gr; g.fillRect(x0,topRow,w,botRow-topRow); break; }
+      case 'stripe': { g.fillStyle=P.accent; g.fillRect(x0,Y(Dk-1.6),w,Math.max(2,Y(Dk-2.4)-Y(Dk-1.6))); g.fillRect(x0,Y(Dk-3.4),w,Math.max(3,Y(Dk-4.9)-Y(Dk-3.4))); break; }
+      case 'pinstripe': { g.fillStyle=P.accent; for(let y=2.6;y<Dk+2;y+=1.5) g.fillRect(x0,Y(y),w,2); break; }
+      default: { g.fillStyle=g.createPattern(tile,'repeat'); g.fillRect(x0,topRow,w,botRow-topRow); }
+    }
+    g.fillStyle=P.text; g.textAlign='center'; g.textBaseline='middle';
+    if((LIV.hullText||'').trim()){ const px=Math.round(5.8/40*H); g.font='700 '+px+'px "'+LIV.font+'", "Noto Sans KR", sans-serif'; g.fillText(LIV.hullText.trim(), um(0.5), Y(Dk/2+1.2)); }
+    if((LIV.shipName||'').trim()){ const px=Math.round(3.0/40*H); g.font='700 '+px+'px "'+LIV.font+'", "Noto Sans KR", sans-serif'; g.fillText(LIV.shipName.trim(), um(0.845), Y(Dk-2.4)); }
+    g.restore();
+  }
+  g.fillStyle=P.accent; g.fillRect(0,Y(1.7),W,Y(-0.05)-Y(1.7));                // 부트탑 띠
+  g.fillStyle='rgba(0,0,0,.09)'; for(let y=2.5;y<Dk+12;y+=2.6) g.fillRect(0,Y(y),W,1);   // 외판 이음줄
+  const t=new THREE.CanvasTexture(c); t.anisotropy=renderer.capabilities.getMaxAnisotropy(); return t;
+}
+function applyLivery(){
+  const old=liveryTex; liveryTex=paintHull();
+  hullMeshes.forEach(m=>{ m.material.map=liveryTex; m.material.color.set(0xffffff); m.material.needsUpdate=true; });
+  if(bulbMesh) bulbMesh.material.color.set(PAL().rim);
+  if(old) old.dispose();
+}
+
+/* ── 압축기 패키지: 봉투는 공개 카탈로그 {典|24}, 구조는 공개 서술 {典|25} + 현업 확인 {聞|준철}.
+   회사 도면의 태그·치수·프로젝트 정보는 앱 밖. ── */
+function damperGeo(r,h){ const pts=[new THREE.Vector2(0.001,0), new THREE.Vector2(r,0), new THREE.Vector2(r,h)];
+  for(let i=1;i<=6;i++){ const a=Math.PI/2*i/6; pts.push(new THREE.Vector2(r*Math.cos(a), h+r*0.75*Math.sin(a))); }
+  return new THREE.LatheGeometry(pts,16); }
+function buildSkid(cx, base, cz, idx){
+  const L=GEO.skid.l, W=GEO.skid.w, H=GEO.skid.h, A=String.fromCharCode(65+idx), deck=2.75;
+  const P=(mesh,info,shadow=true)=>{ const m=part(mesh, Object.assign({ship:'gap', sys:'fgss'}, info)); if(!shadow) m.castShadow=false; return m; };
+  const B=(l,h,w,dx,dy,dz,m)=>box(l,h,w,cx+dx,base+dy,cz+dz,m);
+  const C=(r1,r2,h,dx,dy,dz,m,seg)=>cyl(r1,r2,h,cx+dx,base+dy,cz+dz,m,seg);
+
+  P(B(L,0.35,W, 0,0.18,0, M.skid),{id:'sk'+idx, name:'고압 BOG 압축기 '+A+' — 패키지 봉투 11.5 × 7 × 5.5 m · '+TUNE.skidCap+' kg/h',
+    note:'봉투 치수는 공개 카탈로그의 300 bar 표준 패키지 {典|24}. 두 대가 각각 BOG 100%를 맡아 이중화한다 {典|25}. 압축기·전동기·윤활·냉각을 한 바닥에 얹어 통째로 배에 내린다 — 조선소에는 〔기〕의 물건으로 도착해 〔선〕이 받침을 만든다. 속의 배치는 공개 서술 {典|25}에 현업 확인을 더한 모식 {聞|준철} {推|도면은 앱 밖}.〔기〕〔선〕'});
+  [[-L/2+0.4,-W/2+0.4],[-L/2+0.4,W/2-0.4],[0.6,-W/2+0.4],[0.6,W/2-0.4],[L/2-0.4,-W/2+0.4],[L/2-0.4,W/2-0.4]].forEach((p,k)=>
+    P(B(0.26,H-0.5,0.26, p[0],0.35+(H-0.5)/2,p[1], M.skid),{id:'sk'+idx+'c'+k, name:'구조 기둥', note:'정비 데크와 배관을 받친다. 왕복동 기계의 진동을 받아내는 뼈대 — 완전 평형 크랭크기어라야 선체를 흔들지 않는다 {典|24}.'},false));
+  P(B(L-1.4,0.12,W-1.2, -0.2,deck,0, M.grate),{id:'sk'+idx+'deck', name:'정비 데크 — 사람이 서는 층', note:'실린더와 완충기에 손이 닿는 높이. 사람의 치수가 기계의 치수를 정하는 자리.'},false);
+  [-1,1].forEach(s=>P(B(L-0.6,0.22,0.22, 0,H-0.25,s*(W/2-0.4), M.skid),{id:'sk'+idx+'b'+s, name:'상부 프레임 빔', note:'인양과 배관 지지.'},false));
+
+  P(B(2.2,2.6,1.9, -2.4,1.65,0, M.engine),{id:'sk'+idx+'cc', name:'주 크랭크케이스 — 수직형', note:'크랭크케이스가 서 있고, 그 위로 실린더가 층층이 얹힌다 {典|25}. 아래에는 주·보조 윤활유 펌프가 붙는다.'});
+  P(B(1.4,0.5,1.3, -2.4,3.15,0, M.head),{id:'sk'+idx+'ch', name:'크로스헤드 덮개', note:'회전을 왕복으로 바꾸는 관절. 크랭크실의 기름과 가스실 사이를 가르는 격벽이 여기 선다.'},false);
+  const stg=[[0.62,'1단','흡입 −160℃ · 대기압에서 시작','복동 라비린스'],[0.54,'2단','','복동 라비린스'],[0.46,'3단','','복동 라비린스'],[0.38,'4단','','단동 링실'],[0.30,'5단','300 bar 토출 — 주기관으로','단동 링실']];
+  let y=3.4; stg.forEach((s,k)=>{ const h=0.36;
+    P(C(s[0],s[0],h, -2.4,y+h/2,0, M.steel,16),{id:'sk'+idx+'st'+k, name:s[1]+' 실린더 — 지름 '+(s[0]*2).toFixed(2)+' m 급',
+      note:(s[2]?s[2]+'. ':'')+'단이 오를수록 실린더가 가늘어진다 — 같은 질량의 기체가 눌리며 부피를 잃기 때문이다. 이 계단이 곧 압축의 산수다. 밀봉은 '+s[3]+' {典|25}: 압력이 오르면 밀봉 방식마저 바뀐다.'},k<2);
+    y+=h; });
+  dashedBox(1.5,1.7,1.5, cx-2.4, base+y+0.85, cz, 0x8fa3b8,{id:'sk'+idx+'dis', sys:'fgss', ship:'gap', name:'정비 인출 공간 — 피스톤과 로드를 뽑을 하늘',
+    note:'실린더 위에는 반드시 이만큼의 빈 공간이 있어야 한다. 기계의 진짜 크기는 기계가 아니라 기계를 뜯을 공간까지다 — 그래서 갑판 기계실의 층고가 정해진다 {推|일반 관행}.'});
+
+  [[-4.2,2.2,1.5,'1단 흡입측'],[-4.2,-2.2,1.5,'1단 토출측'],[-0.6,2.2,1.35,'중간단 흡입측'],[-0.6,-2.2,1.35,'중간단 토출측'],[1.4,2.0,1.15,'고압단 흡입측'],[1.4,-2.0,1.15,'고압단 토출측']].forEach((d,k)=>{
+    const m=new THREE.Mesh(damperGeo(0.33,d[2]), M.vessel); m.position.set(cx+d[0], base+deck+0.06, cz+d[1]);
+    P(m,{id:'sk'+idx+'dp'+k, name:'맥동 완충기 — '+d[3], note:'왕복동 압축기는 기체를 밀 때마다 관 속에 파동을 만든다. 이 통이 그 파동을 삼켜 배관과 용접부를 지킨다. 단마다 흡입·토출 양쪽에 하나씩 선다 {聞|준철} {推|배치 모식}.'},k<2);
+  });
+  [-1,1].forEach(s=>{ const c=P(C(0.35,0.35,2.6, 0.4,1.25,s*2.1, M.vessel,14),{id:'sk'+idx+'cl'+s, name:'단간 냉각기 — 누른 기체를 식히는 통',
+      note:'누르면 뜨거워지니 다음 단으로 보내기 전에 식힌다. 식히지 않으면 다음 단이 헛일을 한다 — 다단 압축이 등온에 가까워지는 까닭.'},false); c.rotation.z=Math.PI/2; });
+  P(B(1.4,0.9,1.1, 3.0,deck+0.62,-1.9, M.gen),{id:'sk'+idx+'lo', name:'윤활유 모듈 — 판형 열교환기와 복식 여과기', note:'주 펌프·보조 펌프·가열기·이중 여과기. 여과기가 둘인 것은 돌리면서 갈아 끼우기 위함이다.'},false);
+  P(C(0.45,0.45,1.8, 3.9,deck+0.55,1.9, M.vessel,14),{id:'sk'+idx+'ev', name:'냉각수 팽창 탱크 — 질소로 눌러 둔 통', note:'글리콜/물 냉각 회로의 부피 변화를 받아 준다.'},false).rotation.z=Math.PI/2;
+  P(B(1.3,0.5,0.9, 3.9,deck+0.31,-0.2, M.gen),{id:'sk'+idx+'cp', name:'냉각수 펌프 ×2 — 스크류식', note:'하나는 돌고 하나는 쉰다.'},false);
+
+  P(B(3.0,2.0,2.0, 3.6,1.35,0, M.motorM),{id:'sk'+idx+'mt', sys:'elec', name:'구동 전동기 — 압축기의 근육',
+    note:'배의 전기가 여기서 기체의 압력이 된다. 고압일수록 이 상자가 커지고, 커진 만큼 발전기와 배전반이 커진다 — 카드 하나의 "쇳값"은 여기까지 이어진다.〔전〕〔기〕'});
+  P(C(0.9,0.9,0.5, 5.35,1.65,0, M.steel,18),{id:'sk'+idx+'fan', sys:'elec', name:'전동기 냉각 팬 덮개', note:'전동기가 스스로 식는 바람.'},false).rotation.z=Math.PI/2;
+  P(B(1.0,0.8,0.8, 1.5,1.25,0, M.head),{id:'sk'+idx+'cpl', name:'커플링 · 터닝 기어', note:'축을 잇고, 정비 때 기계를 손으로 조금씩 돌린다.'},false);
+  const st=P(B(2.0,0.12,0.9, -4.6,1.55,W/2-1.2, M.grate),{id:'sk'+idx+'st', name:'계단', note:'데크로 오르는 길.'},false); st.rotation.z=0.62;
+
+  tube([[cx-2.4,base+3.5,cz],[cx-3.4,base+3.6,cz+1.2],[cx-4.2,base+deck+1.7,cz+2.2]],0.13,M.pipeV,{ship:'gap', sys:'fgss', id:'sk'+idx+'p1', name:'1단 흡입관', note:'기체 헤더에서 온 −160℃ 가까운 BOG가 첫 단으로 든다.'});
+  tube([[cx-2.4,base+4.9,cz],[cx+0.4,base+4.9,cz-1.0],[cx+1.4,base+deck+1.3,cz-2.0]],0.11,M.pipeHP,{ship:'gap', sys:'fgss', id:'sk'+idx+'p2', name:'고압단 토출관 — 여기서부터 300 bar', note:'마지막 단을 나온 가스가 이중관을 타고 기관실로 내려간다 {典|1}.'});
+}
+
+/* ── 공용 부품: 선체·선수루·기관실·거주구·연돌·갑판 장비. 선체 넷이 함께 쓴다 ── */
+function beginBuild(){
+  if(shipGroup){ shipGroup.traverse(o=>{ if(o.geometry) o.geometry.dispose(); }); scene.remove(shipGroup); }
+  PARTS=[]; HULLFAM=[]; LABELS=[]; hullMeshes=[]; house=null; shipGroup=new THREE.Group(); scene.add(shipGroup);
+  const L=TUNE.loa, hB=TUNE.beam/2, T=TUNE.draft, Dk=TUNE.depth-T;
+  return LAY={L,hB,T,Dk,stern:-L/2,bow:L/2, bowLen:Math.min(75,Math.max(26,L*0.18)), sternLen:Math.min(80,Math.max(30,L*0.2)), tankW:1, tankY:[0,1], ch:0, tl:1, tanks:[]};
+}
+function hullAt(lay,x){ const {L,hB,T,Dk}=lay, bowS=L/2-lay.bowLen, sternS=-L/2+lay.sternLen; let hb=hB,keel=-T,deck=Dk;
+  if(x>bowS){ const t=(x-bowS)/(L/2-bowS); hb=hB*Math.pow(Math.max(0,1-Math.pow(t,2.6)),0.9); const u=Math.max(0,(t-0.5)/0.5); keel=-T+(T-2.5)*Math.pow(u,1.6); deck=Dk+3.2*t*t; }
+  else if(x<sternS){ const t=(sternS-x)/(L/2+sternS); hb=hB*(1-0.40*Math.pow(t,1.7)); deck=Dk+1.4*t; }
+  const kLen=Math.min(26,lay.sternLen*0.45), sternK=-L/2+kLen; if(x<sternK){ const tk=(sternK-x)/kLen; keel=-T+(T+1.2)*Math.pow(tk,0.45); }
+  return {hb:Math.max(hb,0.7),keel,deck}; }
+function addHull(lay, note){
+  const {L,hB,T,Dk}=lay;
+  const info={id:'hull', sys:'hull', name:()=>'선체 — 길이 '+TUNE.loa+' · 폭 '+TUNE.beam+' · 깊이 '+TUNE.depth+' · 흘수 '+TUNE.draft+' m', note};
+  [1,-1].forEach(side=>{ const hm=part(new THREE.Mesh(hullHalfGeometry(L,hB,T,Dk,side,lay.bowLen,lay.sternLen), M.hull), Object.assign({},info,{id:'hull'+(side>0?'S':'P')})); if(liveryTex){ hm.material.map=liveryTex; hm.material.color.set(0xffffff); hm.material.needsUpdate=true; } HULLFAM.push(hm); hullMeshes.push(hm); });
+  const bl=Math.min(11,L*0.037), br=Math.min(4.5,Math.max(1.1,T*0.39));
+  const bulb=part(new THREE.Mesh(new THREE.SphereGeometry(1,20,14), M.anti),{id:'bulb', sys:'hull', name:'구상선수 — 파도를 미리 가르는 혹', note:'선수파를 상쇄해 저항을 줄인다. 형상 {推|통례}.'}); bulb.scale.set(bl,br,br); bulb.position.set(lay.bow-bl*0.82,-T*0.66,0); HULLFAM.push(bulb); bulbMesh=bulb; bulb.material.color.set(PAL().rim);
+}
+function addForecastle(lay){
+  const {L,hB,bow}=lay, fl=Math.min(22,L*0.075), fx=bow-3-fl/2, dk=hullAt(lay,fx).deck;
+  const fore=part(box(fl,2.4,Math.max(5,hullAt(lay,fx).hb*1.5), fx, dk+1.2, 0, M.deck),{id:'fore', sys:'hull', name:'선수루 갑판 — 닻과 계류의 자리', note:'양묘기와 계류 윈치가 여기 산다.〔선〕'}); HULLFAM.push(fore);
+  const ws=Math.min(3,L*0.011);
+  [-1,1].forEach(s=>{ part(box(ws,ws*0.7,ws*0.8, fx, dk+2.4+ws*0.35, s*Math.min(4.5,hB*0.2), M.gen),{id:'windlass'+s, sys:'chs', name:'양묘기 — 닻을 올리는 윈치', note:'계류·정박 설비. 화물 취급 계통의 이웃.〔선〕'});
+    const ax=bow-fl*0.8; part(box(ws*0.7,ws,ws*0.35, ax, dk-4, s*(hullAt(lay,ax).hb-0.2), M.funnel),{id:'anchor'+s, sys:'hull', name:'닻', note:'현측 호스파이프에 걸린 닻.'}); });
+}
+/* ── 추진·주기관의 해부: 2행정 크로스헤드 기관의 층, 축계, 프로펠러, 타와 조타기 ── */
+function engYFor(lay,x0,eH){ return Math.max(-2, hullAt(lay,x0).keel+eH/2+0.4); }   // 선미 카운터 위에 기관을 앉힌다
+function bladeGeo(R,thk){ const r0=R*0.2, sh=new THREE.Shape(); sh.moveTo(r0,-0.17*R); sh.quadraticCurveTo(0.62*R,-0.36*R, 0.96*R, 0.05*R); sh.quadraticCurveTo(0.66*R,0.36*R, r0,0.17*R); sh.closePath();
+  const g=new THREE.ExtrudeGeometry(sh,{depth:thk, bevelEnabled:true, bevelThickness:thk*0.35, bevelSize:thk*0.35, bevelSegments:2}); g.translate(0,0,-thk/2);
+  g.rotateX(Math.PI/2); g.rotateZ(Math.PI/2);   // 반지름→y(위), 시위→z(접선), 두께→x(축 방향)
+  return g; }
+function rudderGeo(c,t,span){ const sh=new THREE.Shape(); sh.moveTo(0,0); sh.quadraticCurveTo(c*0.28,t*0.55,c,0); sh.quadraticCurveTo(c*0.28,-t*0.55,0,0); const g=new THREE.ExtrudeGeometry(sh,{depth:span,bevelEnabled:false}); g.rotateX(-Math.PI/2); return g; }
+function addPropulsion(lay,o){
+  const {T,stern}=lay, eL=o.eng[1]-o.eng[0], eH=o.eH, eW=o.eW, ex=(o.eng[0]+o.eng[1])/2, n=o.n, R=o.propR;
+  const engY=engYFor(lay,o.eng[0],eH), yb=engY-eH/2, yt=engY+eH/2, py=-T*0.6, px=stern+Math.max(4,lay.L*0.03);
+  const k=o.blades||(R>=4.8?5:4), nTC=n<=6?1:(n<=8?2:3);
+  o.z.forEach((z,i)=>{
+    const P=(m,info,shadow=true)=>{ const q=part(m,Object.assign({sys:'prop'},info)); if(!shadow) q.castShadow=false; return q; };
+    P(box(eL,eH*0.16,eW*1.15, ex, yb+eH*0.08, z, M.head),{id:'bed'+i, name:'베드플레이트 — 기관의 주춧돌', note:'크랭크축 베어링이 이 안에 앉는다. 선체 이중저 위에 볼트로 매인다 {推|2행정 기관 통례}.〔기〕〔각〕'});
+    P(box(eL*0.98,eH*0.34,eW*0.95, ex, yb+eH*0.33, z, M.engine),{id:'frame'+i, name:'프레임 박스 — 크로스헤드가 오르내리는 층', note:'피스톤 로드와 커넥팅 로드를 잇는 크로스헤드가 안내판을 타고 오르내린다. 2행정 대형기관만의 층 — 그래서 이 기관은 높다.〔기〕'});
+    P(box(eL*0.98,eH*0.30,eW, ex, yb+eH*0.65, z, M.engine),{id:'block'+i, name:'실린더 블록 — 연소가 일어나는 층', note:'실린더 라이너와 소기 공기실이 여기 있다. 기통마다 라이너 하나.〔기〕'});
+    for(let c=0;c<n;c++){ const cx=o.eng[0]+eL*(c+0.5)/n, cs=Math.min(eW*0.22, eL/n*0.42);
+      P(cyl(cs,cs,eH*0.06, cx, yt+eH*0.03, z, M.head,18),{id:'cov'+i+c, name:'실린더 커버 '+(c+1), note:o.cylNote});
+      P(cyl(cs*0.5,cs*0.6,eH*0.14, cx, yt+eH*0.13, z, M.steel,14),{id:'exv'+i+c, name:'배기밸브 하우징 '+(c+1), note:'유압으로 열리는 하나의 큰 배기밸브. 2행정은 흡기밸브가 없다 — 실린더 아래쪽의 소기구멍이 대신한다.'},false);
+      [-1,1].forEach(s=>P(box(eL/n*0.42,eH*0.2,0.16, cx, yb+eH*0.33, z+s*(eW*0.95/2+0.08), M.head),{id:'door'+i+c+(s<0?'a':'b'), name:'크랭크실 문', note:'정비 때 여는 문. 문 수가 곧 실린더 수.'},false));
+    }
+    P(cyl(eW*0.2,eW*0.2,eL*0.95, ex, yt+eH*0.10, z+eW*0.58, M.steel,16),{id:'exr'+i, name:'배기가스 리시버 — 뜨거운 숨을 모으는 관', note:'모든 실린더의 배기가 이 관에 모여 과급기 터빈으로 간다. 갑은 여기서 배기 일부를 되돌려(EGRBP) 쓴다 {典|8}.'}).rotation.z=Math.PI/2;
+    for(let t=0;t<nTC;t++){ const tx=o.eng[0]+eL*(t+0.5)/nTC, tr=Math.min(eW*0.26, eL/nTC*0.28), tz=z+eW*0.58+tr*1.35;
+      P(cyl(tr,tr*0.85,tr*2.2, tx, yt+eH*0.18, tz, M.steel,18),{id:'tc'+i+t, name:'과급기 '+(t+1)+' — 배기로 돌리는 바람개비', note:'배기가스가 터빈을 돌리고, 같은 축의 압축기가 공기를 밀어 넣는다. 기관 출력의 절반은 이 바람이 만든다 {推|통례}. 기통이 많으면 과급기도 늘어 여기서는 '+nTC+'대. ME-GI는 EGRBP, X-DF는 iCER가 이 앞뒤에 붙는다 {典|4,8}.'}).rotation.z=Math.PI/2;
+      P(box(tr*1.1,tr*0.9,tr*1.0, tx, yt+eH*0.18-tr*1.0, tz, M.head),{id:'tcin'+i+t, name:'과급기 터빈 입구', note:'배기 리시버에서 오는 길.'},false);
+      P(box(eL/nTC*0.32,eH*0.26,eW*0.32, tx, yb+eH*0.6, z-eW*0.84, M.gen),{id:'ac'+i+t, name:'공기냉각기 '+(t+1)+' — 눌린 공기를 식히는 상자', note:'과급된 공기는 뜨겁다. 물로 식혀 밀도를 되찾은 뒤 소기 리시버로 보낸다 — 같은 부피에 더 많은 산소.'});
+    }
+    P(cyl(eW*0.18,eW*0.18,eL*0.9, ex, yb+eH*0.72, z-eW*0.62, M.steel,16),{id:'scv'+i, name:'소기 리시버 — 눌린 공기의 창고', note:'과급기가 밀어 넣은 공기가 여기 고여 소기구멍으로 실린더에 든다.'}).rotation.z=Math.PI/2;
+    [yb+eH*0.5, yt].forEach((yy,g)=>P(box(eL*1.06,0.08,eW*1.75, ex, yy, z, M.grate),{id:'gal'+i+g, name:'기관 갤러리 '+(g+1)+'층 — 사람이 서는 층', note:'크랭크실 층과 실린더 커버 층. 정비원의 길.'},false));
+    const cy=yb+eH*0.18;
+    P(cyl(eH*0.3,eH*0.3,0.45, o.eng[0]-0.35, cy, z, M.head,28),{id:'fw'+i, name:'플라이휠 — 회전을 고르게 하는 바퀴', note:'실린더 하나하나의 충격을 관성으로 다듬는다. 터닝기어가 이 톱니를 물고 기관을 손으로 돌린다.'}).rotation.z=Math.PI/2;
+    P(box(1.4,eH*0.22,eW*0.5, o.eng[0]-1.5, cy, z, M.engine),{id:'thr'+i, name:'추력 베어링 — 배를 미는 힘이 선체로 옮는 곳', note:'프로펠러의 추력은 축을 타고 여기까지 와서 선체에 전해진다. 배를 실제로 미는 손은 이 베어링이다.〔기〕〔각〕'});
+    P(box(0.9,0.7,0.7, o.eng[0]-0.35, cy-eH*0.3-0.45, z+eH*0.32, M.gen),{id:'tg'+i, name:'터닝 기어', note:'정비 때 기관을 조금씩 돌린다.'},false);
+    P(box(eL*0.08,eH*0.5,eW*0.6, o.eng[1]+eL*0.045, yb+eH*0.4, z, M.gen),{id:'hps'+i, name:'유압 동력 유닛 — 전자제어 기관의 심장 펌프', note:'캠축 대신 유압이 배기밸브와 연료 분사를 연다. ME·X-DF 같은 전자제어 기관의 앞머리.〔기〕〔전〕'});
+    if(o.extra) o.extra(z,i,{ex,eL,eH,eW,yb,yt});
+    // 축계
+    const x0=o.eng[0]-2.2, sl=x0-px, sr=Math.max(0.25,R*0.11);
+    P(cyl(sr,sr,sl, (x0+px)/2, py, z, M.steel,14),{id:'shaft'+i, name:'중간축·프로펠러축 — 지름 약 '+(2*sr).toFixed(1)+' m', note:'주기관의 토크가 이 축을 타고 나간다. 단조 강 한 덩이.〔기〕'}).rotation.z=Math.PI/2;
+    [0.3,0.68].forEach((f,j)=>P(cyl(sr*1.7,sr*1.7,0.4, px+sl*f, py, z, M.head,20),{id:'cpl'+i+j, name:'축 커플링 플랜지', note:'축 토막을 볼트로 잇는 원판.'},false).rotation.z=Math.PI/2);
+    [0.5,0.85].forEach((f,j)=>P(box(1.0,sr*3.2,sr*3.6, px+sl*f, py-sr*0.4, z, M.gen),{id:'brg'+i+j, name:'중간축 베어링(플러머 블록)', note:'긴 축이 처지지 않게 받친다.'},false));
+    P(cyl(sr*1.5,sr*1.5,R*1.3, px+R*1.25, py, z, M.head,16),{id:'stt'+i, name:'선미관 — 축이 바다로 나가는 문', note:'축이 선체를 뚫는 자리. 기름 또는 물로 윤활하고 씰이 바다를 막는다.〔각〕〔기〕'}).rotation.z=Math.PI/2;
+    const bx0=x0, bx1=px+R*0.95, km=hullAt(lay,(bx0+bx1)/2).keel, bb=py-R*0.28, bt=km+1.2;
+    part(box(bx1-bx0, bt-bb, Math.max(R*0.55,1.2), (bx0+bx1)/2, (bt+bb)/2, z, M.anti),{id:'boss'+i, sys:'hull', name:o.z.length>1?'축 보싱 — 축을 감싸 선체에 잇는 살':'스케그 — 선미의 등뼈', note:'카운터 아래로 축을 내려보내는 살덩이. 물속 형상은 {推|모식}.〔각〕'}).castShadow=false;
+    // 프로펠러
+    P(cyl(R*0.19,R*0.26,R*0.44, px, py, z, M.bronze,20),{id:'hub'+i, name:'프로펠러 허브 — 직경 약 '+(2*R).toFixed(0)+' m, '+k+'익', note:o.propNote||'물을 뒤로 밀어 배를 앞으로 보낸다. 직경 {推|급 통례}.'}).rotation.z=Math.PI/2;
+    const cap=P(new THREE.Mesh(new THREE.ConeGeometry(R*0.19,R*0.3,20), M.bronze),{id:'cap'+i, name:'프로펠러 캡', note:'허브 끝의 유선형 마감.'},false); cap.position.set(px-R*0.37, py, z); cap.rotation.z=Math.PI/2;
+    for(let b=0;b<k;b++){ const g=bladeGeo(R,R*0.055); g.rotateY(-0.5); g.rotateX(b*2*Math.PI/k); const bl=P(new THREE.Mesh(g,M.bronze),{id:'bl'+i+b, name:'프로펠러 날개 '+(b+1)+'/'+k, note:k+'익. 뒤로 굽은(스큐) 날개가 진동을 줄인다 {推|통례}. 날개 끝은 수면 바로 아래를 지난다.'}); bl.position.set(px,py,z); }
+    // 타 · 러더 스톡 · 조타기
+    const rc=R*0.95, rspan=R*1.9, rx=px-R*0.42-rc, ry=py-R*0.95;
+    P(new THREE.Mesh(rudderGeo(rc,R*0.22,rspan), M.steel),{id:'rud'+i, name:'타 — 방향을 정하는 익형 판', note:'힘을 만들지 않고 방향만 정한다. 프로펠러 바로 뒤에서 그 흐름을 꺾는다 — 단면은 날개꼴.'}).position.set(rx,ry,z);
+    const sx=rx+rc*0.4, kl=hullAt(lay,sx).keel, stockTop=kl+2.6;
+    P(cyl(R*0.09,R*0.09,Math.max(0.5,stockTop-(ry+rspan)), sx, (ry+rspan+stockTop)/2, z, M.steel,12),{id:'stock'+i, name:'러더 스톡 — 타를 돌리는 기둥', note:'조타기의 힘이 이 기둥으로 타에 전해진다.'});
+    P(box(Math.min(3,R*0.7),1.4,Math.min(3,R*0.7), sx, stockTop+0.8, z, M.gen),{id:'sg'+i, name:'조타기 — 타를 돌리는 유압', note:'램 두 개가 스톡을 좌우로 민다. 비상용은 따로 둔다 — 규칙이 정한다 {推|통례}.〔기〕'});
+  });
+  return {engY, px, py, yb, yt};
+}
+function addGensets(lay, list, k, genName, genNote){
+  const {T}=lay; list.forEach((g,i)=>{ const [x,z]=g, y=-T+2.2+1.6*k;
+    part(box(5.6*k,3.2*k,2.4*k, x,y,z,M.gen),{id:'gen'+i, sys:'elec', name:genName(i,g), note:genNote});
+    for(let c=0;c<6;c++) part(box(0.55*k,0.5*k,1.6*k, x-2.3*k+c*0.9*k, y+1.85*k, z, M.head),{id:'gh'+i+c, sys:'elec', name:'발전기관 실린더 헤드', note:'4행정 중속. 여섯에서 아홉 기통 {推}.'}).castShadow=false;
+    part(cyl(0.5*k,0.5*k,1.1*k, x+2.7*k, y+2.0*k, z, M.steel,12),{id:'gtc'+i, sys:'elec', name:'발전기관 과급기', note:'작은 바람개비.'}).rotation.z=Math.PI/2;
+    part(cyl(1.05*k,1.05*k,2.4*k, x+4.4*k, y, z, M.alt,14),{id:'alt'+i, sys:'elec', name:'발전기 '+(i+1)+' 전기자', note:'회전을 전기로.〔전〕'}).rotation.z=Math.PI/2;
+    part(cyl(0.22*k,0.22*k,4*k, x+2.7*k, y+4.3*k, z, M.steel,10),{id:'gex'+i, sys:'elec', name:'발전기 배기관', note:'연돌로 오른다.'}).castShadow=false;
+  });
+}
+
+function addEngineRoom(lay,o){
+  const {T,Dk,stern}=lay;
+  const room=part(box(o.x[1]-o.x[0], Dk+T-3, o.w, (o.x[0]+o.x[1])/2, (Dk-T+3)/2, 0, M.room),{id:'room', sys:'prop', name:'기관실 — 거주구 아래의 큰 방', note:o.roomNote||'주기관·발전기·배전실이 한 방에 산다.〔기〕〔전〕'}); room.castShadow=false;
+  const pr=o.z.length?addPropulsion(lay,o):{engY:engYFor(lay,o.eng[0],o.eH), px:stern+4, py:-T*0.6};
+  addGensets(lay, o.gens||[], o.genScale||1, o.genName, o.genNote);
+  if(o.swbd) part(box(8*(o.genScale||1),4*(o.genScale||1),10*(o.genScale||1), o.swbd[0], Dk-4*(o.genScale||1), o.swbd[1], M.room),{id:'swbd', sys:'elec', name:'배전실 — 전기의 갈림길', note:'주배전반과 IAS 캐비닛.〔전〕'});
+  return pr;
+}
+function addAccom(lay,o){
+  const {Dk,hB}=lay, al=o.x[1]-o.x[0], ax=(o.x[0]+o.x[1])/2, aw=o.w, ah=o.h, y0=(o.y0??Dk);
+  const accom=part(box(al,ah,aw,ax,y0+ah/2,0,M.accom),{id:'accom', sys:'hull', name:'거주구 — '+o.crew+'의 집', note:o.note}); HULLFAM.push(accom);
+  const nd=o.decks, dh=(ah-2.2)/nd; for(let d=0;d<nd;d++){ const w=part(box(al+0.2,Math.min(1.0,dh*0.3),aw+0.2, ax, y0+1.5+d*dh, 0, M.window),{id:'win'+d, sys:'hull', name:'거주구 창 띠 — '+(d+1)+'층', note:'층마다의 창. 위로 갈수록 사관.'}); w.castShadow=false; }
+  const bw=o.bridgeW||2*hB; const bridge=part(box(Math.min(8,al*0.3),3,bw, o.x[0]+Math.min(4,al*0.15), y0+ah+1.5, 0, M.accom),{id:'bridge', sys:'elec', name:'브리지 윙 — 항해와 자동화의 눈', note:'통합자동화(IAS)의 화면들이 여기 모인다.〔전〕'}); HULLFAM.push(bridge);
+  const mh=Math.min(12,ah*0.55); part(cyl(0.35,0.5,mh, o.x[0]+Math.min(8,al*0.3), y0+ah+3+mh/2, 0, M.mast,10),{id:'radar', sys:'elec', name:'레이더 마스트', note:'항해 전자장비의 기둥.〔전〕'});
+  part(box(0.3,0.3,Math.min(9,bw*0.3), o.x[0]+Math.min(8,al*0.3), y0+ah+3+mh*0.9, 0, M.mast),{id:'yard', sys:'elec', name:'안테나 가로대', note:'통신·항법 안테나.〔전〕'});
+  return {ax,al,aw,ah,top:y0+ah};
+}
+function addFunnel(lay,o){
+  const y0=(o.y0??lay.Dk), f=part(box(o.x[1]-o.x[0], o.top-y0, o.w, (o.x[0]+o.x[1])/2, (y0+o.top)/2, 0, M.funnel),{id:'funnel', sys:'prop', name:'연돌 — 태운 것이 나가는 길', note:o.note}); HULLFAM.push(f);
+  [-1,1].forEach(s=>part(cyl(o.w*0.11,o.w*0.11,3.5,(o.x[0]+o.x[1])/2, o.top+1.7, s*o.w*0.27, M.steel,10),{id:'exh'+s, sys:'prop', name:'배기관', note:'주기관 배기.'}));
+}
+function addBoats(lay,x,zs,y){ zs.forEach((z,i)=>{ const b=part(box(Math.min(12,lay.L*0.04),Math.min(4,lay.L*0.014),Math.min(4,lay.L*0.014), x, y, z, M.boat),{id:'boat'+i, sys:'safe', name:'구명정 — 마지막 배', note:'안전 설비의 끝. 선미에서 비스듬히 바다로 미끄러진다.'}); b.rotation.z=0.45; }); }
+function addWinches(lay,x,zs){ zs.forEach((z,i)=>part(box(3,2,2.4, x, hullAt(lay,x).deck+1.4, z, M.gen),{id:'winch'+i, sys:'chs', name:'계류 윈치', note:'접안과 이안의 손.〔선〕'})); }
+function addCranes(lay,x,zs,h,name,note){ zs.forEach((z,i)=>part(cyl(0.5,0.6,h, x, hullAt(lay,x).deck+h/2, z, M.mast,10),{id:'crane'+i+name, sys:'chs', name, note})); }
+function addVent(lay,x,h,id,name,note){ part(cyl(0.6,0.9,h, x, hullAt(lay,x).deck+h/2, 0, M.mast,12),{id, sys:'safe', name, note}); }
+function addPerson(x,y,z){ const g=new THREE.Group(); const pb=new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.28,1.25,10), M.paper); pb.position.y=0.63; g.add(pb); const ph=new THREE.Mesh(new THREE.SphereGeometry(0.27,10,8), M.paper); ph.position.y=1.55; g.add(ph); g.position.set(x,y,z); g.traverse(o=>{ if(o.isMesh) o.castShadow=true; }); shipGroup.add(g); }
+function octaTank(x0,x1,w,y0,y1,ch,mat){ const sh=new THREE.Shape(); sh.moveTo(-w/2+ch,y0); sh.lineTo(w/2-ch,y0); sh.lineTo(w/2,y0+ch); sh.lineTo(w/2,y1-ch); sh.lineTo(w/2-ch,y1); sh.lineTo(-w/2+ch,y1); sh.lineTo(-w/2,y1-ch); sh.lineTo(-w/2,y0+ch); sh.closePath();
+  const g=new THREE.Mesh(new THREE.ExtrudeGeometry(sh,{depth:x1-x0, bevelEnabled:false}), mat); g.rotation.y=Math.PI/2; g.position.x=x0; return g; }
+function capsuleGeo(r,Lc){ const pts=[]; for(let i=0;i<=8;i++){ const a=Math.PI/2*i/8; pts.push(new THREE.Vector2(Math.max(0.001,r*Math.sin(a)), -Lc/2-r*Math.cos(a))); } for(let i=8;i>=0;i--){ const a=Math.PI/2*i/8; pts.push(new THREE.Vector2(Math.max(0.001,r*Math.sin(a)), Lc/2+r*Math.cos(a))); } return new THREE.LatheGeometry(pts,20); }
+
+/* ── 병·정 · VLGC/VLAC 88k 선체 (공유) ── */
+function buildVLGC(){
+  const lay=beginBuild(); const {L,hB,T,Dk,stern,bow}=lay;
+  addHull(lay,'주요 치수 {典|27}. 폭 32.25 m는 구갑문 허용 32.31 m에 6 cm를 남긴 값 {典|32} — 폭을 자물쇠에 맞추고 용적은 아래로 팠다. 깊이는 88k 용적에서 역산 {推}. 좁고 깊은 배.〔각〕');
+  addForecastle(lay);
+  const accomX=[stern+15, stern+43], engX=[stern+18, stern+34], funX=[stern+8, stern+14], hX=[stern+44, stern+56], cargo=[stern+58, bow-30];
+  const n=TUNE.tanks, cof=3, span=cargo[1]-cargo[0], tl=(span-cof*(n-1))/n;
+  lay.tanks=[]; for(let i=0;i<n;i++){ const x1=cargo[1]-i*(tl+cof); lay.tanks.push([x1-tl,x1]); }
+  lay.tankW=2*hB-5; lay.tankY=[-T+2, Dk+2.5]; lay.ch=5; lay.tl=tl; lay.cargo=cargo;
+  const isJ=()=>curShip==='jeong';
+  lay.tanks.forEach((tk,i)=>{
+    part(octaTank(tk[0],tk[1],lay.tankW,lay.tankY[0],lay.tankY[1],lay.ch,M.tank),{id:'tank'+(i+1), sys:'ccs', name:()=>'화물창 '+(i+1)+' — Type A 프리즘, '+(isJ()?'프로판·부탄 그리고 암모니아(적재율 98%)':'완전냉동 프로판·부탄'),
+      note:()=>isJ()?'암모니아를 탱크 용량의 98%까지 싣도록 설계된다 {典|11}. 프로판(0.58 t/m³)보다 무거운 암모니아(0.68 t/m³)를 같은 탱크에 담으니 구조가 그 무게를 감당해야 한다 {推|밀도 통용값}. 독성이 카드 셋의 값.':'−42℃ 언저리, 거의 대기압 {推|IGC 통례}. 갑판 위로 2.5 m쯤 솟는다 — 자물쇠(폭)에 맞춘 배는 위로도 용적을 찾는다 {推}.'});
+    const cx=(tk[0]+tk[1])/2;
+    part(box(Math.min(8,tl*0.25),3.2,6, cx, Dk+2.5+1.6, 0, M.trunk),{id:'dome'+(i+1), sys:'bog', name:'탱크 '+(i+1)+' 돔 — 펌프·배관·안전밸브의 문', note:'끓어 나온 기체가 여기서 나와 압축기실로 가고, 되돌아온 액체도 이 문으로 든다.'});
+  });
+  // 갑판 탱크 둘 — 450 m³ Type C, 등급 전환·연료 서비스
+  const dtx=cargo[0]+20;
+  [-1,1].forEach(s=>{ const dt=part(cyl(2.0,2.0,36, dtx, Dk+2.5+2.6, s*7, M.vessel,18),{id:'dtank'+s, sys:'chs', name:'갑판 탱크 — 450 m³ Type C', note:'둘 합쳐 900 m³ {典|33}: 프로판·부탄 등급을 바꿀 때의 완충이면서, LGIP 연료의 서비스 탱크 노릇도 한다 {推|통례}. 병이 자기 화물을 조금씩 먹는 길이 여기서 시작된다.〔선〕〔기〕'}); dt.rotation.z=Math.PI/2;
+    [-12,12].forEach(k=>part(box(1.2,2.2,4.4, dtx+k, Dk+2.5+1.1, s*7, M.steel),{id:'saddle'+s+k, sys:'hull', name:'갑판 탱크 받침', note:'〔선〕'})); });
+  // 화물 압축기실 — 되돌리는 방
+  const hw=Math.min(20,2*hB-8), hx=(hX[0]+hX[1])/2;
+  house=part(box(hX[1]-hX[0],7,hw,hx,Dk+3.5,0,M.house),{id:'house', sys:'bog', name:'화물 압축기실 — 되돌리는 방', note:'끓은 프로판을 눌러 해수로 식혀 액체로 되돌린다(카드 둘). 압축 20 bar 언저리 {推|포화압 계산}, 응축은 바닷물 온도로 족하다 {推|물성표, 장부 20}. 갑의 갑판 기계실과 같은 자리에 서지만 하는 일이 반대다 — 갑은 끓음을 엔진에 먹이고, 병은 탱크로 돌려보낸다.〔기〕'}); HULLFAM.push(house);
+  [-5.5,0,5.5].forEach((z,i)=>part(box(3,3,2.4, hx-2, Dk+1.5, z, M.engine),{id:'ccomp'+i, sys:'bog', name:'화물 압축기 '+(i+1)+' — 끓음을 되돌리는 첫 손', note:'왕복동 2단 언저리 {推}. 갑의 300 bar 기계와 견주면 열다섯 분의 일의 압력. 되돌리는 값이 싼 화물의 기계.〔기〕'}));
+  [-4,4].forEach((z,i)=>part(cyl(0.9,0.9,4.5, hx+3.2, Dk+1.6, z, M.vessel,16),{id:'cond'+i, sys:'bog', name:'해수 응축기 '+(i+1)+' — 바닷물이 하는 냉동', note:'프로판은 임계온도 +97℃라 상온의 바닷물로도 액체가 된다 {推|물성표, 장부 20}. 메탄에는 없는 이 한 줄이 두 선단을 갈랐다 — 카드 둘.'}).rotation.z=Math.PI/2);
+  part(cyl(0.8,0.8,3.2, hx+3.2, Dk+1.6, 0, M.vessel,16),{id:'recv', sys:'bog', name:'수액기 — 되돌아온 액체가 잠시 머무는 통', note:'여기서 탱크로 돌아간다. 되돌아간 만큼 상품이 남는다.'});
+  // 연료 공급 스키드 — 50 bar 액체
+  const fz=hB-1.6;
+  part(box(3.5,2.2,2.6, hX[1]+2.5, Dk+1.1, fz, M.skid),{id:'fss', sys:'fgss', name:'LPG 연료 공급 스키드 — 펌프 한 쌍과 가열기', note:'저압 펌프 → 고압 펌프 → 가열기 → 50 bar·45℃의 액체 LPG {典|31}. 갑에는 3.2 MW 압축기 두 대가 앉은 자리에 병은 펌프 한 쌍이 앉는다 — 액체는 누르기가 값싸다. 분사압 500~600 bar는 엔진 속의 연료 부스터(FBIV)가 스스로 만든다 {典|31}: 갑은 기계실이 압력을 만들고, 병은 엔진이 만든다.〔기〕'});
+  dashedBox(6,3,4, hX[1]+7.5, Dk+1.5, fz, 0x8fa3b8,{id:'nh3prep', sys:'fgss', ship:'jeong', name:'암모니아 연료 준비 공간 — 레디의 실물', note:'"암모니아 레디"란 이 자리와 배관 통로와 강재 사양을 미리 비워 두었다는 뜻이다 {典|11}. 지금은 점선 — 개조 전까지 아무것도 없는 방 {推}.'});
+  [-1,1].forEach(s=>part(box(cargo[1]-cargo[0],0.25,0.25,(cargo[0]+cargo[1])/2, Dk+0.9, s*(hB-1.2), M.pipeRet),{id:'curtain'+s, sys:'safe', ship:'jeong', name:'살수 커튼 노즐 — 암모니아가 새면 물이 먹는다', note:'암모니아는 물에 잘 녹는다. 갑판 가장자리의 물장막이 새는 가스를 붙들어 갑판 위 사람을 지킨다 {推|통례}. 정이 병보다 무거운 안전 계통을 지는 이유.'}));
+  // 배관: 기체 헤더 → 압축기실 · 귀환 액체 → 마지막 탱크 · 50 bar 연료선 → 주기관
+  const lastDome=[(lay.tanks[n-1][0]+lay.tanks[n-1][1])/2, Dk+2.5+3.2, 0];
+  tube([[(cargo[0]+cargo[1])/2, Dk+2.5+3.4, 2.2],[cargo[0]+1, Dk+2.5+3.4, 2.2],[hX[1]-1, Dk+6.2, 2.2],[hx-2, Dk+3.2, 2.2]],0.35,M.pipeV,{id:'vaphdr', sys:'bog', name:'기체 헤더 — 끓음이 모여 압축기실로', note:'네 탱크 돔의 증발가스가 이 관에 모인다.'});
+  tube([[hx+3.2, Dk+3.3, 0],[hX[1]-0.5, Dk+6.5, -2.2],[cargo[0]+2, Dk+2.5+3.4, -2.2],[lastDome[0]-3, Dk+2.5+3.6, -1],lastDome],0.3,M.pipeRet,{id:'ret', sys:'bog', name:'귀환관 — 액체가 되어 탱크로', note:'카드 둘: 되돌리는 값이 싸면 되돌린다.'});
+  tube([[dtx-18, Dk+2.5+2.6, 7],[cargo[0]-1, Dk+4, fz],[hX[1]+2.5, Dk+2.3, fz]],0.22,M.pipeLiq,{id:'fuelfeed', sys:'fgss', name:'연료 공급관 — 갑판 탱크에서 스키드로', note:'액체 LPG가 펌프로 간다.'});
+  const engY=engYFor(lay,engX[0],12);
+  tube([[hX[1]+2.5, Dk+2.3, fz],[hX[0]-2, Dk-1, fz-2],[hX[0]-6, engY+5, 3],[engX[1]-4, engY+6.2, 0]],0.25,M.pipeLiq,{id:'lp50', sys:'fgss', name:'50 bar 액체 LPG 관 — 단일관, 호박색', note:'갑의 붉은 300 bar 이중관에 견줄 병의 연료길. 액체라 관이 가늘고 압축기가 없다 {典|31}. 경로 {推|모식}.〔기〕'});
+  // 기관실·거주구·연돌·장비
+  addEngineRoom(lay,{x:[stern+10,stern+46], w:2*hB-10, eng:engX, n:6, z:[0], eH:12, eW:5.4, propR:4,
+    engName:()=>'ME-LGIP 주기관 — 6기통, LPG 액체 분사 + 디젤',
+    engNote:'6G60 LGIP 계열 {典|27}. 50 bar 액체를 받아 엔진 속 부스터가 500~600 bar로 뿜는다 {典|31}. 단축 하나 — 가스선은 대개 외줄이다 {推|통례}.〔기〕',
+    cylNote:'여기서 액체 LPG가 500~600 bar로 뿜어져 디젤 불꽃에 붙는다 {典|31}.', propNote:'단축 프로펠러. 직경 {推|급 통례}.',
+    gens:[[stern+40,-6.5,'1,800'],[stern+40,0,'1,800'],[stern+40,6.5,'1,800']], genName:(i,g)=>'발전기관 '+(i+1)+' — 약 '+g[2]+' kW', genNote:'출력은 {推|급 통용값}. 축발전기가 이 일을 덜어 주는 배들이 늘고 있다(카드 여섯) {典|10,33}.〔전〕', swbd:[stern+44,-(hB-8)]});
+  const A=addAccom(lay,{x:accomX, w:Math.min(26,2*hB-6), h:18, decks:5, crew:'스무 몇 명', note:'선원 수는 {推|급 통례}. 위치·크기 {推}.〔선〕〔전〕'});
+  addFunnel(lay,{x:funX, w:6, top:Dk+26, note:'주기관·발전기의 배기. HPSCR — 고압 선택적 촉매환원으로 NOx를 잡는다 {典|27}.'});
+  addBoats(lay, stern+11, [-(hB*0.45)], Dk+8); addWinches(lay, stern+5, [-hB*0.4, hB*0.4]);
+  addCranes(lay, accomX[1]+3, [-(A.aw/2+2.5), A.aw/2+2.5], 12, '식료·부품 크레인', '보급을 들어 올리는 손.〔선〕');
+  [-1,1].forEach(s=>part(box(6,3,5, (cargo[0]+cargo[1])/2, Dk+2.5+1.5, s*(hB-3), M.steel),{id:'mani'+s, sys:'chs', name:'매니폴드 — 육지와 배를 잇는 손', note:'적하·양하 배관이 선측에서 로딩암과 만난다 {推|통례}.〔선〕'}));
+  addCranes(lay,(cargo[0]+cargo[1])/2+5,[-(hB-2.5),hB-2.5],11,'매니폴드 크레인','호스와 리듀서를 들어 올린다.〔선〕');
+  addVent(lay, hX[1]+3, 26, 'vent', '벤트 마스트 — 마지막 안전판', '압력이 넘칠 때 가스를 높이 내보낸다.'); addVent(lay, bow-30, 22, 'ventF', '선수 벤트 마스트', '화물창 1의 안전 배출.');
+  addPerson(hX[1]+1.2, Dk, -hw/2-1.2);
+  // 구갑문 — 점선 벽 둘 (규칙이 콘크리트가 된 것). HUD의 '갑문' 단추로 켠다
+  [-1,1].forEach(s=>{ const w=dashedBox(304.8,22,1.2, 0, -12.04+11, s*(33.53/2+0.6), 0xb99a5a,{id:'lock'+s, sys:'rules', lock:true, name:'구갑문 벽 — 물길 폭 33.53 m, 길이 304.8 m', note:'통과가 허용되는 배는 폭 32.31 · 전장 294.13 · 열대담수 흘수 12.04 m까지 {典|32}. 이 배는 폭 6 cm, 흘수 4 cm를 남긴 열쇠다 {典|27}. 88이라는 숫자는 이 콘크리트가 낳았다 — 카드 넷.'}); });
+  LABELS=[ {p:[hx, Dk+12, 0], t:'화물 압축기실 — 되돌리는 방'}, {p:[hX[1]+2.5, Dk+5, fz], t:'연료 펌프 스키드 · 50 bar'}, {p:[(cargo[0]+cargo[1])/2, Dk+9, 0], t:'Type A 화물창 '+n+'개'},
+    {p:[dtx, Dk+8.5, 7], t:'갑판 탱크 450 m³ ×2'}, {p:[A.ax, A.top+6, 0], t:'거주구 · 그 아래 주기관 하나'}, {p:[hX[1]+1.2, Dk+3.2, -hw/2-1.2], t:'사람 1.8 m'}, {p:[bow-9,-2,0], t:'구상선수'} ];
+}
+
+/* ── 무 · 24k TEU LNG 이중연료 컨테이너선 ── */
+function buildBox(){
+  const lay=beginBuild(); const {L,hB,T,Dk,stern,bow}=lay;
+  addHull(lay,'주요 치수 {典|26,30}. 갑판을 다 뚫은 상자 — 비틀림을 토션 박스와 해치 코밍이 받는다 {推|통례}. 220,000 DWT {典|30}.〔각〕');
+  addForecastle(lay);
+  const acc=[bow-152, bow-124], cas=[stern+58, stern+76], engX=[stern+30, stern+56], roomX=[stern+16, stern+78];
+  const fx=[acc[0]+2, acc[1]-2], fw=Math.min(52,2*hB-8), fy=[-T+2.5, -T+2.5+14.9], nT=TUNE.tanks;
+  lay.fuel={x:fx, w:fw, y:fy, n:nT}; lay.tankW=fw; lay.tankY=fy; lay.ch=0; lay.tl=fx[1]-fx[0];
+  // 앞섬(거주구)과 그 아래 연료탱크
+  const A=addAccom(lay,{x:acc, w:Math.min(40,2*hB-20), h:30, decks:9, crew:'26명', note:'선원 26명 {典|30}. 앞섬 — 이 배는 섬이 둘이다: 앞섬에 사람이, 뒷섬에 굴뚝이 {推|급의 통례}. 그리고 앞섬 아래에 탱크가 있다.〔선〕〔전〕'});
+  for(let i=0;i<nT;i++){ const w=fw/nT-0.6, z=(i-(nT-1)/2)*(fw/nT);
+    part(box(fx[1]-fx[0], fy[1]-fy[0], w, (fx[0]+fx[1])/2, (fy[0]+fy[1])/2, z, M.tank),{id:'ftank'+i, sys:'fgss', name:'LNG 연료탱크 — 18,600 m³, 폭 52 m, 거주구 아래', note:'단일 멤브레인 탱크가 거주구 아래에 앉아 화물 약 300 TEU를 내어 준다 {典|26}. "이 배는 탱크를 중심으로 지어졌다" {典|26}. 대부분의 LNG 연료선은 탱크가 둘 — 하나로 크게 가면 별도의 구조·슬로싱 평가가 따른다 {典|26}. 튜닝에서 둘로 나눠 보라. 용적은 같고 구조만 다르다 {推}.〔각〕〔기〕'}); }
+  dashedBox(fx[1]-fx[0]+0.2, (Dk-1)-fy[0], fw+0.2, (fx[0]+fx[1])/2, (fy[0]+Dk-1)/2, 0, 0xcf6a55,{id:'lost', sys:'hull', name:'잃어버린 300 TEU — 탱크가 먹은 화물 칸', note:'이 점선 상자에 컨테이너가 있을 수 있었다 {典|26}. 이중연료의 값은 연료비만이 아니라 화물 자리로도 치른다 — 카드 다섯.'});
+  // 컨테이너 베이 — 갑판 7단, 선창 안 적재 (13.7 m 간격)
+  const bayL=13.7, bayW=Math.min(56,2*hB-5), cm=[M.cont1,M.cont2,M.cont3,M.cont4]; let bays=0; const bx0=stern+82, bx1=bow-32;
+  for(let x=bx0; x+12.2<bx1; x+=bayL){
+    const cx=x+6.1; const inAcc=cx>acc[0]-8&&cx<acc[1]+8, inCas=cx>cas[0]-8&&cx<cas[1]+8;
+    if(!inAcc&&!inCas){ part(box(12.2,18.1,bayW, cx, Dk+0.5+9.05, 0, cm[bays%4]),{id:'deck'+bays, sys:'ccs', name:'갑판 적재 베이 — 7단 × 23열', note:'화물이 스스로 상자니 배는 선반이다. 갑판 위에는 7단쯤, 래싱 브리지가 잡아 준다 {推|급 통례}.〔선〕'}); }
+    if(!(cx>fx[0]-7&&cx<fx[1]+7)){ const hb=hullAt(lay,cx).hb; const hw=Math.min(bayW-2, 2*hb-6); if(hw>8) part(box(12.2,(Dk-1)-(-T+2.5),hw, cx, ((Dk-1)+(-T+2.5))/2, 0, M.contHold),{id:'hold'+bays, sys:'ccs', name:'선창 적재 베이 — 셀 가이드 속 10단쯤', note:'선창 안에서는 셀 가이드가 상자를 잡는다. 여기가 24,000 TEU의 몸통이다 {推}.〔각〕〔선〕'}); }
+    bays++; }
+  lay.bays=bays;
+  // 탱크 연결 공간 — 저압 압축기·강제기화기 (앞섬 곁)
+  const tcsZ=A.aw/2+7;
+  house=part(box(10,6,7, acc[0]-4, Dk+3, tcsZ, M.house),{id:'house', sys:'fgss', name:'탱크 연결 공간 — 저압 압축기와 강제 기화기', note:'멤브레인 연료탱크의 문. 자연 증발은 저압 압축기가, 모자란 몫은 펌프+강제기화기가 채워 6~16 bar로 주기관에 보낸다 {典|13,2}. 무의 끓음은 갈증에 턱없이 못 미친다 — 그래서 "다스린다"(카드 아홉): 압력을 관리하고 대부분은 억지로 끓인다 {推}.〔기〕'}); HULLFAM.push(house);
+  dashedBox(5,3.5,3, acc[0]-5.5, Dk+1.8, tcsZ-1.2, 0x8fa3b8,{id:'lpc', sys:'fgss', name:'저압 압축기 — 치수 미확정', note:GEO.lpSkid.stamp});
+  part(box(3,2.2,2.2, acc[0]-1.5, Dk+1.1, tcsZ+1.5, M.steel),{id:'fv', sys:'fgss', name:'연료 펌프 + 강제 기화기 — 끓음이 모자랄 때의 주역', note:'무에서는 이것이 주역이다: 하루 200 t 넘는 갈증을 12 t의 자연 증발이 채울 수 없다 {推|계기판}. 조성은 자연 증발과 다르다 {典|19}.〔기〕'});
+  const engY=engYFor(lay,engX[0],15);
+  tube([[acc[0]-4, Dk+0.5, tcsZ],[acc[0]-6, Dk-3, tcsZ-2],[acc[0]-10, -T+6, 10],[engX[1]+8, -T+6, 6],[engX[1]-4, engY+8.5, 0]],0.5,M.pipeLP,{id:'lpm', sys:'fgss', name:'저압 연료가스 관 — 6~16 bar, 배 길이의 절반을 달린다', note:'앞섬 아래 탱크에서 뒷섬 아래 기관실까지. 이중연료의 값에는 이 긴 관도 든다 {推|모식}.〔기〕〔선〕'});
+  part(box(6,7,5, cas[0]+3, Dk+3.5+14, 9, M.gcu),{id:'gcu', sys:'bog', name:'GCU — 남는 끓음을 태우는 마지막 아궁이', note:'정박 중 압력이 오르면 여기서 태운다. 항해 중에는 거의 쉰다 — 갈증이 끓음을 앞서니까 {推}.'});
+  part(cyl(0.6,0.9,30, acc[0]-4, Dk+15, -tcsZ, M.mast,12),{id:'vent', sys:'safe', name:'벤트 마스트', note:'연료탱크의 안전 배출.'});
+  // 뒷섬: 기관 케이싱·연돌, 그 아래 기관실 — 12기통 X-DF 하나, 프로펠러 10 m
+  const casing=part(box(cas[1]-cas[0],14,22,(cas[0]+cas[1])/2,Dk+7,0,M.accom),{id:'casing', sys:'prop', name:'기관 케이싱 — 뒷섬', note:'주기관 위로 솟은 굴뚝의 집. 사람은 앞섬에, 불은 뒷섬에 {推|통례}.'}); HULLFAM.push(casing);
+  addFunnel(lay,{x:[cas[0]+4,cas[1]-4], w:9, top:Dk+14+16, y0:Dk+14, note:'X-DF 주기관의 배기 — iCER로 배기 일부를 되돌린다 {典|13}.'});
+  addEngineRoom(lay,{x:roomX, w:2*hB-16, eng:engX, n:12, z:[0], eH:15, eW:7, propR:5,
+    engName:()=>'X-DF 주기관 — 12기통, 저압 예혼합 · 63,840 kW',
+    engNote:'급의 개척자는 WinGD 12X92DF-2.0 + iCER, 63,840 kW {典|13,30}. 에버그린 신조의 기종은 공표 대기 {推|급의 통례}. 한 척의 발전소 — 중소 도시 하나의 전력이 축 하나로 나간다.〔기〕',
+    cylNote:'흡기 초입에서 가스가 미리 섞인다 — 오토사이클 {典|2}.', propNote:'프로펠러 직경 10 m {典|30}. 사람 다섯이 겹친 키.',
+    gens:[[cas[0]+8,-15,'대형'],[cas[0]+8,-5,'대형'],[cas[0]+8,5,'대형'],[cas[0]+8,15,'대형']], genName:(i)=>'이중연료 발전기관 '+(i+1)+' — 냉동 컨테이너의 전기', genNote:'수천 TEU의 냉동 컨테이너가 이 발전기를 먹는다. 호텔부하가 가스선의 몇 배 {推|4,000 kW 언저리}.〔전〕', swbd:[cas[1]+4,-(hB-10)]});
+  addBoats(lay, (cas[0]+cas[1])/2, [-13.5, 13.5], Dk+9); addWinches(lay, stern+6, [-hB*0.35, hB*0.35]);
+  addPerson(acc[0]+1.2, Dk, tcsZ-3.5-1.2);
+  LABELS=[ {p:[(fx[0]+fx[1])/2, Dk+2, fw/2+4], t:'연료탱크 18,600 m³ — 거주구 아래'}, {p:[(fx[0]+fx[1])/2, Dk+4, -(fw/2+4)], t:'잃어버린 300 TEU'}, {p:[A.ax, A.top+8, 0], t:'앞섬 — 거주구 · 브리지'},
+    {p:[(cas[0]+cas[1])/2, Dk+14+18, 0], t:'뒷섬 — 굴뚝 · 그 아래 주기관 12기통'}, {p:[acc[0]-4, Dk+8, tcsZ], t:'탱크 연결 공간'}, {p:[stern+Math.max(4,L*0.03), 2, 0], t:'프로펠러 10 m'}, {p:[bow-12,-2,0], t:'구상선수'}, {p:[bx0+40, Dk+22, 0], t:'베이 '+bays+'개 · 갑판 7단'} ];
+}
+
+/* ── 기 · LNGBV 6,000 m³ — 바다의 주유소 ── */
+function buildBV(){
+  const lay=beginBuild(); const {L,hB,T,Dk,stern,bow}=lay;
+  addHull(lay,'6,000 m³급의 치수는 4,000 m³ 사례(90 × 20 m, 약 5,000 GT)와 18,600 m³ 사례(136 × 25 m) 사이의 보간 {推|典 28}. 곡면 {推}. 작지만 배 한 척의 모든 것을 갖춘다.〔각〕');
+  addForecastle(lay);
+  const accomX=[stern+8, stern+26], funX=[stern+4, stern+7], cargo=[stern+30, bow-12];
+  const n=TUNE.tanks, gap=3, span=cargo[1]-cargo[0], tl=(span-gap*(n-1))/n, r=Math.min(hB-4.5, 5.3), Lc=tl-2*r, cy=-T+1.2+r;
+  lay.tanks=[]; for(let i=0;i<n;i++){ const x1=cargo[1]-i*(tl+gap); lay.tanks.push([x1-tl,x1]); }
+  lay.tankR=r; lay.tankLc=Math.max(1,Lc); lay.tl=tl; lay.cargo=cargo;
+  lay.tanks.forEach((tk,i)=>{ const cx=(tk[0]+tk[1])/2;
+    const tm=part(new THREE.Mesh(capsuleGeo(r,Math.max(1,Lc)), M.tank),{id:'tank'+(i+1), sys:'ccs', name:'화물창 '+(i+1)+' — Type C 압력용기, 지름 '+(2*r).toFixed(1)+' m', note:'끓은 만큼 압력이 오르도록 얼마간 버텨 주는 탱크 — 기는 참는다(카드 아홉·여덟). 운전압 1.7 bara에서 시작해 안전밸브 압력까지 며칠을 참는가가 이 배의 시간이다 {準|준철 2026-09-05} {推|계기판}. 소형선이 전부 이 형식으로 가는 이유: 재액화도 압축기도 없이 끓음을 견딘다.'}); tm.rotation.z=Math.PI/2; tm.position.set(cx, cy, 0);
+    part(box(3,2.2,3, cx, cy+r+1.1, 0, M.trunk),{id:'dome'+(i+1), sys:'bog', name:'탱크 '+(i+1)+' 돔 — 안전밸브의 자리', note:'참다 못한 압력이 마지막으로 나가는 문. 그 전까지는 닫혀 있다.'});
+    [-r*0.7, r*0.7].forEach(k=>part(box(2.2,Math.max(0.6,cy-(-T+0.4)),r*1.6, cx+k*1.6, (cy-r+(-T+0.4))/2, 0, M.steel),{id:'sad'+(i+1)+(k<0?'a':'b'), sys:'hull', name:'탱크 받침(새들)', note:'압력용기를 선체에 앉히는 안장. 극저온 수축을 한쪽에서 미끄러지게 받아 준다 {推|통례}.〔각〕'})); });
+  // STS 매니폴드·호스 크레인 — 무의 현측이 여기 붙는다
+  const mx=(cargo[0]+cargo[1])/2;
+  [-1,1].forEach(s=>part(box(5,2.5,3, mx, Dk+2.7+1.2, s*(hB-2.2), M.steel),{id:'mani'+s, sys:'chs', name:'STS 매니폴드 — 배가 배에게 주는 손', note:'받는 배의 벙커 매니폴드와 극저온 호스로 이어진다. 기의 본업은 항해가 아니라 이 순간이다 {典|14}.〔선〕'}));
+  addCranes(lay, mx+4, [-(hB-1.8), hB-1.8], 9, '호스 크레인', '극저온 호스를 들어 받는 배에 건다.〔선〕');
+  const hose=tube([[mx, Dk+3.9, hB-2.2],[mx+2, Dk+6, hB+4],[mx+3, Dk+9, hB+9]],0.22,M.pipeRet,{id:'hose', sys:'chs', name:'극저온 이송 호스', note:'−160℃가 흐르는 유연관. 시간당 수백 m³.'});
+  dashedBox(60,22,1.0, mx+6, Dk+2, hB+10, 0x9a958b,{id:'recv', sys:'chs', name:'받는 배의 현측 — 예컨대 무', note:'6,000 m³를 다 주어도 무의 탱크(18,600 m³)는 셋의 하나만 찬다 {典|26} — 계기판에 그 셈이 있다. 점선은 여기 없는 배 {推}.'});
+  part(box(2.6,1.6,2.2, cargo[0]-3, Dk+0.8, -(hB-3.5), M.skid),{id:'fgss', sys:'fgss', name:'연료 기화기 — 자기 화물로 달리는 배', note:'화물창의 LNG를 조금 덜어 기화시켜 발전기에 먹인다 {推|통례}. 벙커링선은 자기가 파는 것으로 달린다.〔기〕'});
+  tube([[cargo[0]-3, Dk+1.6, -(hB-3.5)],[accomX[1]+2, Dk-1, -(hB-4)],[stern+16, -T+3.5, -2]],0.16,M.pipeLP,{id:'lpg', sys:'fgss', name:'저압 연료가스 관 — 발전기로', note:'{推|모식}'});
+  addEngineRoom(lay,{x:[stern+5,stern+30], w:2*hB-6, eng:[stern+13,stern+19], n:0, z:[], eH:3, eW:2, propR:1.5,
+    engName:()=>'', engNote:'', cylNote:'', gens:[[stern+16,-3.5,'1,500'],[stern+16,3.5,'1,500']], genScale:0.55, genName:(i,g)=>'이중연료 발전기관 '+(i+1)+' — 약 '+g[2]+' kW, 전기추진', genNote:'작은 배는 발전기가 주기관이다: 전기로 추진기를 돌린다 {推|급 통례}. 정박·저속·접현이 잦은 배에 맞는 선택.〔전〕〔기〕', swbd:[stern+24,-(hB-4)]});
+  [-1,1].forEach(s=>{ const az=part(cyl(0.9,1.1,2.4, stern+4.5, -T+2.2, s*3.6, M.steel,12),{id:'azi'+s, sys:'prop', name:'아지무스 추진기 — 360° 돌아가는 프로펠러', note:'조타기 없이 방향을 바꾼다. 다른 배 곁에 바짝 붙어야 하는 벙커링선의 손발 {推|통례}.〔기〕'});
+    const hub=part(cyl(0.35,0.35,0.5, stern+3.5, -T+1.0, s*3.6, M.bronze,12),{id:'ahub'+s, sys:'prop', name:'프로펠러 — 직경 약 3 m', note:'{推}'}); hub.rotation.z=Math.PI/2;
+    for(let b=0;b<4;b++){ const bl=part(box(0.2,1.4,0.7, stern+3.5, -T+1.0, s*3.6, M.bronze),{id:'abl'+s+b, sys:'prop', name:'프로펠러 날개', note:''}); bl.position.y=-T+1.0+0.8*Math.cos(b*Math.PI/2); bl.position.z=s*3.6+0.8*Math.sin(b*Math.PI/2); bl.rotation.x=b*Math.PI/2+0.5; bl.castShadow=false; } });
+  const A=addAccom(lay,{x:accomX, w:Math.min(14,2*hB-4), h:9.5, decks:3, crew:'열댓 명', note:'선원 수 {推|급 통례}. 브리지가 배 전체를 내려다본다.〔선〕'});
+  addFunnel(lay,{x:funX, w:3, top:Dk+13.5, note:'발전기 배기.'});
+  addBoats(lay, stern+9, [-(hB*0.6)], Dk+11); addWinches(lay, stern+3, [-hB*0.45, hB*0.45]);
+  addVent(lay, cargo[0]-6, 16, 'vent', '벤트 마스트 — 참다 못한 압력의 출구', '안전밸브가 열리면 여기로. 이 관이 조용할수록 좋은 항해.');
+  addPerson(mx-3, Dk, -(hB-2.2)-1.2);
+  LABELS=[ {p:[mx, Dk+3+r, 0], t:'Type C 화물창 '+n+'개 — 참는다'}, {p:[mx, Dk+12, hB+6], t:'STS 매니폴드 · 호스'}, {p:[mx+6, Dk+15, hB+10], t:'받는 배의 현측(점선)'}, {p:[A.ax, A.top+5, 0], t:'거주구 · 발전기 둘 · 전기추진'}, {p:[mx-3, Dk+3.2, -(hB-2.2)-1.2], t:'사람 1.8 m'} ];
+}
+
+/* ── 갈아 끼우기 ── */
+function buildShip(){ ({lngc:buildLNGC, vlgc:buildVLGC, box:buildBox, bv:buildBV})[curType](); rebuildLabelNodes(); refreshLegendCounts(); }
+function refreshLegendCounts(){ $$('#legend button[data-sys]').forEach(b=>{ const n=PARTS.filter(p=>p.userData.sys===b.dataset.sys && (p.userData.ship==='both'||p.userData.ship===curShip) && !p.userData.lock).length; const c=$('.cnt',b); if(c) c.textContent=n||'—'; }); }
+function resetCamera(){ cam.target.set(-TUNE.loa*0.05, TUNE.loa*0.02+3, 0); cam.r=Math.max(200,TUNE.loa*2.15); placeCamera(); }
+
+/* ── 갑·을 · 174k LNGC ── */
+function buildLNGC(){
+  const lay0=beginBuild(); const {L,hB,T,Dk,stern,bow}=lay0; const TR=Dk+3;
+  const lay=LAY=Object.assign(lay0,{TR, accom:[stern+19.5,stern+51.5], funnel:[stern+7.5,stern+15.5], eng:[stern+21.5,stern+43.5], house:[stern+53.5,stern+75.5],
+    trunk:[stern+51.5,bow-33.5], cargo:[stern+81.5,bow-37.5], fore:[bow-22,bow-3], trunkW:Math.min(36,2*hB-8), accomW:Math.min(34,2*hB-10)});
+  const n=TUNE.tanks, cof=4, span=lay.cargo[1]-lay.cargo[0], tl=(span-cof*(n-1))/n;
+  lay.tanks=[]; for(let i=0;i<n;i++){ const x1=lay.cargo[1]-i*(tl+cof); lay.tanks.push([x1-tl,x1]); }
+  lay.tankW=Math.min(41,2*hB-5); lay.tankY=[-T+2.2, TR-1]; lay.ch=5; lay.tl=tl;
+
+  // 선체·구상선수·트렁크·선수루
+  hullMeshes=[]; const hullInfo={id:'hull', sys:'hull', name:()=>'선체 — 길이 '+TUNE.loa+' · 폭 '+TUNE.beam+' · 깊이 '+TUNE.depth+' · 흘수 '+TUNE.draft+' m', note:'주요 치수 {典|21,22}, 곡면은 급의 통례 {推|도면 없음}. 물 아래는 방오 도장, 흘수선의 띠는 부트탑 — 그림이 아니라 관행이다. 색·무늬·글자는 튜닝의 도장 칸에서. 종강도의 대들보이자 화물창을 업는 이중선각.〔각〕'};
+  [1,-1].forEach(side=>{ const hm=part(new THREE.Mesh(hullHalfGeometry(L,hB,T,Dk,side,lay.bowLen,lay.sternLen), M.hull), Object.assign({},hullInfo,{id:'hull'+(side>0?'S':'P')})); if(liveryTex){ hm.material.map=liveryTex; hm.material.color.set(0xffffff); hm.material.needsUpdate=true; } HULLFAM.push(hm); hullMeshes.push(hm); });
+  const bulb=part(new THREE.Mesh(new THREE.SphereGeometry(1,20,14), M.anti),{id:'bulb', sys:'hull', name:'구상선수 — 파도를 미리 가르는 혹', note:'선수파를 상쇄해 저항을 줄인다. 형상 {推|통례}.'}); bulb.scale.set(11,4.5,4.5); bulb.position.set(bow-9,-7.6,0); HULLFAM.push(bulb); bulbMesh=bulb; bulb.material.color.set(PAL().rim);
+  const trunk=part(box(lay.trunk[1]-lay.trunk[0],3,lay.trunkW,(lay.trunk[0]+lay.trunk[1])/2,Dk+1.5,0,M.trunk),{id:'trunk', sys:'hull', name:'트렁크 데크 — 화물창 위로 솟은 등', note:'멤브레인 화물창의 윗부분이 상갑판 위로 올라와 등처럼 솟는다. 배관·통로·돔이 이 위에 산다 {推|통례}.〔각〕〔선〕'}); HULLFAM.push(trunk);
+  const fore=part(box(lay.fore[1]-lay.fore[0],2.6,Math.max(8,2*hB*0.62),(lay.fore[0]+lay.fore[1])/2,Dk+3.2+1.3,0,M.deck),{id:'fore', sys:'hull', name:'선수루 갑판 — 닻과 계류의 자리', note:'양묘기와 계류 윈치가 여기 산다.〔선〕'}); HULLFAM.push(fore);
+  [-1,1].forEach(s=>{ part(box(3.2,2.2,2.6, lay.fore[0]+7, Dk+3.2+2.6+1.1, s*4.5, M.gen),{id:'windlass'+s, sys:'chs', name:'양묘기 — 닻을 올리는 윈치', note:'계류·정박 설비. 화물 취급 계통의 이웃.〔선〕'});
+    const anc=part(box(2.2,3.2,1.2, bow-16, Dk-4.5, s*Math.min(14.5,hB*0.62), M.funnel),{id:'anchor'+s, sys:'hull', name:'닻', note:'현측 호스파이프에 걸린 닻.'}); });
+  // 계류 윈치(선미)
+  [-1,1].forEach(s=>part(box(3,2,2.4, stern+5.5, Dk+1.4+1, s*(hB*0.42), M.gen),{id:'winch'+s, sys:'chs', name:'계류 윈치', note:'접안과 이안의 손.〔선〕'}));
+
+  // 화물창·돔·헤더·통로
+  lay.tanks.forEach((tk,i)=>{
+    const w=lay.tankW, y0=lay.tankY[0], y1=lay.tankY[1], ch=lay.ch, sh=new THREE.Shape();
+    sh.moveTo(-w/2+ch,y0); sh.lineTo(w/2-ch,y0); sh.lineTo(w/2,y0+ch); sh.lineTo(w/2,y1-ch); sh.lineTo(w/2-ch,y1); sh.lineTo(-w/2+ch,y1); sh.lineTo(-w/2,y1-ch); sh.lineTo(-w/2,y0+ch); sh.closePath();
+    const g=new THREE.Mesh(new THREE.ExtrudeGeometry(sh,{depth:tk[1]-tk[0], bevelEnabled:false}), M.tank); g.rotation.y=Math.PI/2; g.position.x=tk[0];
+    part(g,{id:'tank'+(i+1), sys:'ccs', name:'화물창 '+(i+1)+' — 멤브레인 탱크', note:'단열의 두께가 끓음의 속도(BOR)를 정한다 {典|23}. 배분과 팔각 단면은 {推|통례}. 튜닝에서 탱크 수와 선체 치수를 당기면 용적이 따라 바뀐다.'});
+    const cx=(tk[0]+tk[1])/2;
+    const d=part(cyl(3,3,3, cx, TR+1.5, 0, M.trunk,18),{id:'dome'+(i+1), sys:'bog', name:'탱크 '+(i+1)+' 액체 돔 — 펌프와 배관이 드나드는 문', note:'카고 펌프·스프레이·계측이 이 문으로 내려간다.'});
+    const v=part(cyl(1.7,1.7,2.4, cx+8, TR+1.2, 5.5, M.trunk,14),{id:'vdome'+(i+1), sys:'bog', name:'탱크 '+(i+1)+' 기체 돔 — 끓음이 나오는 문', note:'끓어 나온 BOG는 이 문을 지나 기체 헤더를 타고 압축기 방으로 간다 — 카드 아홉.'});
+  });
+  const hx0=lay.trunk[0]+3, hx1=lay.trunk[1]-3;
+  part(new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.55,hx1-hx0,10), M.pipeLiq),{id:'liqhdr', sys:'chs', name:'액체 헤더 — 화물이 흐르는 큰 관', note:'적하·양하 때 LNG가 이 관을 타고 매니폴드와 탱크 사이를 오간다.〔선〕'}).rotation.z=Math.PI/2;
+  PARTS[PARTS.length-1].position.set((hx0+hx1)/2, TR+1.2, -3.2);
+  part(new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.42,hx1-hx0,10), M.pipeV),{id:'vaphdr', sys:'bog', name:'기체 헤더 — 끓음이 모이는 관', note:'네 탱크의 BOG가 이 관에 모여 압축기 방으로 간다.'}).rotation.z=Math.PI/2;
+  PARTS[PARTS.length-1].position.set((hx0+hx1)/2, TR+1.0, 3.2);
+  part(box(hx1-hx0,0.35,2.2,(hx0+hx1)/2,TR+2.6,0,M.rail),{id:'catwalk', sys:'hull', name:'통로 — 트렁크 위의 길', note:'선원이 선수까지 걷는 길.〔선〕'});
+  [-1,1].forEach(s=>{ part(box(8,4,7, -2, TR+2, s*(lay.trunkW/2+3), M.steel),{id:'mani'+s, sys:'chs', name:'매니폴드 — 육지와 배를 잇는 손', note:'적하·양하 배관이 선측에서 육상 로딩암과 만난다. 위치는 통상 선체 중앙 {推|통례}.〔선〕'});
+    const post=part(cyl(0.5,0.6,12, 4, TR+6, s*(lay.trunkW/2+2), M.mast,10),{id:'mcrane'+s, sys:'chs', name:'매니폴드 크레인', note:'호스와 리듀서를 들어 올린다.〔선〕'}); });
+
+  // 거주구·브리지·마스트·연돌·구명정·크레인
+  const aw=lay.accomW, ah=22, ax=(lay.accom[0]+lay.accom[1])/2, al=lay.accom[1]-lay.accom[0];
+  const accom=part(box(al,ah,aw,ax,Dk+ah/2,0,M.accom),{id:'accom', sys:'hull', name:'거주구 — 36명의 집', note:'선원 36명 {典|21}. 브리지에서 배 전체를 내려다본다. 위치·크기 {推|통례}.〔선〕〔전〕'}); HULLFAM.push(accom);
+  for(let d=0;d<5;d++){ const y=Dk+3.2+d*3.6; part(box(al+0.2,1.0,aw+0.2, ax, y, 0, M.window),{id:'win'+d, sys:'hull', name:'거주구 창 띠 — 갑판 '+(d+1)+'층', note:'층마다의 창. 위로 갈수록 사관.'}); }
+  const bridge=part(box(8,3,2*hB, lay.accom[0]+4, Dk+ah+1.5, 0, M.accom),{id:'bridge', sys:'elec', name:'브리지 윙 — 항해와 자동화의 눈', note:'통합자동화(IAS)의 화면들이 여기 모인다.〔전〕'}); HULLFAM.push(bridge);
+  const mast=part(cyl(0.35,0.5,12, lay.accom[0]+8, Dk+ah+3+6, 0, M.mast,10),{id:'radar', sys:'elec', name:'레이더 마스트', note:'항해 전자장비의 기둥.〔전〕'});
+  part(box(0.3,0.3,9, lay.accom[0]+8, Dk+ah+3+11, 0, M.mast),{id:'yard', sys:'elec', name:'안테나 가로대', note:'통신·항법 안테나.〔전〕'});
+  const funnel=part(box(lay.funnel[1]-lay.funnel[0],46-Dk,8,(lay.funnel[0]+lay.funnel[1])/2,(Dk+46)/2,0,M.funnel),{id:'funnel', sys:'prop', name:'연돌 — 태운 것이 나가는 길', note:'주기관·발전기의 배기. 갑은 EGRBP로 배기를 되돌려 쓰고, 을은 iCER로 되돌린다 {典|4,8}.'}); HULLFAM.push(funnel);
+  [-1,1].forEach(s=>part(cyl(0.9,0.9,4,(lay.funnel[0]+lay.funnel[1])/2, 48, s*2.2, M.steel,10),{id:'exh'+s, sys:'prop', name:'배기관', note:'주기관 배기.'}));
+  const boat=part(box(12,4,4, stern+11, Dk+9, -hB*0.45, M.boat),{id:'boat', sys:'safe', name:'자유낙하 구명정 — 마지막 배', note:'선미에서 비스듬히 바다로 미끄러진다. 안전 설비의 끝.'}); boat.rotation.z=0.45;
+  [-1,1].forEach(s=>part(cyl(0.5,0.6,14, lay.accom[1]+3, Dk+7, s*(aw/2+3), M.mast,10),{id:'pcrane'+s, sys:'chs', name:'식료·부품 크레인', note:'보급을 들어 올리는 손.〔선〕'}));
+
+  // 기관실 — 방, 주기관 둘(실린더 헤드·과급기), 축, 프로펠러(날개 넷), 타, 발전기 넷, 배전실
+  const ex0=lay.eng[0], ex1=lay.eng[1], ez=7;
+  const room=part(box(lay.accom[1]+2-(stern+9), Dk+T-3, 2*hB-16, (stern+9+lay.accom[1]+2)/2, (Dk-T+3)/2, 0, M.room),{id:'room', sys:'prop', name:'기관실 — 거주구 아래의 큰 방', note:'주기관 둘, 발전기 넷, 배전실이 한 방에 산다. 연료가스 관은 갑판 기계실에서 이 방으로 내려온다.〔기〕〔전〕'}); room.castShadow=false;
+  const engName=()=>curShip==='gap'?'ME-GI 주기관 ×2 — 디젤사이클, 300 bar 고압 분사':'X-DF 주기관 ×2 — 오토사이클, 저압 예혼합';
+  const pr=addPropulsion(lay,{eng:[ex0,ex1], n:5, z:[-ez,ez], eH:12, eW:6, propR:4.5, engName,
+    engNote:'2×13,000 kW급 쌍축 {典|21}. 5G70 — 실린더 다섯 {典|8}. 같은 방에 다른 원리가 앉는다 — 카드 하나.〔기〕',
+    cylNote:()=>curShip==='gap'?'여기서 300 bar 가스가 상사점에 뿜어진다 {典|1}.':'여기 흡기 초입에서 가스가 미리 섞인다 {典|2}.',
+    propNote:'쌍축. 직경 {推|급 통례}.',
+    extra:(z,i,g)=>{ part(box(g.eL*0.18,g.eH*0.16,g.eW*0.35, g.ex-g.eL*0.2, g.yb+g.eH*0.86, z-g.eW*0.95, M.skid),{id:'gvu'+i, sys:'fgss', ship:'gap', name:'가스 밸브 유닛 — 300 bar가 기관에 드는 마지막 문', note:'이중관으로 온 고압 가스를 기통마다 나누고 비상시 한순간에 끊는다 {典|1}.〔기〕'});
+      part(box(g.eL*0.22,g.eH*0.25,g.eW*0.5, g.ex+g.eL*0.25, g.yt+g.eH*0.25, z+g.eW*1.05, M.house),{id:'icer'+i, sys:'prop', ship:'eul', name:'iCER — 배기를 되돌리는 화학의 고삐', note:'배기 일부를 식혀 흡기에 섞어 산소를 낮춘다. 슬립이 반으로 {典|4}.'}); } });
+  addGensets(lay,[[ex1+7,-13,'3,680'],[ex1+7,-4.5,'3,680'],[ex1+7,4.5,'2,770'],[ex1+7,13,'2,770']],1,(i,g)=>'이중연료 발전기관 '+(i+1)+' — '+g[2]+' kW',
+    '4행정 이중연료 발전기관 2×3,680 + 2×2,770 kW {典|21}. 증기선 세대의 터빈 발전기는 이 급에서 물러났다 — 여기서는 저압(약 6 bar)의 가스를 마시는 4행정이 전기를 만든다 {典|1}. 축발전기가 이 일을 덜어 준다(카드 여섯).〔전〕〔기〕');
+  part(box(8,4,10, ex1+8, 1, -(hB-9), M.room),{id:'swbd', sys:'elec', name:'배전실 — 전기의 갈림길', note:'주배전반과 IAS 캐비닛.〔전〕'});
+  // GCU — 연돌 옆 갑판
+  part(box(6,7,5, (lay.funnel[0]+lay.funnel[1])/2, Dk+3.5, 9, M.gcu),{id:'gcu', sys:'bog', name:'GCU — 남는 끓음을 태우는 마지막 아궁이', note:'주기관도 발전기도 재액화도 다 못 받는 BOG를 안전하게 태운다. 상품을 대기로 보내는 곳이니, 여기로 오는 가스는 되도록 적어야 한다.'});
+
+  // 갑판 기계실 — 압축기 방 (갑판 탑재 典, 위치·크기 推)
+  const hx=lay.house, hw=Math.min(28,lay.trunkW-4);
+  house=part(box(hx[1]-hx[0],9,hw,(hx[0]+hx[1])/2,TR+4.5,0,M.house),{id:'house', sys:'fgss', name:'갑판 기계실 — 압축기 방', note:'고압 압축기는 기관실이 아니라 갑판 위 기계실에 산다 {典|25}. 벽을 반투명으로 두어 속이 보인다 — 위치·크기 {推|통례}.〔기〕〔선〕'}); HULLFAM.push(house);
+  const skidN=TUNE.skids, skidZ=(i)=>(i-(skidN-1)/2)*Math.min(9, (hw-3)/Math.max(1,skidN));
+  for(let i=0;i<skidN;i++){
+    buildSkid((hx[0]+hx[1])/2+2, TR, skidZ(i), i);
+    dashedBox(GEO.lpSkid.l,GEO.lpSkid.h,GEO.lpSkid.w,(hx[0]+hx[1])/2+2, TR+GEO.lpSkid.h/2, skidZ(i), 0x8fa3b8,{id:'lp'+i, sys:'fgss', ship:'eul', name:'저압 BOG 압축기 '+String.fromCharCode(65+i)+' — 치수 미확정', note:GEO.lpSkid.stamp+' 6~16 bar 공급 {典|2}. 점선은 "그럴싸한 실선"을 그리지 않겠다는 표시.〔기〕'});
+  }
+  // 재액화: 갑 = PRS(고압 가스를 되돌리는 콜드박스), 을 = 별도 냉동 사이클(추정, 점선)
+  const prsX=hx[0]+3.5;
+  part(box(5,6,4, prsX, TR+3, -(hw/2-3.5), M.prs),{id:'prs', sys:'bog', ship:'gap', name:'부분 재액화(PRS) — 콜드박스와 팽창밸브', note:'300 bar로 눌린 가스 가운데 주기관이 못 먹는 몫을 찬 BOG로 식힌 뒤 팽창시켜 액체로 되돌려 탱크로 보낸다 {典|24,25}. 압축기가 이미 한 일(고압)을 재액화가 얻어 쓴다 — 카드 둘의 "품삯"이 여기서 싸진다. 구성은 {推|모식}.'});
+  dashedBox(9,6,6, hx[1]+6, TR+3, -(hw/2-1), 0xcf6a55,{id:'reliq', sys:'bog', ship:'eul', name:'재액화 유닛 — 별도 냉동 사이클(추정)', note:'저압 배의 재액화는 압축기의 고압을 빌릴 수 없어 질소 냉동 사이클 같은 별도 플랜트가 필요하다 {推|급의 통례, 사양 미확인}. 점선.'});
+  part(box(3,2.4,2.2, hx[1]-2, TR+1.2, hw/2-2.5, M.steel),{id:'fv', sys:'fgss', name:'강제 기화기 + 연료펌프 — 끓음이 모자랄 때', note:'자연 증발이 갈증에 못 미치면 LNG를 펌프로 퍼 올려 억지로 끓인다(FBOG) {典|19}. 조성은 자연 증발과 다르다.〔기〕'});
+
+  // ── 연료가스의 길 (배관 위상) — 기체 헤더 → 압축기 방 → 갈림
+  const H=(x,y,z)=>[x,y,z];
+  const houseIn=[hx[1]-1, TR+1.0, 3.2], lpOut=[(hx[0]+hx[1])/2-5, TR+2, 6], hpOut=[(hx[0]+hx[1])/2-5, TR+2.5, -6];
+  tube([H(hx[1]+3,TR+1.0,3.2), houseIn, H(hx[1]-4,TR+1.6,4)],0.42,M.pipeV,{id:'vfeed', sys:'bog', name:'BOG 인입관 — 헤더에서 압축기로', note:'−160℃에 가까운 기체가 압축기 1단으로 든다 {典|25}.'});
+  const engY=pr.engY, engFeedY=pr.yt+1.6, genFeedY=-3.5;
+  // 발전기용 저압선(6 bar) — 갑·을 공통 (갑: 압축기 저압단에서 분기)
+  tube([lpOut, H(hx[0]-2,TR+2,6), H(hx[0]-3,Dk-1,6), H(hx[0]-6,genFeedY,8), H(ex1+7,genFeedY,10)],0.32,M.pipeLP,{id:'lpgen', sys:'fgss', name:'발전기 연료가스 — 약 6 bar', note:'4행정 발전기는 낮은 압력이면 된다 {典|1}. 갑에서는 압축기 저압단에서, 을에서는 저압 압축기에서 바로 온다. 경로 {推|모식}.〔기〕'});
+  // 주기관용: 갑은 300 bar 이중관(붉음), 을은 6~16 bar 단일관(푸름)
+  const mainPath=[hpOut, H(hx[0]-2,TR+2.5,-6), H(hx[0]-3,Dk-1,-5), H(hx[0]-6,engFeedY,-3), H(ex1-4,engFeedY,-1)];
+  tube(mainPath,0.45,M.pipeHP,{id:'hp', sys:'fgss', ship:'gap', name:'고압 연료가스 관 — 300 bar, 이중관', note:'300 bar·45℃로 주기관에 든다 {典|1}. 이중관 속에 관을 넣고 사이를 감시한다 — 고압이 사람의 습관에게 요구하는 것 {聞|준철}. 경로 {推|모식}.〔기〕〔선〕'});
+  const hpo=tube(mainPath,0.9,M.pipeHPouter,{id:'hpo', sys:'safe', ship:'gap', name:'이중관 바깥관 — 감시 공간', note:'안 관이 새면 이 공간에서 먼저 잡는다. 가스검지·환기·Zone 구분이 여기 잇닿아 있다 {聞|준철}.'}); hpo.castShadow=false;
+  tube(mainPath,0.6,M.pipeLP,{id:'lpm', sys:'fgss', ship:'eul', name:'저압 연료가스 관 — 6~16 bar, 단일관', note:'예혼합이라 낮은 압력이면 된다 {典|2}. 관이 가볍고 방이 가벼워진다. 경로 {推|모식}.〔기〕'});
+  // 주기관 사이 분배(두 기관으로 갈라짐)
+  tube([H(ex1-4,engFeedY,-1), H(ex1-4,engFeedY,-ez), H((ex0+ex1)/2+6,engFeedY,-ez)],0.35,M.pipeLP,{id:'dist1', sys:'fgss', name:'주기관 A 분배관', note:'두 기관이 50%씩 나눠 마신다 {典|25}.'});
+  tube([H(ex1-4,engFeedY,-1), H(ex1-4,engFeedY,ez), H((ex0+ex1)/2+6,engFeedY,ez)],0.35,M.pipeLP,{id:'dist2', sys:'fgss', name:'주기관 B 분배관', note:'두 기관이 50%씩 나눠 마신다 {典|25}.'});
+  // 갑: 고압 분기 → PRS → 액체로 되돌아가는 관(차가운 하늘색) → 마지막 탱크 액체 돔
+  const lastDome=[(lay.tanks[lay.tanks.length-1][0]+lay.tanks[lay.tanks.length-1][1])/2, TR+3.2, 0];
+  tube([hpOut, H(prsX+1,TR+3,-(hw/2-6)), H(prsX,TR+3,-(hw/2-3.5))],0.4,M.pipeHP,{id:'hpprs', sys:'bog', ship:'gap', name:'재액화 분기 — 300 bar 가스가 콜드박스로', note:'주기관이 못 먹는 몫이 이리로 간다.'});
+  tube([H(prsX,TR+6.2,-(hw/2-3.5)), H(prsX,TR+7,-(hw/2-3.5)), H(hx[1]+1,TR+7,-3), H(lastDome[0]-4,TR+5,-1), lastDome],0.36,M.pipeRet,{id:'ret', sys:'bog', ship:'gap', name:'재액화 귀환관 — 액체가 되어 탱크로', note:'되돌아간 만큼 상품이 남는다. 카드 둘: 되돌리는 값이 싸면 되돌린다.'});
+  line([H(hx[1]+6,TR+6.2,-(hw/2-1)), H(hx[1]+6,TR+7,-(hw/2-1)), H(lastDome[0]-4,TR+5,-1), lastDome],0x7fb0c8,{id:'ret2', sys:'bog', ship:'eul', name:'재액화 귀환(추정)', note:'별도 플랜트에서 액체가 되어 탱크로 {推|}.'});
+  // GCU 공급 — 저압 분기가 연돌 옆 GCU로
+  tube([lpOut, H(hx[0]-2,TR+2,6), H(hx[0]-8,Dk+1,aw/2+2.5), H(lay.funnel[1]+1,Dk+1,aw/2+2.5), H((lay.funnel[0]+lay.funnel[1])/2,Dk+3.5,11.5)],0.3,M.pipeV,{id:'gcufeed', sys:'bog', name:'GCU 공급관 — 남는 끓음의 마지막 길', note:'재액화도 기관도 못 받는 잉여가 여기로.'});
+  // FBOG: 마지막 탱크 액체 돔에서 펌프로 퍼 올려 강제기화기로 (가는 점선)
+  line([lastDome, H(lastDome[0]-3,TR+4,hw/2-2.5), H(hx[1]-2,TR+2.4,hw/2-2.5)],0xe0b070,{id:'fbog', sys:'fgss', name:'강제 기화 공급(FBOG) — 액체를 퍼 올리는 가는 관', note:'끓음이 모자랄 때만 쓰는 길 {典|19}. 구성은 열린 문 {聞|대기}.'});
+
+  // 벤트 마스트·사람
+  part(cyl(0.6,0.9,36, hx[1]+3, TR+18, 0, M.mast,12),{id:'vent', sys:'safe', name:'벤트 마스트 — 마지막 안전판', note:'압력이 넘칠 때 가스를 높이 내보낸다. 안전 설비의 마지막 층.'});
+  part(cyl(0.6,0.9,30, bow-30, Dk+15, 0, M.mast,12),{id:'ventF', sys:'safe', name:'선수 벤트 마스트', note:'화물창 1의 안전 배출.'});
+  const person=new THREE.Group(); const pb=new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.28,1.25,10), M.paper); pb.position.y=0.63; person.add(pb);
+  const ph=new THREE.Mesh(new THREE.SphereGeometry(0.27,10,8), M.paper); ph.position.y=1.55; person.add(ph); person.position.set(hx[1]+1.2, TR, -hw/2-1.2); person.traverse(o=>{ if(o.isMesh) o.castShadow=true; }); shipGroup.add(person);
+
+  LABELS=[ {p:[(hx[0]+hx[1])/2, TR+13, 0], t:'압축기 방'}, {p:[ax, Dk+ah+6, 0], t:'거주구 · 그 아래 기관실'}, {p:[(lay.cargo[0]+lay.cargo[1])/2, TR+8, 0], t:'화물창 '+n+'개 (멤브레인)'},
+    {p:[hx[1]+1.2, TR+3.2, -hw/2-1.2], t:'사람 1.8 m'}, {p:[bow-9,-2,0], t:'구상선수'}, {p:[pr.px, 1.5, 0], t:'프로펠러 ×2'}, {p:[(lay.funnel[0]+lay.funnel[1])/2, Dk+8.5, 9], t:'GCU'} ];
+  rebuildLabelNodes();
+}
+
+/* ── 이름표: 고정 이름표 + 계통 선택 시 그 계통의 부품 이름 ── */
+const labelsEl=$('#labels'); let labelNodes=[]; let showLabels=true;
+function rebuildLabelNodes(){ labelsEl.innerHTML=''; labelNodes=LABELS.concat(DYN).map(l=>{ const d=document.createElement('div'); d.className='lbl'+(l.dyn?' dyn':''); d.textContent=l.t; labelsEl.appendChild(d); return d; }); }
+$('#t-labels').onclick=()=>{ showLabels=!showLabels; $('#t-labels').classList.toggle('on',showLabels); };
+function updateLabels(){ const v=new THREE.Vector3(); const all=LABELS.concat(DYN);
+  all.forEach((l,i)=>{ const d=labelNodes[i]; if(!d) return; v.set(l.p[0],l.p[1],l.p[2]).project(camera); const on=showLabels && (!curSys || l.dyn) && v.z<1 && Math.abs(v.x)<1.1 && Math.abs(v.y)<1.1;
+    d.style.display=on?'block':'none'; if(on){ d.style.left=((v.x+1)/2*innerWidth)+'px'; d.style.top=((1-v.y)/2*innerHeight)+'px'; } }); }
+
+/* ── 카메라 궤도 ── */
+const cam={theta:3.72, phi:1.12, r:640, target:new THREE.Vector3(-15,6,0)};
+function placeCamera(){ camera.position.set(cam.target.x+cam.r*Math.sin(cam.phi)*Math.sin(cam.theta), cam.target.y+cam.r*Math.cos(cam.phi), cam.target.z+cam.r*Math.sin(cam.phi)*Math.cos(cam.theta)); camera.lookAt(cam.target); }
+let drag=null, moved=0, touched=false, panMode=false, pinch=null; const ptrs=new Map(); const hint=$('#hint'); const touch=()=>{ if(!touched){ touched=true; hint.classList.add('off'); } };
+function panBy(dx,dy){ const k=2*cam.r*Math.tan(camera.fov*Math.PI/360)/innerHeight; const right=new THREE.Vector3(), up=new THREE.Vector3(), fw=new THREE.Vector3(); camera.matrixWorld.extractBasis(right,up,fw); cam.target.addScaledVector(right,-dx*k).addScaledVector(up,dy*k); placeCamera(); }
+el.addEventListener('contextmenu',e=>e.preventDefault());
+el.addEventListener('pointerdown',e=>{ ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); el.setPointerCapture(e.pointerId);
+  if(ptrs.size===1){ drag={x:e.clientX,y:e.clientY}; moved=0; panMode=(e.button===2||e.button===1||e.shiftKey); }
+  else if(ptrs.size===2){ const [a,b]=[...ptrs.values()]; pinch={d:Math.hypot(a.x-b.x,a.y-b.y), cx:(a.x+b.x)/2, cy:(a.y+b.y)/2}; drag=null; } });
+el.addEventListener('pointermove',e=>{ if(ptrs.has(e.pointerId)) ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===2 && pinch){ const [a,b]=[...ptrs.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y), cx=(a.x+b.x)/2, cy=(a.y+b.y)/2; cam.r=Math.min(2600,Math.max(60,cam.r*pinch.d/Math.max(1,d))); panBy(cx-pinch.cx, cy-pinch.cy); pinch={d,cx,cy}; moved=99; touch(); return; }
+  if(drag){ const dx=e.clientX-drag.x, dy=e.clientY-drag.y; moved+=Math.abs(dx)+Math.abs(dy);
+    if(panMode) panBy(dx,dy); else { cam.theta-=dx*0.0055; cam.phi=Math.min(1.52,Math.max(0.12,cam.phi-dy*0.0045)); placeCamera(); }
+    drag={x:e.clientX,y:e.clientY}; touch(); } else hover(e); });
+const endPtr=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) pinch=null; if(drag && moved<5 && !panMode) pick(e); drag=null;
+  if(ptrs.size===1){ const [q]=[...ptrs.values()]; drag={x:q.x,y:q.y}; moved=99; panMode=false; } };
+el.addEventListener('pointerup',endPtr); el.addEventListener('pointercancel',endPtr);
+addEventListener('keydown',e=>{ if(e.target.matches('input,textarea,select')) return; const step=innerHeight*0.06;
+  if(e.key==='ArrowLeft') panBy(-step,0); else if(e.key==='ArrowRight') panBy(step,0); else if(e.key==='ArrowUp') panBy(0,-step); else if(e.key==='ArrowDown') panBy(0,step);
+  else if(e.key==='+'||e.key==='='){ cam.r=Math.max(60,cam.r*0.9); placeCamera(); } else if(e.key==='-'){ cam.r=Math.min(2600,cam.r*1.1); placeCamera(); } else if(e.key==='0') resetCamera(); else return; e.preventDefault(); touch(); });
+$('#t-center').onclick=()=>resetCamera();
+$('#fold-r').onclick=()=>{ const on=document.body.classList.toggle('fold-r'); $('#fold-r').textContent=on?'표찰 펼치기':'표찰 접기'; };
+$('#fold-l').onclick=()=>{ const on=document.body.classList.toggle('fold-l'); $('#fold-l').textContent=on?'선단 펼치기':'선단 접기'; };
+el.addEventListener('wheel',e=>{ e.preventDefault(); cam.r=Math.min(2600,Math.max(60,cam.r*(1+e.deltaY*0.0011))); placeCamera(); touch(); },{passive:false});
+addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
+
+/* ── 피킹 ── */
+const ray=new THREE.Raycaster(); const mouse=new THREE.Vector2(); let hovered=null;
+function castAt(e){ mouse.x=(e.clientX/innerWidth)*2-1; mouse.y=-(e.clientY/innerHeight)*2+1; ray.setFromCamera(mouse,camera);
+  const cands=PARTS.filter(p=>p.visible && !p.userData.isLine && (!curSys || p.userData.sys===curSys || p.material.opacity>0.3));
+  const hits=ray.intersectObjects(cands,false); return hits.length?hits[0].object:null; }
+const nameOf=(o)=>typeof o.userData.name==='function'?o.userData.name():o.userData.name;
+function hover(e){ const o=castAt(e); if(o!==hovered){ hovered=o; $('#h-hover').textContent=o?nameOf(o):''; el.style.cursor=o?'pointer':'grab'; } }
+function pick(e){ const o=castAt(e); if(!o) return; lastPart=o.userData; openPanel('part'); touch(); }
+
+/* ── 계통 하이라이트 · 갑↔을 · 속 보기 ── */
+const INTERNAL=new Set(['ccs','bog','prop','fgss','elec']);
+function dimsLine(st){ let h='길이 '+TUNE.loa+' · 폭 '+TUNE.beam+' · 깊이 '+TUNE.depth+' · 흘수 '+TUNE.draft+' m';
+  if(curType==='lngc') h+=' · 화물창 '+TUNE.tanks+' · 모형 용적 '+Math.round(st.cargo/1000)+'k m³';
+  else if(curType==='vlgc'){ const bm=(32.31-TUNE.beam)*100, dm=(12.04-TUNE.draft)*100, lm=294.13-TUNE.loa; const bad=bm<0||dm<0||lm<0; h+='<br><span style="color:'+(bad?'var(--seal-jun)':'var(--brass)')+'">구갑문 여유 — 폭 '+bm.toFixed(0)+' cm · 흘수 '+dm.toFixed(0)+' cm · 길이 '+lm.toFixed(1)+' m'+(bad?' — 통과 불가':'')+'</span>'; }
+  else if(curType==='box') h+=' · 연료탱크 '+Math.round(st.cargo/100)/10+'k m³ · 베이 '+(LAY.bays||'')+'개';
+  else h+=' · Type C '+TUNE.tanks+'기 · '+Math.round(st.cargo/100)/10+'k m³';
+  return h; }
+function applyState(flash){
+  const selColor=curSys?new THREE.Color(SYS_COLOR[curSys]):null;
+  PARTS.forEach(p=>{
+    const u=p.userData; if(u.lock){ p.visible=(showLock||curSys==='rules'); if(p.visible){ p.material.opacity=(curSys&&curSys!=='rules')?0.15:0.95; } return; }
+    const forShip=(u.ship==='both'||u.ship===curShip); p.visible=forShip; if(!forShip) return;
+    const m=p.material; let op=u.baseOp;
+    if(HULLFAM.includes(p) && (xray || (curSys && INTERNAL.has(curSys)))) op=Math.min(op, p===house?0.08:0.14);
+    if(curSys){
+      if(u.sys===curSys){ if(!u.isLine){ m.emissive=selColor.clone().multiplyScalar(0.55); m.emissiveIntensity=1.0; } op=Math.max(op, u.isLine?0.95:(HULLFAM.includes(p)?0.55:0.98)); }
+      else { op*=(HULLFAM.includes(p)?0.35:0.06); if(!u.isLine) m.emissive=new THREE.Color(0x000000); }
+    } else if(!u.isLine){ m.emissive=new THREE.Color(0x000000); }
+    if(flash && u.ship!=='both' && !u.isLine){ m.emissive=new THREE.Color(0xb99a5a); m.emissiveIntensity=0.9; setTimeout(()=>{ if(!curSys || u.sys!==curSys) m.emissive=new THREE.Color(0x000000); else { m.emissive=selColor.clone().multiplyScalar(0.55); } },900); }
+    m.opacity=op; m.needsUpdate=true;
+  });
+  // 계통 이름표
+  DYN=[]; if(curSys){ const seen=new Set(); const bb=new THREE.Box3();
+    PARTS.filter(p=>p.visible && p.userData.sys===curSys).forEach(p=>{ const nm=nameOf(p).split(' — ')[0].replace(/ [A-D]$/,'').replace(/ \d+$/,''); if(seen.has(nm)||seen.size>=10) return; seen.add(nm); bb.setFromObject(p); const c=bb.getCenter(new THREE.Vector3()); DYN.push({p:[c.x, bb.max.y+2.5, c.z], t:nm, dyn:true}); }); }
+  rebuildLabelNodes();
+  const s=SHIPS.find(x=>x.id===curShip); const st=stats();
+  $('#h-ship').textContent=s.ho+' · '+s.name;
+  $('#h-dim').innerHTML=dimsLine(st);
+  $('#t-lock').style.display=(curType==='vlgc')?'':'none'; $('#t-lock').classList.toggle('on',showLock); refreshLegendCounts();
+  $('#h-stamp').innerHTML='주요 치수 '+fmt(GEOS[curType].dimsSrc)+' · 형상 '+fmt(GEOS[curType].shape)+(['loa','beam','depth','draft','tanks'].some(k=>TUNE[k]!==TUNE_DEF[k])?' · <span style="color:var(--seal-jun)">튜닝 중 — 표준선이 아님</span>':''); sealBind($('#h-stamp'));
+  $$('.shipbtn').forEach(b=>b.classList.toggle('on',b.dataset.ship===curShip));
+  $$('#legend button[data-sys]').forEach(b=>b.classList.toggle('on',b.dataset.sys===curSys));
+  $('#t-xray').classList.toggle('on',xray);
+  if(panel.classList.contains('show')){ if(ptab==='part') fillPanel(); else if(ptab==='tune'){ const t=$('#tstats'); if(t) t.innerHTML=statsHTML(); } }
+}
+$('#t-xray').onclick=()=>{ xray=!xray; applyState(false); };
+
+/* ── 계기판 산수: 배수량 · 끓음 대 갈증 · 압축기 여유 ── */
+/* ── 계기판 산수 — 선체마다 다른 셈. 끓음(BOG)과 갈증(연료 수요)의 저울 ── */
+function stats(){
+  const L=TUNE.loa, B=TUNE.beam, T=TUNE.draft, n=TUNE.tanks, c=GEOS[curType].c, v=TUNE.speed;
+  const disp=(L-5)*B*T*c.cb*1.025, fn=v*0.5144/Math.sqrt(9.81*L);
+  const P=c.pRef*Math.pow(v/c.vRef,3)*Math.pow(L/TUNE_DEF.loa,0.6);
+  const gasMain=P*c.sgc*24/1000, gasGen=c.hotel*c.sgcGen*24/1000, demand=gasMain+gasGen;
+  let cargo=0;
+  if(curType==='lngc'||curType==='vlgc'){ const area=LAY.tankW*(LAY.tankY[1]-LAY.tankY[0])-2*LAY.ch*LAY.ch; cargo=n*LAY.tl*area*c.calib; }
+  else if(curType==='box'){ cargo=(LAY.fuel.x[1]-LAY.fuel.x[0])*LAY.fuel.w*(LAY.fuel.y[1]-LAY.fuel.y[0])*c.calib; }
+  else { cargo=n*(Math.PI*LAY.tankR*LAY.tankR*LAY.tankLc+4/3*Math.PI*Math.pow(LAY.tankR,3))*c.calib; }
+  const mass=cargo*c.rho, bog=mass*TUNE.bor/100;
+  const out={cargo, disp, mass, bog, P, gasMain, gasGen, demand, balance:bog-demand, fn};
+  if(curType==='lngc'){ out.cap=TUNE.skids*TUNE.skidCap*24/1000; out.util=bog/out.cap; }
+  if(curType==='vlgc'){ out.cargoPct=demand/mass*100; out.deckTank=2*450*c.rho; out.deckDays=out.deckTank/demand; }
+  if(curType==='box'){ out.days=mass/demand; out.range=out.days*v*24; out.forced=Math.max(0,demand-bog); }
+  if(curType==='bv'){ out.holdDays=mass*3.5*19/(bog*510); out.fills=18600/cargo; out.dayPct=demand/mass*100; }
+  return out;
+}
+const fmtN=(x,d=0)=>x.toLocaleString('ko-KR',{maximumFractionDigits:d,minimumFractionDigits:d});
+function tuneHTML(){
+  const R=RANGES[curType], g=GEOS[curType];
+  const row=(k,id,unit)=>'<div class="trow"><span class="tk">'+k+'</span><input type="range" data-t="'+id+'" min="'+R[id][0]+'" max="'+R[id][1]+'" step="'+R[id][2]+'" value="'+TUNE[id]+'"><span class="tval">'+TUNE[id]+unit+'</span></div>';
+  const tankLabel={lngc:'화물창',vlgc:'화물창',box:'연료탱크',bv:'화물창'}[curType];
+  let h='<div class="coord">튜닝 — 치수를 당기면 배가 다시 지어지고, 아래 계기판이 따라 움직인다. 기본값: '+g.title+'</div>'+
+    row('길이','loa',' m')+row('폭','beam',' m')+row('깊이','depth',' m')+row('흘수','draft',' m')+row(tankLabel,'tanks','')+
+    '<div class="blocktitle">'+({lngc:'끓음과 갈증 — 태운다',vlgc:'끓음과 갈증 — 되돌린다',box:'끓음과 갈증 — 다스린다',bv:'끓음 — 참는다'})[curType]+'</div>'+row('BOR(적재)','bor',' %/일')+row('속도','speed',' kn');
+  if(curType==='lngc') h+=row('압축기 대수','skids',' 대')+'<div class="trow"><span class="tk">압축기 용량</span><select data-t="skidCap"><option'+(TUNE.skidCap==3100?' selected':'')+'>3100</option><option'+(TUNE.skidCap==5000?' selected':'')+'>5000</option><option'+(TUNE.skidCap==5700?' selected':'')+'>5700</option></select><span class="tval">kg/h</span></div>';
+  h+='<div class="blocktitle">선체 도장 — 색 · 무늬 · 글자 (선체 구조만)</div><div class="swatches" id="sw-pal"></div><div class="swatches pat" id="sw-pat"></div>'+
+    '<div class="trow"><span class="tk">선측 글자</span><input type="text" data-l="hullText" maxlength="24" value="'+LIV.hullText.replace(/"/g,'&quot;')+'" placeholder="선체 한가운데 큰 글자"></div>'+
+    '<div class="trow"><span class="tk">선수 이름</span><input type="text" data-l="shipName" maxlength="24" value="'+LIV.shipName.replace(/"/g,'&quot;')+'" placeholder="뱃머리에 새길 이름"></div>'+
+    '<div class="trow"><span class="tk">글꼴</span><select data-l="font">'+FONTS.map(f=>'<option value="'+f[0]+'"'+(LIV.font===f[0]?' selected':'')+'>'+f[1]+'</option>').join('')+'</select><span class="tval" id="sw-name">'+PAL().name+'</span></div>'+
+    '<div class="tstats" id="tstats">'+statsHTML()+'</div>'+
+    '<p class="prose" style="font-size:12.5px;color:#cfcabf;margin-top:10px">'+fmt(stampsNote())+'</p>'+
+    '<div style="margin-top:12px"><button class="cardlink" id="t-reset">표준선으로 되돌리기</button></div>';
+  return h;
+}
+function stampsNote(){
+  const c=GEOS[curType].c;
+  return {lngc:'산수의 도장: 배수량 Cb 0.72는 典 21의 112,433 t 역산 {典|21}{推|역산}, LNG 밀도 0.45 t/m³ {推|0.42~0.47}, 가스 소비율 140/165 g/kWh {推|급 통용값}, 출력 19.5 kn에서 21,660 kW {典|21}에 속도 세제곱 법칙 {推|}. BOR 기본 0.12%/일 {典|23}. 압축기 용량 {典|24}. — 카드 둘과 아홉의 산수가 이 판에서 움직인다.',
+    vlgc:'산수의 도장: 프로판 밀도 0.58 t/m³(−42℃) {推|물성 통용값}, Cb 0.78 {推}, 주기관 12,000 kW @16.5 kn {推|급 통용값}, LPG 소비율 150 g/kWh {推}, 호텔 1,200 kW {推}, BOR 기본 0.15%/일 {推|완전냉동 통례}. 갑판 탱크 450 m³ ×2 {典|33}. 끓음은 전량 되돌린다(재액화) — 카드 둘. 연료는 화물의 몇 %인가 — 병은 자기 화물을 먹으며 간다.',
+    box:'산수의 도장: 연료탱크 18,600 m³ {典|26}, LNG 밀도 0.45 {推}, 주기관 63,840 kW {典|30} @22 kn {推|설계속도 통례}, 가스 소비율 140 g/kWh {推}, 호텔 4,000 kW(냉동 컨테이너) {推}, BOR 0.15%/일 {推}. 검산: 이 셈의 항속거리가 공표된 "약 2만 해리" {典|26}와 맞는지 보라 — 모형이 장부를 맞히면 모형을 믿어도 된다.',
+    bv:'산수의 도장: 치수 보간 {推|典 28 사이}, LNG 밀도 0.45 {推}, BOR 0.2%/일 {推|소형 Type C 통례}, 참는 시간은 액체 전체를 19 K 데우는 열(비열 3.5 kJ/kg·K, 1.7→약 4 bara의 포화온도 차)을 하루 증발열(510 kJ/kg)로 나눈 거친 셈 {推|열역학 근사, 출전 예정}. 발전기 2,200 kW @12 kn {推}. 무의 탱크 18,600 m³ {典|26}.'}[curType];
+}
+function statsHTML(){
+  const st=stats(), v=TUNE.speed; let h='<div><em>배수량 (Cb '+GEOS[curType].c.cb+' '+(curType==='lngc'?'역산':'추정')+')</em><b>'+fmtN(st.disp)+' t</b></div>';
+  if(curType==='lngc'){ const bal=st.balance; h+=
+    '<div><em>모형 화물 용적 (보정 1.03)</em><b>'+fmtN(st.cargo)+' m³</b></div><div><em>실린 LNG (0.45 t/m³)</em><b>'+fmtN(st.mass)+' t</b></div>'+
+    '<div><em>자연 증발 — 끓음</em><b>'+fmtN(st.bog,1)+' t/일</b></div><div><em>주기관 갈증 @'+v+' kn ('+fmtN(st.P)+' kW)</em><b>'+fmtN(st.gasMain,1)+' t/일</b></div><div><em>발전기 갈증 (호텔 2,500 kW)</em><b>'+fmtN(st.gasGen,1)+' t/일</b></div>'+
+    '<div class="'+(bal>0?'surplus':'deficit')+'"><em>'+(bal>0?'남는 끓음 → 재액화(갑) · 별도 플랜트(을) · GCU':'모자란 끓음 → 강제 기화(FBOG)')+'</em><b>'+(bal>0?'+':'')+fmtN(bal,1)+' t/일</b></div>'+
+    '<div><em>압축기 능력 ('+TUNE.skids+'×'+TUNE.skidCap+' kg/h) · 가동률</em><b>'+fmtN(st.cap)+' t/일 · '+fmtN(st.util*100)+'%</b></div>'; }
+  else if(curType==='vlgc'){ h+=
+    '<div><em>모형 화물 용적 (명목 88,000)</em><b>'+fmtN(st.cargo)+' m³</b></div><div><em>실린 LPG (0.58 t/m³)</em><b>'+fmtN(st.mass)+' t</b></div>'+
+    '<div class="surplus"><em>자연 증발 → 전량 재액화 (되돌린다)</em><b>'+fmtN(st.bog,1)+' t/일</b></div>'+
+    '<div><em>주기관 갈증 @'+v+' kn ('+fmtN(st.P)+' kW) — LPG 액체 50 bar</em><b>'+fmtN(st.gasMain,1)+' t/일</b></div><div><em>발전기 갈증 (호텔 1,200 kW)</em><b>'+fmtN(st.gasGen,1)+' t/일</b></div>'+
+    '<div class="deficit"><em>연료가 되는 화물 — 하루에 실은 것의</em><b>'+st.cargoPct.toFixed(3)+' %</b></div>'+
+    '<div><em>갑판 탱크 둘의 연료 ('+fmtN(st.deckTank)+' t)로 갈 수 있는 날</em><b>'+fmtN(st.deckDays,1)+' 일</b></div>'+
+    '<div><em>구갑문 여유 — 폭 · 흘수 · 길이</em><b>'+((32.31-TUNE.beam)*100).toFixed(0)+' cm · '+((12.04-TUNE.draft)*100).toFixed(0)+' cm · '+fmtN(294.13-TUNE.loa,1)+' m</b></div>'; }
+  else if(curType==='box'){ h+=
+    '<div><em>연료탱크 용적 (모형)</em><b>'+fmtN(st.cargo)+' m³</b></div><div><em>실린 LNG 연료 (0.45 t/m³)</em><b>'+fmtN(st.mass)+' t</b></div>'+
+    '<div><em>자연 증발 — 끓음</em><b>'+fmtN(st.bog,1)+' t/일</b></div><div><em>주기관 갈증 @'+v+' kn ('+fmtN(st.P)+' kW)</em><b>'+fmtN(st.gasMain,1)+' t/일</b></div><div><em>발전기 갈증 (호텔 4,000 kW)</em><b>'+fmtN(st.gasGen,1)+' t/일</b></div>'+
+    '<div class="deficit"><em>강제 기화가 채우는 몫 — 다스린다</em><b>'+fmtN(st.forced,1)+' t/일</b></div>'+
+    '<div class="surplus"><em>한 번 채워 가는 거리 (공표 약 2만 해리)</em><b>'+fmtN(st.range)+' nm · '+fmtN(st.days,1)+' 일</b></div>'+
+    '<div><em>잃어버린 화물 칸</em><b>약 300 TEU</b></div>'; }
+  else { h+=
+    '<div><em>모형 화물 용적 (명목 6,000)</em><b>'+fmtN(st.cargo)+' m³</b></div><div><em>실린 LNG (0.45 t/m³)</em><b>'+fmtN(st.mass)+' t</b></div>'+
+    '<div><em>자연 증발 — 끓음</em><b>'+fmtN(st.bog,1)+' t/일</b></div>'+
+    '<div class="surplus"><em>참는 시간 — 1.7에서 약 4 bara까지 (거친 셈)</em><b>'+fmtN(st.holdDays)+' 일</b></div>'+
+    '<div><em>발전기 갈증 @'+v+' kn ('+fmtN(st.P)+' kW) — 자기 화물로</em><b>'+fmtN(st.demand,1)+' t/일 · '+st.dayPct.toFixed(2)+' %/일</b></div>'+
+    '<div><em>무 한 척(18,600 m³)을 채우려면</em><b>'+st.fills.toFixed(1)+' 번</b></div>'; }
+  h+='<div><em>프루드 수 Fn = v/√(gL)</em><b>'+st.fn.toFixed(3)+'</b></div>';
+  return h;
+}
+let tuneTimer=null;
+function bindTune(){
+  $$('#pbody [data-t]').forEach(inp=>{ const apply=()=>{ const k=inp.dataset.t; TUNE[k]=parseFloat(inp.value); if(k==='skidCap') TUNE[k]=parseInt(inp.value); const tv=inp.parentElement.querySelector('.tval'); if(tv && k!=='skidCap') tv.textContent=inp.value+tv.textContent.replace(/^[\d.\-]+/,'');
+      const geo=['loa','beam','depth','draft','tanks','skids'].includes(k);
+      if(geo){ clearTimeout(tuneTimer); tuneTimer=setTimeout(()=>{ buildShip(); cam.target.set(-TUNE.loa*0.05,TUNE.loa*0.02+3,0); placeCamera(); applyState(false); },90); }
+      else applyState(false); };
+    inp.addEventListener('input',apply); inp.addEventListener('change',apply); });
+  const r=$('#t-reset'); if(r) r.onclick=()=>{ GEO_KEYS.forEach(k=>{ if(k in TUNE_DEF) TUNE[k]=TUNE_DEF[k]; }); buildShip(); resetCamera(); applyState(false); fillPanel(); };
+  const sp=$('#sw-pal'); if(sp){ PALETTES.forEach((p,i)=>{ const b=document.createElement('button'); b.title=p.name; b.classList.toggle('on',LIV.palette===i); b.innerHTML='<span style="background:'+p.base+'"></span><span style="background:'+p.accent+'"></span><span style="background:'+p.rim+'"></span><span style="background:'+p.text+'"></span>';
+      b.onclick=()=>{ LIV.palette=i; $$('#sw-pal button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); $('#sw-name').textContent=p.name; applyLivery(); }; sp.appendChild(b); }); }
+  const spt=$('#sw-pat'); if(spt){ PATTERNS.forEach(([k,l])=>{ const b=document.createElement('button'); b.title=l; b.classList.toggle('on',LIV.pattern===k); const th=paintTile(48,k,PAL().base,PAL().accent); th.className='thumb'; b.appendChild(th);
+      b.onclick=()=>{ LIV.pattern=k; $$('#sw-pat button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); applyLivery(); }; spt.appendChild(b); }); }
+  let livTimer=null;
+  $$('#pbody [data-l]').forEach(inp=>{ inp.addEventListener('input',()=>{ LIV[inp.dataset.l]=inp.value; clearTimeout(livTimer);
+    livTimer=setTimeout(()=>{ if(inp.dataset.l==='font' && document.fonts && document.fonts.load) document.fonts.load('700 40px "'+LIV.font+'"').then(applyLivery,applyLivery); else applyLivery(); },160); }); });
+}
+
+/* ── 계통도 — 어떻게 이어지나. 선체마다 다른 그림 ── */
+function fgssSVG(ship){
+  const type=HULLTYPE[ship], gap=ship==='gap', jeong=ship==='jeong';
+  const c={v:'#a9a49a',lp:'#8fa3b8',hp:'#cf6a55',ret:'#7fb0c8',liq:'#e0b070',ink:'#e9e5dc',dim:'#9a958b',box:'#1b1e24'};
+  const B=(x,y,w,h,t,sub,dash)=>'<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="2" fill="'+c.box+'" stroke="'+c.dim+'"'+(dash?' stroke-dasharray="4 3"':'')+'/><text x="'+(x+w/2)+'" y="'+(y+h/2-(sub?2:-4))+'" text-anchor="middle" fill="'+c.ink+'" font-size="11">'+t+'</text>'+(sub?'<text x="'+(x+w/2)+'" y="'+(y+h/2+11)+'" text-anchor="middle" fill="'+c.dim+'" font-size="9.5">'+sub+'</text>':'');
+  const P=(d,col,w=2,dash)=>'<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="'+w+'"'+(dash?' stroke-dasharray="5 3"':'')+' marker-end="url(#a)"/>';
+  const T=(x,y,t)=>'<text x="'+x+'" y="'+y+'" fill="'+c.dim+'" font-size="9.5">'+t+'</text>';
+  let s='<svg viewBox="0 0 340 250" width="100%" style="display:block;margin-top:6px"><defs><marker id="a" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="'+c.dim+'"/></marker></defs>';
+  if(type==='lngc'){
+    s+=B(8,100,64,44,'화물창','−160℃ · 1.06 bara');
+    if(gap){ s+=B(110,72,74,34,'압축기 1~3단','저압 · ~6 bar')+B(110,124,74,34,'압축기 4~5단','고압 · 300 bar')+P('M72,116 L110,89',c.v)+P('M147,106 L147,124',c.v,2)+P('M184,89 L262,89',c.lp)+B(262,72,70,34,'발전기 ×4','4행정 DF · 6 bar')+P('M184,141 L262,141',c.hp,3)+B(262,124,70,34,'주기관 ×2','ME-GI · 300 bar')+P('M147,158 L147,196',c.hp,2)+B(110,196,74,34,'재액화 PRS','팽창 → 액체')+P('M110,213 C60,213 40,190 40,144',c.ret,2)+P('M184,80 C215,60 240,40 262,36',c.v,1.5)+B(262,20,70,30,'GCU','잉여 소각')+P('M40,144 C40,225 100,232 110,224',c.liq,1.5,true)+T(8,243,'점선 = 강제 기화(FBOG) 경로 · 갑: 고압을 재액화가 얻어 쓴다'); }
+    else { s+=B(110,98,74,38,'저압 압축기','6~16 bar · 점선(치수 미확정)',true)+P('M72,116 L110,117',c.v)+P('M184,108 L262,89',c.lp)+B(262,72,70,34,'발전기 ×4','4행정 DF · 6 bar')+P('M184,126 L262,141',c.lp,3)+B(262,124,70,34,'주기관 ×2','X-DF · 6~16 bar')+P('M72,130 C80,200 100,213 110,213',c.v,2)+B(110,196,74,34,'재액화 유닛','별도 냉동 사이클 · 推',true)+P('M110,205 C60,205 40,190 40,144',c.ret,2,true)+P('M184,104 C215,60 240,40 262,36',c.v,1.5)+B(262,20,70,30,'GCU','잉여 소각')+P('M40,144 C40,225 100,232 110,224',c.liq,1.5,true)+T(8,243,'점선 = 추정 · 을: 재액화가 압축기의 고압을 빌리지 못한다'); }
+  } else if(type==='vlgc'){
+    s+=B(8,96,64,44,'Type A 화물창',jeong?'−42℃ · LPG / NH₃':'−42℃ · 대기압');
+    s+=P('M72,106 L110,84',c.v)+B(110,66,74,34,'화물 압축기 ×3','~20 bar · 推')+P('M184,83 L226,83',c.v)+B(226,66,86,34,'해수 응축기 ×2','바닷물로 액화')+P('M269,100 C269,140 200,150 110,150 L72,150',c.ret,2)+B(110,136,74,28,'수액기','액체가 잠시');
+    s+=P('M40,140 C40,200 90,206 110,206',c.liq,1.5)+B(110,190,74,32,'갑판 탱크 ×2','450 m³ · 등급 전환 · 연료')+P('M184,206 L226,206',c.liq,2)+B(226,190,86,32,'펌프 ×2 + 가열기','50 bar · 45℃ 액체');
+    s+=P('M269,190 C269,170 300,160 300,150 L300,130',c.liq,3)+B(262,100,70,30,'주기관 ×1','LGIP · FBIV 500~600 bar');
+    s+=T(8,240,'되돌린다: 끓음은 응축기에서 액체로 · 연료는 액체째 펌프로 — 압축기 없음 {典 31}');
+  } else if(type==='box'){
+    s+=B(8,96,74,44,'연료탱크 18,600 m³','멤브레인 · 거주구 아래')+P('M82,108 L120,84',c.v)+B(120,66,80,34,'저압 압축기','자연 증발분 · 점선',true)+P('M82,126 L120,150',c.liq,1.5,true)+B(120,134,80,34,'펌프 + 강제기화기','모자란 몫 · 주역')+P('M200,83 L262,105',c.lp,2)+P('M200,151 L262,129',c.lp,3)+B(262,100,70,34,'주기관 ×1','X-DF 12기통 · 6~16 bar')+P('M296,100 L296,72',c.lp,1.5)+B(262,40,70,30,'발전기 ×4','냉동 컨테이너의 전기')+P('M200,74 C230,40 250,30 262,26',c.v,1.2)+B(262,8,70,28,'GCU','정박 때만')+T(8,240,'다스린다: 끓음 ≪ 갈증 — 압력은 관리하고 대부분은 억지로 끓인다');
+  } else {
+    s+=B(8,90,76,50,'Type C 화물창 ×2','1.7 bara → 참는다')+P('M84,100 C110,60 130,50 150,46',c.v,1.2,true)+B(150,30,74,30,'벤트 마스트','참다 못하면 · 최후')+P('M84,115 L150,115',c.liq,3)+B(150,98,74,34,'카고 펌프 → STS 매니폴드','−160℃ 호스')+P('M224,115 L262,115',c.liq,3)+B(262,98,70,34,'받는 배','예컨대 무 · 3번에 찬다')+P('M46,140 C46,190 100,200 120,200',c.liq,1.5)+B(120,184,74,32,'연료 기화기','자기 화물로')+P('M194,200 L262,200',c.lp,2)+B(262,184,70,32,'DF 발전기 ×2','→ 전기추진')+T(8,240,'참는다: 재액화도 압축기도 없다 — 압력용기가 시간을 벌고, 그 안에 팔고 떠난다');
+  }
+  return s+'</svg>';
+}
+
+/* ── 독 구성 ── */
+$('#edition').textContent=META.edition;
+SHIPS.forEach(s=>{ const b=document.createElement('button'); const ready=!!HULLTYPE[s.id]; b.className='shipbtn'+(ready?'':' wait'); b.dataset.ship=s.id;
+  b.innerHTML='<i></i>'+s.ho+' <small>'+s.name.split(' — ')[0]+(ready?'':' · 3D 대기')+'</small>';
+  if(ready) b.onclick=()=>switchShip(s.id);
+  $('#fleet').appendChild(b); });
+function switchShip(id){ if(curShip===id) return; const prev=curType; curShip=id; curType=HULLTYPE[id]; TUNE=TUNES[curType]; TUNE_DEF=TUNE_DEFS[curType];
+  if(prev!==curType){ buildShip(); resetCamera(); applyState(false); } else applyState(true);
+  if(panel.classList.contains('show')) fillPanel(); touch(); }
+$('#t-lock').onclick=()=>{ showLock=!showLock; applyState(false); };
+buildShip();
+SYSTEMS.forEach(sy=>{ const b=document.createElement('button'); b.dataset.sys=sy.id; const n=PARTS.filter(p=>p.userData.sys===sy.id).length;
+  b.innerHTML='<i></i>'+sy.num+' '+sy.en+' <span class="cnt">'+(n||'—')+'</span>';
+  b.onclick=()=>{ curSys=(curSys===sy.id)?null:sy.id; applyState(false); if(curSys){ const first=PARTS.find(p=>p.userData.sys===curSys && p.visible); lastPart=first?first.userData:{sys:curSys, name:sy.en+' · '+sy.ko, note:''}; openPanel('part'); } touch(); };
+  $('#legend').appendChild(b); });
+$('#t-tune').onclick=()=>openPanel('tune');
+placeCamera(); applyLivery(); applyState(false);
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>applyLivery());
+(function loop(){ requestAnimationFrame(loop); renderer.render(scene,camera); updateLabels(); })();
+
+</script>
+</body>
+</html>
